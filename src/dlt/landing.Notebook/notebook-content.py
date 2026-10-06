@@ -10,7 +10,7 @@
 
 # CELL ********************
 
-# landing: bronze + silver.trips for nyc_taxi_lakehouse.
+# landing: bronze + silver conformed tables for nyc_taxi_lakehouse.
 # Mirrors the brownfield builder tools/build_domain.py in the sibling clone
 # (bronze landing + silver conforming), staged here with Lakehouse Files
 # local raw/ paths build_domain.py reads. FULL-VOLUME landing: every row lands.
@@ -44,7 +44,7 @@ def yellow_tripdata():
     return (
         spark.read.parquet("Files/raw/yellow_tripdata_2024-*.parquet")
         .withColumn("_load_id", F.lit(LOAD_YELLOW))
-        .withColumn("_source_file", F.regexp_extract(F.input_file_name(), "[^/]+$", 0))
+        .withColumn("_source_file", F.regexp_extract(F.input_file_name(), "([^/]+)$", 1))
         .withColumn("_loaded_at", F.to_timestamp(F.lit(LOADED_AT)))
     )
 
@@ -54,7 +54,7 @@ def green_tripdata():
     return (
         spark.read.parquet("Files/raw/green_tripdata_2024-*.parquet")
         .withColumn("_load_id", F.lit(LOAD_GREEN))
-        .withColumn("_source_file", F.regexp_extract(F.input_file_name(), "[^/]+$", 0))
+        .withColumn("_source_file", F.regexp_extract(F.input_file_name(), "([^/]+)$", 1))
         .withColumn("_loaded_at", F.to_timestamp(F.lit(LOADED_AT)))
     )
 
@@ -82,31 +82,47 @@ def taxi_zone_lookup():
 
 # Hand-maintained refs. Static values copied verbatim from
 # build_domain.py:67-93 (the team keeps these in the warehouse because the
-# TLC data dictionary is a PDF).
+# TLC data dictionary is a PDF). Stamped like every other write: the source
+# SQL carries no stamps, but stamp-every-write wins.
 @dlt.table(name="bronze_payment_type_ref", comment="Hand-maintained payment-type descriptions")
 def payment_type_ref():
-    return spark.createDataFrame(
-        [(0, "Flex Fare trip"), (1, "Credit card"), (2, "Cash"),
-         (3, "No charge"), (4, "Dispute"), (5, "Unknown"), (6, "Voided trip")],
-        ["payment_type", "payment_type_desc"],
+    return (
+        spark.createDataFrame(
+            [(0, "Flex Fare trip"), (1, "Credit card"), (2, "Cash"),
+             (3, "No charge"), (4, "Dispute"), (5, "Unknown"), (6, "Voided trip")],
+            ["payment_type", "payment_type_desc"],
+        )
+        .withColumn("_load_id", F.lit(LOAD_REF))
+        .withColumn("_source_file", F.lit("payment_type_ref.csv"))
+        .withColumn("_loaded_at", F.to_timestamp(F.lit(LOADED_AT)))
     )
 
 
 @dlt.table(name="bronze_rate_code_ref", comment="Hand-maintained rate-code descriptions")
 def rate_code_ref():
-    return spark.createDataFrame(
-        [(1, "Standard rate"), (2, "JFK"), (3, "Newark"),
-         (4, "Nassau or Westchester"), (5, "Negotiated fare"), (6, "Group ride")],
-        ["rate_code_id", "rate_code_desc"],
+    return (
+        spark.createDataFrame(
+            [(1, "Standard rate"), (2, "JFK"), (3, "Newark"),
+             (4, "Nassau or Westchester"), (5, "Negotiated fare"), (6, "Group ride")],
+            ["rate_code_id", "rate_code_desc"],
+        )
+        .withColumn("_load_id", F.lit(LOAD_REF))
+        .withColumn("_source_file", F.lit("rate_code_ref.csv"))
+        .withColumn("_loaded_at", F.to_timestamp(F.lit(LOADED_AT)))
     )
 
 
 @dlt.table(name="bronze_vendor_ref", comment="Hand-maintained vendor names")
 def vendor_ref():
-    return spark.createDataFrame(
-        [(1, "Creative Mobile Technologies"), (2, "Curb Mobility"),
-         (6, "Myle Technologies"), (7, "Helix")],
-        ["vendor_id", "vendor_name"],
+    return (
+        spark.createDataFrame(
+            [(1, "Creative Mobile Technologies"), (2, "Curb Mobility"),
+             (6, "Myle Technologies"), (7, "Helix")],
+            ["vendor_id", "vendor_name"],
+        )
+        .withColumn("_load_id", F.lit(LOAD_REF))
+        .withColumn("_source_file", F.lit("vendor_ref.csv"))
+        .withColumn("_loaded_at", F.to_timestamp(F.lit(LOADED_AT)))
     )
 
 # METADATA ********************
@@ -132,7 +148,7 @@ CONFORMED_COLS = [
     "pickup_location_id", "dropoff_location_id", "payment_type",
     "fare_amount", "extra", "mta_tax", "tip_amount", "tolls_amount",
     "improvement_surcharge", "congestion_surcharge", "total_amount",
-    "_load_id", "_source_file",
+    "_load_id", "_source_file", "_loaded_at",
 ]
 
 
@@ -167,6 +183,35 @@ def trips():
     )
     return keyed.filter(F.col("_dup_rank") == 1).drop("_dup_rank")
 
+
+# silver.zones / silver.payment_types / silver.rate_codes. Copies
+# build_domain.py:159-180 (rename-only conform from bronze). The source SQL
+# carries no stamps; stamp columns pass through from bronze so every write
+# stays stamped. gold.* (dim_zone and the marts) is deliberately NOT ported:
+# superseded by the dbt project.
+@dlt.table(name="silver_zones", comment="Conformed zone dimension")
+def zones():
+    return dlt.read("bronze_taxi_zone_lookup").select(
+        F.col("LocationID").alias("location_id"),
+        F.col("Borough").alias("borough"),
+        F.col("Zone").alias("zone_name"),
+        "service_zone", "_load_id", "_source_file", "_loaded_at",
+    )
+
+
+@dlt.table(name="silver_payment_types", comment="Conformed payment types")
+def payment_types():
+    return dlt.read("bronze_payment_type_ref").select(
+        "payment_type", "payment_type_desc", "_load_id", "_source_file", "_loaded_at",
+    )
+
+
+@dlt.table(name="silver_rate_codes", comment="Conformed rate codes")
+def rate_codes():
+    return dlt.read("bronze_rate_code_ref").select(
+        "rate_code_id", "rate_code_desc", "_load_id", "_source_file", "_loaded_at",
+    )
+
 # METADATA ********************
 
 # META {
@@ -177,7 +222,9 @@ def trips():
 # CELL ********************
 
 # Run the pipeline against the default lakehouse (nyc_taxi_lakehouse).
+# Lazy references: dlt owns execution, so pass the functions un-called.
 pipeline = dlt.pipeline(pipeline_name="landing", destination="lakehouse", dataset_name="default")
-load_info = pipeline.run([yellow_tripdata(), green_tripdata(), taxi_zone_lookup(),
-                          payment_type_ref(), rate_code_ref(), vendor_ref(), trips()])
+load_info = pipeline.run([yellow_tripdata, green_tripdata, taxi_zone_lookup,
+                          payment_type_ref, rate_code_ref, vendor_ref, trips,
+                          zones, payment_types, rate_codes])
 print(load_info)
