@@ -1,0 +1,1 @@
+{"command":{"arguments":{"exclude":"","threads":4},"operation":"build"},"profile":{"connectionSettings":{"name":"nyc_taxi_lakehouse","properties":{"type":"Lakehouse","typeProperties":{}}},"profileType":"Lakehouse","schema":"staging"},"project":{"folderPath":"dbt","projectType":"OneLake"}}
