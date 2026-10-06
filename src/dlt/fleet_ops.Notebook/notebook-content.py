@@ -275,9 +275,11 @@ def shift():
     shift_id = F.col("shift_id")
     return _stamp(
         keyed.withColumn("shift_start_ts",
-                         _minus_minutes(F.col("first_trip_ts"), 7 + hb(vkey)))
+                         _minus_minutes(F.col("first_trip_ts"),
+                                        7 + F.pmod(hb(vkey), F.lit(38))))
         .withColumn("_full_end_ts",
-                    _plus_minutes(F.col("last_trip_ts"), 4 + hb(skey)))
+                    _plus_minutes(F.col("last_trip_ts"),
+                                  4 + F.pmod(hb(skey), F.lit(26))))
         .withColumn("driver_id",
                     F.when(F.pmod(hb(shift_id), F.lit(5)) < 4,
                            1 + F.pmod(F.col("vehicle_id") * 7, F.lit(N_DRIVERS)))
