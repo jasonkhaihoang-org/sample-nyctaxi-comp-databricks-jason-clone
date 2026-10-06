@@ -1,0 +1,17 @@
+# Fabric Lakehouse target for the nyc_taxi_analytics project.
+# No secrets live in this file: at runtime the driver notebook binds the
+# real workspace/lakehouse coordinates, so the placeholders below only
+# document which values get bound.
+nyc_taxi_analytics:
+  target: lakehouse
+  outputs:
+    # The Fabric Lakehouse. Holds every schema the project reads or writes
+    # (bronze/silver/ops_raw/mdm_raw sources plus dbt-managed
+    # staging/intermediate/core/agg/finance/ops/seeds).
+    lakehouse:
+      type: fabricspark
+      workspaceid: <workspace-id>
+      lakehouseid: <lakehouse-id>
+      lakehouse: nyc_taxi_lakehouse
+      schema: staging
+      threads: 4
