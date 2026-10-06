@@ -18,7 +18,7 @@ key — deterministic, no RNG. The zone master reads the landed
 | `mdm_raw_fare_regime_master` | Surcharge rates (improvement, MTA tax, congestion, airport fee) | Effective dates are approximate |
 | `mdm_raw_borough_master` | Names, codes, approximately census-accurate population/area | `reporting_region`, `is_core_market` |
 | `mdm_raw_zone_poi` | The three airport points of interest | The other 269 assignments |
-| `mdm_raw_calendar_master` | 2024 US federal holidays, 8 April eclipse, St Patrick's Day parade | School-term / season flags |
+| `mdm_raw_calendar_master` | 2024 US federal holidays, 8 April eclipse, St Patrick's Day parade | derived weekend/school-term flags (`is_weekend`, `is_school_term`) |
 | `mdm_raw_weather_daily` | Nothing — seasonal sine curve plus hash noise, not NOAA data | Everything |
 
 The coordinates look real and are not: hash output in a plausible NYC range
