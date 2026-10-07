@@ -17,7 +17,7 @@ agent can act on.
 2. **Target**: Fabric Lakehouse (`dbt-fabricspark`), single Lakehouse item
    `src/nyc_taxi_lakehouse.Lakehouse/` holding all schemas.
 3. **`src/` is the Fabric-connected folder.** Workspace subfolders mirror as
-   subfolders (`Dude2/` pattern). Nothing human-authored lives inside any
+   subfolders. Nothing human-authored lives inside any
    `*.<ItemType>/` (Fabric wipes strays there on commit); shared sources sit
    beside item folders and Fabric preserves them.
 4. **Single dbt project** `nyc_taxi_analytics` (v2.1.0, from
