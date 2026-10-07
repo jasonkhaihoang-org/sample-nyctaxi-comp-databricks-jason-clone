@@ -6,6 +6,18 @@
 # META   "kernel_info": {
 # META     "name": "synapse_pyspark"
 # META   }
+# META   "dependencies": {
+# META     "lakehouse": {
+# META       "default_lakehouse": "a4dde4fa-dd85-468f-b14f-9fa012565f38",
+# META       "default_lakehouse_name": "nyc_taxi_lakehouse",
+# META       "default_lakehouse_workspace_id": "845b86b2-0270-4b04-bfd4-685c3687055a",
+# META       "known_lakehouses": [
+# META         {
+# META           "id": "a4dde4fa-dd85-468f-b14f-9fa012565f38"
+# META         }
+# META       ]
+# META     },
+# META   }
 # META }
 
 # CELL ********************
