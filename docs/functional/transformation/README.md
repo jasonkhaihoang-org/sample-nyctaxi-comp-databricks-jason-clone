@@ -1,8 +1,9 @@
 # Transformation — single dbt project
 
 One dbt project (`nyc_taxi_analytics`, v2.1.0, profile `nyc_taxi_analytics`,
-Lakehouse connection on `nyc_taxi_lakehouse`), sources under `transformation/`
-with a deploy mirror at `src/dbt/dbt/`. Layer flow: `staging` views →
+Lakehouse connection on `nyc_taxi_lakehouse`), embedded in the job at
+`src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/` (mirrored from
+`transformation/` in the sibling DuckDB repo). Layer flow: `staging` views →
 `intermediate` tables → `core` / `agg` / `finance` / `ops` tables, plus `seeds`
 band tables (daypart, distance, duration, fare) and five singular tests
 (`assert_airport_fee_only_on_yellow`,

@@ -21,7 +21,10 @@ agent can act on.
    `*.<ItemType>/` (Fabric wipes strays there on commit); shared sources sit
    beside item folders and Fabric preserves them.
 4. **Single dbt project** `nyc_taxi_analytics` (v2.1.0, from
-   `transformation/dbt_project.yml:1`) at `src/dbt/dbt/`. Retarget:
+   `transformation/dbt_project.yml:1`) embedded in the job at
+   `src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/` (native
+   Fabric shape: `dbt-content.json` `folderPath: "dbt"` resolves inside
+   `Code/`). Retarget:
    adapter `dbt-duckdb` → `dbt-fabricspark`, `profiles.yml` to Lakehouse
    coords, `vars` databases `domain` → Lakehouse (schemas unchanged).
    Full-volume landing; no sample clause (dev slicing is a target concern).

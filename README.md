@@ -73,8 +73,7 @@ root, outside Fabric management.
 ```text
 src/
   nyc_taxi_lakehouse.Lakehouse/
-  dbt/nyc_taxi_analytics.DataBuildToolJob/  # single dbt project (Code/dbt/)
-  dbt/dbt/                                  # dbt_project.yml, models/, seeds/, tests/
+  dbt/nyc_taxi_analytics.DataBuildToolJob/  # job + embedded project (Code/dbt/)
   dbt/<staging|marts|finance|ops>_dbt.Notebook/  # drivers: run slice, assert it
   dlt/<landing|mdm|fleet_ops>.Notebook/     # dlt ingestion + enrichment
   pipelines/<main|finance|ops>.DataPipeline/
