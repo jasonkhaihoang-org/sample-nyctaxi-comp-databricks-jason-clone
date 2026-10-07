@@ -5,31 +5,6 @@
 # META {
 # META   "kernel_info": {
 # META     "name": "synapse_pyspark"
-# META   },
-# META   "dependencies": {
-# META     "lakehouse": {
-# META       "default_lakehouse": "a4dde4fa-dd85-468f-b14f-9fa012565f38",
-# META       "default_lakehouse_name": "nyc_taxi_lakehouse",
-# META       "default_lakehouse_workspace_id": "845b86b2-0270-4b04-bfd4-685c3687055a",
-# META       "known_lakehouses": [
-# META         {
-# META           "id": "a4dde4fa-dd85-468f-b14f-9fa012565f38"
-# META         }
-# META       ]
-# META     },
-# META     "environment": {
-# META       "environmentId": "067498ae-0aa8-bca3-420d-e2660cac9cf3",
-# META       "workspaceId": "00000000-0000-0000-0000-000000000000"
-# META     },
-# META     "warehouse": {
-# META       "default_warehouse": "b0da705e-a09d-4d59-9741-7fc137b6efb9",
-# META       "known_warehouses": [
-# META         {
-# META           "id": "b0da705e-a09d-4d59-9741-7fc137b6efb9",
-# META           "type": "Lakewarehouse"
-# META         }
-# META       ]
-# META     }
 # META   }
 # META }
 
@@ -37,13 +12,6 @@
 
 # Runtime libraries (dlt, deltalake, pyarrow) come from the attached
 # dlt.Environment, NOT pip: %pip fails instantly in job sessions here.
-
-# METADATA ********************
-
-# META {
-# META   "language": "python",
-# META   "language_group": "synapse_pyspark"
-# META }
 
 # CELL ********************
 
@@ -72,6 +40,7 @@ import random as pyrandom
 import pyarrow as pa
 import pyarrow.csv as pa_csv
 import pyarrow.parquet as pq
+import tempfile as _tf
 from dlt.destinations import filesystem
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
@@ -143,7 +112,6 @@ def delta_path(table):
 # Streamed per file in 100k-row batches: the driver never holds the load.
 
 
-@dlt.resource(table_name="bronze_yellow_tripdata", write_disposition="replace", table_format="delta")
 def _sampled_batches(path, load_id, name):
     """Yield stamped 100k-row batches, 5%-sampled per file for iteration.
 
@@ -161,6 +129,7 @@ def _sampled_batches(path, load_id, name):
             yield _stamp_batch(chunk, load_id, name)
 
 
+@dlt.resource(table_name="bronze_yellow_tripdata", write_disposition="replace", table_format="delta")
 def yellow_tripdata():
     for path in sorted(pyglob.glob(RAW_DIR + "/yellow_tripdata_2024-*.parquet")):
         yield from _sampled_batches(path, LOAD_YELLOW, os.path.basename(path))
@@ -231,13 +200,13 @@ def vendor_ref():
 
 # Run raw ingestion: dlt streams the six resources above into Delta under
 # DLT_ROOT/DATASET. dlt state lives in the pipeline working dir on the
-# same mount (no credentials anywhere in this notebook).
+# ephemeral local dir (loads here are full-replace; no state must survive).
 pipeline = dlt.pipeline(
     pipeline_name="landing",
     destination=filesystem(bucket_url="file://%s" % DLT_ROOT,
                            kwargs={"auto_mkdir": True}),
     dataset_name=DATASET,
-    pipelines_dir="/lakehouse/default/Files/dlt/pipelines",
+    pipelines_dir=_tf.mkdtemp(prefix="dlt-"),
 )
 load_info = pipeline.run([yellow_tripdata, green_tripdata, taxi_zone_lookup,
                           payment_type_ref, rate_code_ref, vendor_ref])
@@ -345,10 +314,3 @@ for table, dotted in TABLE_SCHEMAS.items():
     spark.sql("CREATE TABLE IF NOT EXISTS %s.%s USING DELTA LOCATION '%s'"
               % (schema, name, delta_path(table)))
 print("registered %d tables" % len(TABLE_SCHEMAS))
-
-# METADATA ********************
-
-# META {
-# META   "language": "python",
-# META   "language_group": "synapse_pyspark"
-# META }
