@@ -10,6 +10,17 @@
 
 # CELL ********************
 
+%pip install "dlt[fabric]"
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
 # landing: bronze + silver conformed tables for nyc_taxi_lakehouse.
 # Mirrors the brownfield builder tools/build_domain.py in the sibling clone
 # (bronze landing + silver conforming), staged here with Lakehouse Files
