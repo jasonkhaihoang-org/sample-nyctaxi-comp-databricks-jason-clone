@@ -40,6 +40,7 @@ import random as pyrandom
 import pyarrow as pa
 import pyarrow.csv as pa_csv
 import pyarrow.parquet as pq
+import tempfile as _tf
 from dlt.destinations import filesystem
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
@@ -199,13 +200,13 @@ def vendor_ref():
 
 # Run raw ingestion: dlt streams the six resources above into Delta under
 # DLT_ROOT/DATASET. dlt state lives in the pipeline working dir on the
-# same mount (no credentials anywhere in this notebook).
+# ephemeral local dir (loads here are full-replace; no state must survive).
 pipeline = dlt.pipeline(
     pipeline_name="landing",
     destination=filesystem(bucket_url="file://%s" % DLT_ROOT,
                            kwargs={"auto_mkdir": True}),
     dataset_name=DATASET,
-    pipelines_dir="/lakehouse/default/Files/dlt/pipelines",
+    pipelines_dir=_tf.mkdtemp(prefix="dlt-"),
 )
 load_info = pipeline.run([yellow_tripdata, green_tripdata, taxi_zone_lookup,
                           payment_type_ref, rate_code_ref, vendor_ref])

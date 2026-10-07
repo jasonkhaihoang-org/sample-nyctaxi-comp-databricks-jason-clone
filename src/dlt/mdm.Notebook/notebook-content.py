@@ -38,6 +38,7 @@
 # - strftime(obs_date, '%Y%m%d') becomes date_format(obs_date, 'yyyyMMdd').
 
 import dlt
+import tempfile as _tf
 from dlt.destinations import filesystem
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
@@ -185,13 +186,13 @@ def borough_master():
 
 
 # Run static ingestion: dlt streams the five resources above into Delta.
-# dlt state lives in the pipeline working dir on the same mount.
+# dlt state lives in an ephemeral local dir (full-replace loads keep no state).
 pipeline = dlt.pipeline(
     pipeline_name="mdm",
     destination=filesystem(bucket_url="file://%s" % DLT_ROOT,
                            kwargs={"auto_mkdir": True}),
     dataset_name=DATASET,
-    pipelines_dir="/lakehouse/default/Files/dlt/pipelines",
+    pipelines_dir=_tf.mkdtemp(prefix="dlt-"),
 )
 load_info = pipeline.run([vendor_master, payment_method_master,
                           rate_plan_master, fare_regime_master,
