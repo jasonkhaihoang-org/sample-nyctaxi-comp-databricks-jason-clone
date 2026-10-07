@@ -1,8 +1,8 @@
-# Sample NYC Taxi Analytics Domain
+# Sample NYC Taxi Analytics — Fabric
 
-An intentionally brownfield DuckDB + dbt warehouse for NYC taxi analytics and
-intent-driven data work. It combines genuine NYC TLC trip records with
-deterministically generated fleet-operations and master-data systems.
+A brownfield Fabric Lakehouse for NYC taxi analytics and intent-driven data
+work. It combines genuine NYC TLC trip records with deterministically
+generated fleet-operations and master-data systems.
 
 The project tests joins, sessionization, SCD2 dimensions, quality rules, and
 aggregate design without pretending that generated driver, vehicle, garage, or
@@ -18,6 +18,8 @@ weather data is real.
 | `mdm_raw` | Zone/vendor/payment/rate/borough/calendar/POI/weather data | Mixed: some labels/rates are hand-transcribed; enriched attributes and weather are generated. |
 | dbt models | Staging, intermediate, dimensions, facts, marts, and aggregates | Derived transformations and business rules. |
 
+All layers live as schemas in one Lakehouse (`nyc_taxi_lakehouse`).
+
 The TLC trip window is January–June 2024. Read the full tier-by-tier notes in
 [`docs/data-provenance.md`](docs/data-provenance.md) before treating a result
 as a real-world claim. Trip-level TLC facts are genuine; Harbour Point
@@ -26,127 +28,89 @@ identities and operational outcomes are not.
 ## Architecture
 
 ```text
-official TLC Parquet + CSV
-          │
-          ▼
-tools/download_bronze_data.py
-          │
-          ▼
-tools/build_domain.py ─────► bronze ─────► silver
-          │                                      │
-          ├── tools/build_mdm.py ───────► mdm_raw
-          └── tools/build_fleet_ops.py ──► ops_raw
-                                                 │
-                                                 ▼
-                              dbt build: staging → intermediate → marts
-                                                 │
-                                                 ▼
-                                      dbt docs generate
+TLC Parquet + CSV in Lakehouse Files
+           │
+           ▼
+src/dlt/landing.Notebook ───► bronze ───► silver
+                                     │
+           ┌─────────────────────────┘
+           ▼
+src/dlt/mdm.Notebook ───────► mdm_raw
+src/dlt/fleet_ops.Notebook ─► ops_raw
+                                     │
+                                     ▼
+              nyc_taxi_analytics DataBuildToolJob
+              staging → intermediate → marts (core + agg)
+                                     │
+                    ┌────────────────┴───────────────┐
+                    ▼                                ▼
+              finance marts                     ops marts
 ```
 
-`domain.duckdb`, downloaded source files, and transformation artifacts are ignored by Git.
-A complete rebuild is reproducible from the scripts and public TLC inputs
-without committing a multi-gigabyte warehouse.
+Landing is full-volume: every TLC file, verbatim plus loader stamps
+(`_load_id`, `_source_file`, `_loaded_at`). There is no sampling step; a
+downsampled dev copy is a target concern, never part of the landing
+contract. Enrichment (MDM masters, fleet entities and event streams) is
+deterministic from landed data. Conforming and SCD2 assembly happen in dbt,
+not in the loaders.
+
+Orchestration is three Fabric Data Pipelines, one activity per item:
+
+- `main`: landing → mdm + fleet_ops (parallel) → staging → marts.
+- `finance`: finance marts, after `main`.
+- `ops`: ops marts and scorecards, after `main`.
+
+Model-level parallelism inside a dbt run comes from dbt `threads`, not from
+pipeline fan-out. Schedules are committed disabled; the estate's standing
+cadence is nightly at 03:00 ET once enabled.
 
 ## Repository layout
 
-- `CONTEXT.md`: domain context and analytical vocabulary.
-- `docs/data-provenance.md`: real versus generated data, tier by tier.
-- `docs/adr/`: architecture decisions.
-- `docs/intents/` and `intent/`: candidate business requests and data slices.
-- `transformation/models/staging/`: source-shaped views.
-- `transformation/models/intermediate/`: conformance and hard transformations.
-- `transformation/models/marts/`: core dimensions/facts, aggregates, finance, and operations.
-- `transformation/seeds/`: analyst-owned daypart, distance, duration, and fare bands.
-- `tools/download_bronze_data.py`: download official TLC inputs.
-- `tools/build_domain.py`: build the Bronze/Silver baseline.
-- `tools/build_mdm.py`: build deterministic MDM source data.
-- `tools/build_fleet_ops.py`: build deterministic fleet source data.
-- `tools/build_synthetic_sources.py`: run the two generated source builders.
-- `tools/build_dbt_and_docs.py`: run dbt and generate documentation.
-- `tools/dq.py`: local profiling and join-evidence utility.
+`src/` is the Fabric-connected folder: everything under it is workspace
+items, mirrored by Git integration. `tools/` and `docs/` live at the repo
+root, outside Fabric management.
+
+```text
+src/
+  nyc_taxi_lakehouse.Lakehouse/
+  dbt/nyc_taxi_analytics.DataBuildToolJob/  # job + embedded project (Code/dbt/)
+  dbt/<staging|marts|finance|ops>_dbt.Notebook/  # drivers: run slice, assert it
+  dlt/<landing|mdm|fleet_ops>.Notebook/     # dlt ingestion + enrichment
+  pipelines/<main|finance|ops>.DataPipeline/
+tools/          # frozen DuckDB-era builders: reference only, never run here
+docs/
+  data-provenance.md
+  functional/   # per-flow specs: ingestion, mdm-enrichment, fleet-ops,
+                #   transformation, orchestration
+  adr/
+CONTEXT.md      # domain context and analytical vocabulary
+```
 
 ## Prerequisites
 
-- Python 3.9 or newer
-- DuckDB Python package
-- dbt Core with the DuckDB adapter
-- Internet access for the TLC downloads
+- A Fabric workspace with a Lakehouse (`nyc_taxi_lakehouse`) and dbt-job
+  support enabled in the tenant.
+- The workspace connected to this repo with `src/` as its Git folder.
+- TLC source files staged in the Lakehouse Files section (13 files,
+  ~336 MB, January–June 2024).
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install duckdb dbt-core dbt-duckdb
-```
+No local Python environment, no DuckDB, no committed warehouse file. There
+is nothing to rebuild locally.
 
-## Full rebuild
+## Deploy and run
 
-Run from the repository root:
-
-```bash
-# Download Yellow/Green trip Parquet and the TLC zone lookup into raw/.
-python3 tools/download_bronze_data.py
-
-# Recreate domain.duckdb. This replaces the local database if it exists.
-python3 tools/build_domain.py
-
-# Add the generated MDM and fleet-operations source systems.
-python3 tools/build_synthetic_sources.py
-
-# Build all dbt models, run tests, and generate the docs site.
-python3 tools/build_dbt_and_docs.py
-```
-
-`build_dbt_and_docs.py` is the named entry point for the dbt layer: it runs
-`dbt build`, then `dbt docs generate`, and writes the documentation artifacts
-under `transformation/target/`.
-
-### Individual commands
-
-Download selected files:
-
-```bash
-python3 tools/download_bronze_data.py \
-  --months 2024-01 2024-02 2024-03 \
-  --fleet yellow
-```
-
-Build source systems independently:
-
-```bash
-python3 tools/build_domain.py
-python3 tools/build_mdm.py
-python3 tools/build_fleet_ops.py
-
-# Or run the generated systems together after the domain exists.
-python3 tools/build_synthetic_sources.py
-python3 tools/build_synthetic_sources.py --only mdm
-python3 tools/build_synthetic_sources.py --only fleet
-```
-
-Run dbt or regenerate documentation from an existing build:
-
-```bash
-python3 tools/build_dbt_and_docs.py --target domain
-python3 tools/build_dbt_and_docs.py --target domain --docs-only
-```
-
-The equivalent direct commands are:
-
-```bash
-cd transformation
-DBT_PROFILES_DIR=. dbt build --target domain
-DBT_PROFILES_DIR=. dbt docs generate --target domain
-DBT_PROFILES_DIR=. dbt docs serve --port 8085
-```
-
-Open <http://localhost:8085> after starting the docs server.
+1. Connect the workspace to this repo (`src/` folder) and sync.
+2. Run the `main` pipeline: landing → mdm + fleet_ops → staging → marts.
+3. Run `finance` and `ops` pipelines for their marts.
+4. Each driver notebook (`*_dbt.Notebook`) runs its dbt slice
+   (`--select <group>.*`) and asserts it: row-count reconciliation,
+   grain and join evidence, billable-trip and reporting-window rules,
+   SCD2 overlap checks.
 
 ## dbt targets and model layers
 
-`transformation/profiles.yml` defines `domain` (`../domain.duckdb`) and `slice`
-(`../slice.duckdb`) targets. The project is organized as:
+The project (`nyc_taxi_analytics`, profile `nyc_taxi_analytics`) builds
+against the Lakehouse via the `dbt-fabricspark` adapter:
 
 - **staging**: source-shaped views over `bronze`, `silver`, `ops_raw`, and `mdm_raw`.
 - **intermediate**: conformed trip, status, occupancy, fare, and quality logic.
@@ -157,31 +121,17 @@ Open <http://localhost:8085> after starting the docs server.
 - **seeds**: four analyst-owned banding tables.
 
 The reporting window (`2024-01-01` through `2024-07-01`) and billable-trip
-definition live in dbt models and project variables. They are not applied when
-Bronze or Silver is built.
-
-## Validation and exploration
-
-```bash
-python3 tools/dq.py profile domain.duckdb silver.trips --top 10
-python3 tools/dq.py joinev domain.duckdb \
-  silver.trips silver.zones pickup_location_id location_id
-python3 tools/dq.py sql domain.duckdb \
-  "select service_type, count(*) from silver.trips group by 1"
-```
-
-`dbt build` runs tests for trip row-count reconciliation, airport fee rules,
-status interval validity, SCD2 zone overlap, and shift-time reconciliation.
+definition (`total_amount > 0`) live in dbt models and project variables.
 
 ## Important limitations
 
-- Do not commit `domain.duckdb`, Parquet files, CSV downloads, `transformation/target/`, or
-  `transformation/logs/`; they are covered by `.gitignore`.
 - `ops_raw` driver, vehicle, garage, lease, maintenance, and weather records
   are synthetic and are not real NYC operations.
 - Generated zone coordinates, population, area, demand tiers, and version
   histories are plausible-looking test attributes, not authoritative geography.
-- Re-running `tools/build_domain.py` replaces the local DuckDB file.
+- `weather_daily` is a seasonal curve plus noise, not NOAA data.
+- `tools/` documents how the DuckDB original was built; it is not executed
+  in this repo. Do not point it at the Lakehouse.
 
 ## Source and license
 
