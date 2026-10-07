@@ -36,4 +36,4 @@ test and `assert_airport_fee_only_on_yellow` protect its fleet asymmetry.
 ## References
 
 - [ADR 0001](../../../adr/0001-conform-yellow-and-green-into-one-trip-grain.md)
-- [Model SQL](../../../../transformation/models/intermediate/int_trips_enriched.sql)
+- [Model SQL](../../../../src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/models/intermediate/int_trips_enriched.sql)

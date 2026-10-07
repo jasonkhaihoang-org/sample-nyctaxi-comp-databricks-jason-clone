@@ -23,7 +23,7 @@
 
 # CELL ********************
 
-# F1: billable-trip definition. Copies transformation/models/intermediate/
+# F1: billable-trip definition. Copies src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/models/intermediate/
 # int_trip_quality_flags.sql: is_billable is total_amount > 0, applied in
 # gold and nowhere upstream (ADR 0002). Every mart row must satisfy it.
 mismatch = spark.sql("""
@@ -54,7 +54,7 @@ print("PASS billable definition: no non-positive revenue rows in mart_daily_zone
 # CELL ********************
 
 # F2: reporting-window bounds. Copies the in_report_window macro in
-# transformation/macros/trip_keys.sql with the ADR 0002 vars from
+# src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/macros/trip_keys.sql with the ADR 0002 vars from
 # dbt_project.yml (report_start 2024-01-01, report_end 2024-07-01).
 out_of_window = spark.sql("""
     SELECT COUNT(*) AS out_of_window_rows
@@ -74,7 +74,7 @@ print("PASS reporting window: all trip_date in [2024-01-01, 2024-07-01)")
 # CELL ********************
 
 # F3: revenue-bridge tie-out. Copies the construction of
-# transformation/models/marts/finance/mart_revenue_component_bridge.sql:
+# src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/models/marts/finance/mart_revenue_component_bridge.sql:
 # each group's unpivoted components (fare through residual) must walk back
 # to the group's total_amount. The residual is its own component, so a
 # non-zero walk is a finding about the source, not rounding to absorb.

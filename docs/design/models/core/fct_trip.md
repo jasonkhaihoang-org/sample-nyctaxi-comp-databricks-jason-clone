@@ -41,5 +41,5 @@ fleet-specific field contract.
 - [ADR 0001](../../../adr/0001-conform-yellow-and-green-into-one-trip-grain.md)
 - [ADR 0002](../../../adr/0002-billable-trip-definition.md)
 - [Enrichment design](../intermediate/int_trips_enriched.md)
-- [Model SQL](../../../../transformation/models/marts/core/fct_trip.sql)
-- [Row-count assertion](../../../../transformation/tests/assert_fct_trip_matches_silver_rowcount.sql)
+- [Model SQL](../../../../src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/models/marts/core/fct_trip.sql)
+- [Row-count assertion](../../../../src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/tests/assert_fct_trip_matches_silver_rowcount.sql)

@@ -23,7 +23,7 @@
 
 # CELL ********************
 
-# O1: status-interval validity. Copies transformation/tests/
+# O1: status-interval validity. Copies src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/tests/
 # assert_no_negative_status_intervals.sql verbatim in intent: the interval
 # model floors at zero, and the floor must never have had to bite widely
 # (threshold: 5000).
@@ -44,7 +44,7 @@ print(f"PASS status intervals: {negative} negative (cap 5000)")
 
 # CELL ********************
 
-# O2: shift-time reconciliation. Copies transformation/tests/
+# O2: shift-time reconciliation. Copies src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/tests/
 # assert_shift_time_budget_reconciles.sql verbatim in intent: on-trip,
 # available and break seconds must not exceed the shift's online seconds
 # (60-second tolerance); exceeding it means overlapping intervals.
@@ -68,7 +68,7 @@ print("PASS shift reconciliation: accounted seconds within online budget")
 # O3: trip-quality flag presence. Every fact row carries a quality verdict
 # through the junk dimension (sibling: relationships test on
 # fct_trip.trip_quality_key to dim_trip_quality in
-# transformation/models/marts/core/_core.yml; junk-dimension description on
+# src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/models/marts/core/_core.yml; junk-dimension description on
 # dim_trip_quality). A null or dangling key means a trip escaped verdicts.
 flagless = spark.sql("""
     SELECT COUNT(*) AS flagless_rows

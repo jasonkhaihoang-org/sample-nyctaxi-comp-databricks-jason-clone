@@ -33,5 +33,5 @@ change the ordering rule.
 
 ## References
 
-- [Model SQL](../../../../transformation/models/intermediate/int_status_intervals.sql)
-- [Negative-interval assertion](../../../../transformation/tests/assert_no_negative_status_intervals.sql)
+- [Model SQL](../../../../src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/models/intermediate/int_status_intervals.sql)
+- [Negative-interval assertion](../../../../src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/tests/assert_no_negative_status_intervals.sql)

@@ -26,9 +26,9 @@
 # A1: per-fleet reconciliation. The yellow/green extras are deduplicated to
 # one row per trip_key so the rejoin cannot multiply the fact (sibling:
 # stg_tlc__yellow_trip_extras / stg_tlc__green_trip_extras descriptions in
-# transformation/models/staging/_staging.yml; multiplication hazard from
-# transformation/models/intermediate/int_trips_enriched description and
-# transformation/tests/assert_airport_fee_only_on_yellow.sql).
+# src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/models/staging/_staging.yml; multiplication hazard from
+# src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/models/intermediate/int_trips_enriched description and
+# src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/tests/assert_airport_fee_only_on_yellow.sql).
 yellow = spark.sql("""
     SELECT
         (SELECT COUNT(*) FROM staging.stg_tlc__trips WHERE service_type = 'yellow') AS trips,
@@ -59,7 +59,7 @@ print(f"PASS green reconciliation: {green.trips} trips = {green.extras} extras")
 # CELL ********************
 
 # A2: null-key checks. Copies the unique + not_null data tests on trip_key
-# in transformation/models/staging/_staging.yml (stg_tlc__trips,
+# in src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/models/staging/_staging.yml (stg_tlc__trips,
 # stg_tlc__yellow_trip_extras, stg_tlc__green_trip_extras).
 for table in (
     "staging.stg_tlc__trips",

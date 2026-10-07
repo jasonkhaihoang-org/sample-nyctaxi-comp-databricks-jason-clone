@@ -25,7 +25,7 @@
 
 # M1: grain. One row per trip_key in core.fct_trip. Copies the unique +
 # not_null tests on fct_trip.trip_key in
-# transformation/models/marts/core/_core.yml ("One row per TLC trip").
+# src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/models/marts/core/_core.yml ("One row per TLC trip").
 grain = spark.sql("""
     SELECT
         SUM(CASE WHEN trip_key IS NULL THEN 1 ELSE 0 END) AS null_keys,
@@ -47,8 +47,8 @@ print("PASS grain: one row per trip_key in core.fct_trip")
 
 # M2: dimension natural-key uniqueness and SCD2 non-overlap.
 # Uniqueness copies the unique tests on dim_zone.zone_key and
-# dim_vendor.vendor_key in transformation/models/marts/core/_core.yml.
-# Non-overlap copies transformation/tests/
+# dim_vendor.vendor_key in src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/models/marts/core/_core.yml.
+# Non-overlap copies src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/tests/
 # assert_scd2_zone_intervals_do_not_overlap.sql verbatim in intent: the
 # half-open intervals must tile cleanly per natural key.
 for dim, surrogate in (("core.dim_zone", "zone_key"), ("core.dim_vendor", "vendor_key")):
@@ -85,7 +85,7 @@ print("PASS SCD2 non-overlap: core.dim_zone")
 
 # M3: zone-join zero-unmatched. Copies the relationships tests on
 # fct_trip.pickup_zone_key / dropoff_zone_key to dim_zone.zone_key in
-# transformation/models/marts/core/_core.yml: every fact-side key must
+# src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/models/marts/core/_core.yml: every fact-side key must
 # resolve in the dimension.
 unmatched = spark.sql("""
     SELECT COUNT(*) AS unmatched_rows

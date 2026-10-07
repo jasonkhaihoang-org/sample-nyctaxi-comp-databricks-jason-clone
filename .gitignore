@@ -15,12 +15,12 @@ raw/
 *.sqlite
 
 # ---------------------------------------------------------------
-# Transformation build artefacts
+# dbt build artefacts (embedded project inside the dbt job item)
 # ---------------------------------------------------------------
-transformation/target/
-transformation/logs/
-transformation/dbt_packages/
-transformation/.user.yml
+src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/target/
+src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/logs/
+src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/dbt_packages/
+src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/.user.yml
 logs/
 target/
 
@@ -37,7 +37,7 @@ venv/
 .vscode/
 
 # Seed CSVs are project config, not data -- keep them.
-!transformation/seeds/*.csv
+!src/dbt/nyc_taxi_analytics.DataBuildToolJob/Code/dbt/seeds/*.csv
 
 # ---------------------------------------------------------------
 # Operator answer key. Never commit: a session that reads this has
