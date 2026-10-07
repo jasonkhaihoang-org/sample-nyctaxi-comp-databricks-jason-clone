@@ -10,11 +10,11 @@
 
 # CELL ********************
 
-# Setup: dlt-hub is not in the Fabric Spark runtime. Run once per session,
-# then restart the session before the cells below.
-# %pip install "dlt[deltalake]" "pyarrow>=17.0.0"
+# Setup: dlt-hub is not in the Fabric Spark runtime. This cell installs it;
+# Fabric restarts the session after inline pip and continues below.
+%pip install "dlt[deltalake]" "pyarrow>=17.0.0"
 # Durable fix (not this cell): an Environment item carrying dlt, attached
-# to this notebook.
+# to this notebook — then delete this cell.
 
 # CELL ********************
 
