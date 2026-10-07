@@ -10,18 +10,30 @@
 
 # CELL ********************
 
+# Setup: dlt-hub is not in the Fabric Spark runtime. This notebook needs no
+# dlt import at all (see below), so there is nothing to install. If a later
+# edit adds dlt resources, run once per session then restart:
+# %pip install "dlt[deltalake]" "pyarrow>=17.0.0"
+
+# CELL ********************
+
 # fleet_ops: Harbour Point Taxi Management dispatch/telematics feed (ops_raw.*).
 # Mirrors the brownfield builder tools/build_fleet_ops.py in the sibling clone
 # (garage 6 -> vehicle 420 -> driver 760 -> lease -> shift ~73k ->
-# trip_assignment ~978k -> status events ~3.8M -> maintenance), staged here as
-# dlt resources in dependency order. The timing skeleton reads the Task 6
-# silver_trips table via spark.table: it is landed by the landing notebook's
-# pipeline run, so dlt.read (same-run only) cannot see it.
+# trip_assignment ~978k -> status events ~3.8M -> maintenance).
+# The timing skeleton reads the landing notebook's silver_trips Delta
+# (pipelines run landing first).
 # Deterministic, NO rng: every pseudo-random choice is hb() of a key, and
 # generate_series/unnest become spark.range / explicit small frames.
 # All four deliberate imperfections are KEPT (flagged downstream, not cleaned),
 # each marked below with its downstream flag. Every write stamps _load_id,
 # _source_file, _loaded_at.
+#
+# Engine note: this notebook has NO raw inputs -- every entity derives from
+# silver_trips or generated masters -- so there is nothing for dlt-hub to
+# ingest and no dlt import here. Plain Spark builds each entity from Delta
+# and writes it back as Delta; the registration cell publishes the tables.
+# (dlt-hub landing of raw files lives in the landing + mdm notebooks.)
 #
 # DuckDB -> Spark SQL notes (values stay deterministic per key; exact
 # cross-engine equality is NOT required):
@@ -34,7 +46,6 @@
 #   frame would merge rows sharing a pickup timestamp.
 # - QUALIFY is rewritten as a lead() subquery plus filter.
 
-import dlt
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 
@@ -43,9 +54,33 @@ from pyspark.sql.window import Window
 LOADED_AT = "2024-07-02 04:10:00"
 SOURCE_FILE = "build_fleet_ops.py"
 
+# Delta landing zone: local Lakehouse Files mount (ADLS-backed, no credentials).
+DLT_ROOT = "/lakehouse/default/Files/dlt/fleet_ops"
+DATASET = "fleet_ops"
+# silver_trips lives in the landing notebook's dataset (pipelines order it first).
+SILVER_TRIPS = "/lakehouse/default/Files/dlt/landing/landing/silver_trips"
+
 N_VEHICLES = 420
 N_DRIVERS = 760
 N_GARAGES = 6
+
+# Explicit table -> schema map for registration. Nothing is inferred.
+TABLE_SCHEMAS = {
+    "garage": "ops_raw.garage",
+    "vehicle": "ops_raw.vehicle",
+    "driver": "ops_raw.driver",
+    "lease_agreement": "ops_raw.lease_agreement",
+    "shift": "ops_raw.shift",
+    "trip_assignment": "ops_raw.trip_assignment",
+    "driver_status_event": "ops_raw.driver_status_event",
+    "maintenance_event": "ops_raw.maintenance_event",
+}
+
+
+def delta_path(table):
+    """Delta directory for one derived table. Single knob: if a first run
+    shows a different layout is wanted, change it here."""
+    return "%s/%s/%s" % (DLT_ROOT, DATASET, table)
 
 
 def hb(col):
@@ -82,10 +117,9 @@ def _plus_minutes(ts_col, minutes_col):
 
 # Reference entities. Copies build_fleet_ops.py:40-125: garage VALUES (6 rows),
 # vehicle (420 medallions off spark.range), driver (760 hack licences), lease
-# (one row per driver off dlt.read of the driver table; the source's count(*)
+# (one row per driver off the driver frame; the source's count(*)
 # over vehicle is the N_VEHICLES constant, 420 by construction). Range ids are
 # long; string keys are cast before any concat/modulo so types never mix.
-@dlt.table(name="ops_raw_garage", comment="Fleet garage master, 6 rows")
 def garage():
     return _stamp(
         spark.createDataFrame(
@@ -101,7 +135,6 @@ def garage():
     )
 
 
-@dlt.table(name="ops_raw_vehicle", comment="Fleet vehicle master, 420 medallions")
 def vehicle():
     n = F.col("n")
     return _stamp(
@@ -140,7 +173,6 @@ def vehicle():
     )
 
 
-@dlt.table(name="ops_raw_driver", comment="Fleet driver master, 760 hack licences")
 def driver():
     n = F.col("n")
     return _stamp(
@@ -171,9 +203,8 @@ def driver():
     )
 
 
-@dlt.table(name="ops_raw_lease_agreement", comment="Driver lease terms, one row per driver")
-def lease_agreement():
-    d = dlt.read("ops_raw_driver")
+def lease_agreement(driver_df):
+    d = driver_df
     lease_type = F.col("lease_type")
     driver_id = F.col("driver_id")
     return _stamp(
@@ -209,11 +240,11 @@ def lease_agreement():
 # runs ~420 medallions, so it sees an hb-bucketed slice of yellow trips, made
 # temporally consistent per vehicle by the overlap drop; consecutive trips
 # <5h apart share a shift. The three TEMP stages stay plain helpers so only
-# ops_raw.* tables land in the dataset. Skeleton columns off silver_trips:
+# ops_raw.* tables land. Skeleton columns off silver_trips:
 # trip_key, pickup_datetime, dropoff_datetime, pickup_location_id,
 # dropoff_location_id, trip_distance (total_amount carried, service_type cut).
 def _candidate_trips():
-    t = spark.table("silver_trips")
+    t = spark.read.format("delta").load(SILVER_TRIPS)
     duration_s = (F.col("dropoff_datetime").cast("long")
                   - F.col("pickup_datetime").cast("long"))
     return (
@@ -255,7 +286,6 @@ def _trip_shift():
     )
 
 
-@dlt.table(name="ops_raw_shift", comment="Driver sign-ons with telematics imperfections kept")
 def shift():
     agg = (
         _trip_shift().groupBy("vehicle_id", "shift_seq")
@@ -323,10 +353,9 @@ def shift():
 # window-containment drift would surface in the ops shift-time reconciliation
 # assert (assert_shift_time_budget_reconciles over int_shift_occupancy), so
 # nothing is cleaned here.
-@dlt.table(name="ops_raw_trip_assignment", comment="Trip-to-shift attribution")
-def trip_assignment():
-    ts = _trip_shift().alias("ts")
-    sh = dlt.read("ops_raw_shift").alias("sh")
+def trip_assignment(shift_df, ts_df):
+    ts = ts_df.alias("ts")
+    sh = shift_df.alias("sh")
     j = (
         ts.join(sh,
                 (F.col("sh.vehicle_id") == F.col("ts.vehicle_id"))
@@ -369,11 +398,10 @@ def trip_assignment():
 # >25min fare gaps (QUALIFY rewritten as a lead() subquery plus filter).
 # Location ids are cast to int up front: the CSV/parquet read can leave them
 # strings, which would break the union and any numeric test downstream.
-@dlt.table(name="ops_raw_driver_status_event", comment="Driver occupancy event stream")
-def driver_status_event():
-    ta = dlt.read("ops_raw_trip_assignment")
-    ts = _trip_shift()
-    sh = dlt.read("ops_raw_shift")
+def driver_status_event(ta_df, ts_df, sh_df):
+    ta = ta_df
+    ts = ts_df
+    sh = sh_df
     base = ta.join(ts, ["trip_key", "vehicle_id"])
     cols = ["shift_id", "driver_id", "vehicle_id", "event_ts",
             "status_code", "zone_id", "ord"]
@@ -454,9 +482,8 @@ def driver_status_event():
 
 # Copies build_fleet_ops.py:336-351: up to 3 dated work orders per vehicle,
 # hb-gated to keep ~2/3 (unnest([1, 2, 3]) as an explicit small frame).
-@dlt.table(name="ops_raw_maintenance_event", comment="Vehicle maintenance work orders")
-def maintenance_event():
-    v = (dlt.read("ops_raw_vehicle")
+def maintenance_event(vehicle_df):
+    v = (vehicle_df
          .select("vehicle_id", F.col("vehicle_id").cast("string").alias("vstr")))
     n = spark.createDataFrame([(1,), (2,), (3,)], ["d"])
     dkey = F.col("d").cast("string")
@@ -498,13 +525,25 @@ def maintenance_event():
 
 # CELL ********************
 
-# Run the pipeline against the default lakehouse (nyc_taxi_lakehouse).
-# Lazy references: dlt owns execution, so pass the functions un-called.
-pipeline = dlt.pipeline(pipeline_name="fleet_ops", destination="lakehouse", dataset_name="default")
-load_info = pipeline.run([garage, vehicle, driver, lease_agreement,
-                          shift, trip_assignment, driver_status_event,
-                          maintenance_event])
-print(load_info)
+# Execution in dependency order. _trip_shift() is computed once and shared
+# (the original dlt graph recomputed it per table; a shared frame avoids two
+# extra full scans of silver). Every entity writes its own Delta directory;
+# registration publishes the eight tables.
+_ts = _trip_shift()
+_frames = {
+    "garage": garage(),
+    "vehicle": vehicle(),
+    "driver": driver(),
+}
+_frames["lease_agreement"] = lease_agreement(_frames["driver"])
+_frames["shift"] = shift()
+_frames["trip_assignment"] = trip_assignment(_frames["shift"], _ts)
+_frames["driver_status_event"] = driver_status_event(
+    _frames["trip_assignment"], _ts, _frames["shift"])
+_frames["maintenance_event"] = maintenance_event(_frames["vehicle"])
+for _table, _frame in _frames.items():
+    _frame.write.format("delta").mode("overwrite").save(delta_path(_table))
+print("wrote %d entities" % len(_frames))
 
 # METADATA ********************
 
@@ -512,3 +551,15 @@ print(load_info)
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
 # META }
+
+# CELL ********************
+
+# Registration: publish every derived Delta directory as a
+# <schema>.<table> in nyc_taxi_lakehouse per TABLE_SCHEMAS. Rerun-safe
+# (IF NOT EXISTS); to rebuild a table, drop it first and rerun this notebook.
+for table, dotted in TABLE_SCHEMAS.items():
+    schema, name = dotted.split(".")
+    spark.sql("CREATE SCHEMA IF NOT EXISTS %s" % schema)
+    spark.sql("CREATE TABLE IF NOT EXISTS %s.%s USING DELTA LOCATION '%s'"
+              % (schema, name, delta_path(table)))
+print("registered %d tables" % len(TABLE_SCHEMAS))

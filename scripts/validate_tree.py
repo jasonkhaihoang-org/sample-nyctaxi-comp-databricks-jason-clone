@@ -11,8 +11,13 @@ Checks (spec sections 3, 10):
   6. Each src/dlt/*.Notebook/notebook-content.py contains the strings
      _load_id, _source_file and _loaded_at.
   7. Every GUID referenced from pipeline-content.json / dbt-content.json
-     resolves to a known item logicalId (except the all-zeros workspaceId);
-     no <PLACEHOLDER> may remain.
+     resolves to a known item logicalId or a recorded bound id
+     (scripts/bound-ids.json, refreshed from Fabric sync commits);
+     except the all-zeros workspaceId); no <PLACEHOLDER> may remain.
+
+Post-sync, Fabric rewrites payload references to physical workspace item
+IDs. Run `python3 scripts/validate_tree.py --record` after pulling a
+Fabric sync commit to refresh bound-ids.json from the tree.
 """
 
 import json
@@ -22,6 +27,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "src")
+BOUND_IDS = os.path.join(ROOT, "scripts", "bound-ids.json")
 
 REQUIRED_CONTENT = {
     "Notebook": "notebook-content.py",
@@ -81,9 +87,18 @@ def check_platform(item_dir, name, item_type, errors, known_ids):
 
 
 def main():
+    record = "--record" in sys.argv
     errors = []
     items = 0
     known_ids = set()
+    bound = {"workspace": None, "ids": []}
+    if os.path.isfile(BOUND_IDS):
+        try:
+            with open(BOUND_IDS) as f:
+                bound = json.load(f)
+        except (json.JSONDecodeError, OSError) as e:
+            fail(errors, "bound-ids.json: invalid (%s)" % e)
+            bound = {"workspace": None, "ids": []}
     if os.path.isdir(SRC):
         for dirpath, dirnames, _filenames in os.walk(SRC):
             for d in sorted(dirnames):
@@ -132,6 +147,11 @@ def main():
                 if stamp not in text:
                     fail(errors, "%s: missing %s" % (nb, stamp))
 
+        allowed = set(known_ids) | {
+            str(x).lower() for x in bound.get("ids", [])
+        }
+        if bound.get("workspace"):
+            allowed.add(str(bound["workspace"]).lower())
         for dirpath, _dirnames, filenames in os.walk(SRC):
             for fn in sorted(filenames):
                 if fn not in ("pipeline-content.json", "dbt-content.json"):
@@ -146,11 +166,43 @@ def main():
                 if re.search(r"<[A-Za-z_]+>", text):
                     fail(errors, "%s: contains unfilled <PLACEHOLDER>" % p)
                 for m in UUID_RE.findall(text):
-                    if m.lower() != ALL_ZEROS and m.lower() not in known_ids:
+                    if (
+                        m.lower() != ALL_ZEROS
+                        and m.lower() not in allowed
+                        and not record
+                    ):
                         fail(
                             errors,
                             "%s: references unknown id %s" % (p, m),
                         )
+
+        if record:
+            seen: dict = {}
+            for dirpath, _dirnames, filenames in os.walk(SRC):
+                for fn in sorted(filenames):
+                    if fn not in ("pipeline-content.json", "dbt-content.json"):
+                        continue
+                    p = os.path.join(dirpath, fn)
+                    try:
+                        with open(p, errors="ignore") as f:
+                            text = f.read()
+                    except OSError:
+                        continue
+                    for m in UUID_RE.findall(text):
+                        seen[m.lower()] = seen.get(m.lower(), 0) + 1
+            fresh = {"workspace": None, "ids": []}
+            for guid in sorted(seen):
+                if guid == ALL_ZEROS or guid in known_ids:
+                    continue
+                # The workspace id is the one referenced everywhere.
+                if seen[guid] == max(seen.values()):
+                    fresh["workspace"] = guid
+                else:
+                    fresh["ids"].append(guid)
+            with open(BOUND_IDS, "w") as f:
+                json.dump(fresh, f, indent=2)
+                f.write("\n")
+            print("recorded %d bound ids" % (len(fresh["ids"]) + 1))
 
     if errors:
         print("tree INVALID: %d error(s)" % len(errors))

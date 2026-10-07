@@ -61,7 +61,8 @@ Orchestration is three Fabric Data Pipelines, one activity per item:
 - `ops`: ops marts and scorecards, after `main`.
 
 Model-level parallelism inside a dbt run comes from dbt `threads`, not from
-pipeline fan-out. Schedules are committed disabled; the estate's standing
+pipeline fan-out. Schedules live in the workspace and are never committed
+(Fabric deletes committed `.schedules` on sync); the estate's standing
 cadence is nightly at 03:00 ET once enabled.
 
 ## Repository layout

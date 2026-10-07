@@ -28,7 +28,8 @@ fan-out.
 
 ## Schedules and cadence
 
-All three `.schedules` files read `{"schedules": [], "disabled": true}`:
-schedules are committed disabled. The standing cadence is nightly 03:00 ET —
-the Monday revenue pack, garage operations review, and data-quality review all
+`.schedules` is Fabric-managed and never committed — verified live: the sync
+writes schedules from the workspace and deletes committed copies. The standing
+cadence is nightly 03:00 ET, configured in the workspace — the Monday revenue
+pack, garage operations review, and data-quality review all
 read from what the nightly run built.

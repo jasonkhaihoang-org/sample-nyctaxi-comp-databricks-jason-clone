@@ -44,7 +44,8 @@ agent can act on.
 8. **Three pipelines** `src/pipelines/<main|finance|ops>.DataPipeline/`,
    one activity per item. `main`: landing → mdm + fleet_ops → staging →
    marts. `finance`/`ops` after `main`. Agg parallelism via dbt `threads`,
-   not pipeline fan-out. Schedules committed disabled (standing cadence
+   not pipeline fan-out. Schedules live in the workspace, never in Git
+   (standing cadence
    nightly 03:00 ET).
 9. **`docs/functional/`**: five specs (ingestion, mdm-enrichment, fleet-ops,
    transformation, orchestration), each stating behavior + provenance tier,
