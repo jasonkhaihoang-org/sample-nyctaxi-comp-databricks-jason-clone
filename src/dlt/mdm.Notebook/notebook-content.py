@@ -12,7 +12,7 @@
 
 # Setup: dlt-hub is not in the Fabric Spark runtime. This cell installs it;
 # Fabric restarts the session after inline pip and continues below.
-%pip install dlt[deltalake] pyarrow>=17.0.0  # unquoted: quoted extras fail Fabric magic parsing
+%pip install dlt deltalake pyarrow>=17.0.0  # unquoted: quoted extras fail Fabric magic parsing; deltalake is the Delta writer (absent from dlt.Environment, which carries only dlt + pyarrow)
 # Durable fix (not this cell): an Environment item carrying dlt, attached
 # to this notebook — then delete this cell.
 
