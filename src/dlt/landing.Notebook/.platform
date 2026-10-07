@@ -5,6 +5,7 @@
     "displayName": "landing"
   },
   "config": {
-    "version": "2.0"
+    "version": "2.0",
+    "logicalId": "69923256-cb98-4a67-903d-7cf7f016a90b"
   }
 }

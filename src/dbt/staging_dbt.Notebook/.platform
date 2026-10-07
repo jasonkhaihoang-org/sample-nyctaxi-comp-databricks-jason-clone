@@ -5,6 +5,7 @@
     "displayName": "staging_dbt"
   },
   "config": {
-    "version": "2.0"
+    "version": "2.0",
+    "logicalId": "9624e761-e74b-42be-be85-307efc85f2b0"
   }
 }

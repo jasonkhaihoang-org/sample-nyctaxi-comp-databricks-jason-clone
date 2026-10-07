@@ -5,6 +5,7 @@
     "displayName": "marts_dbt"
   },
   "config": {
-    "version": "2.0"
+    "version": "2.0",
+    "logicalId": "6cf7099b-d633-4d3b-93ed-873eff75d0cb"
   }
 }

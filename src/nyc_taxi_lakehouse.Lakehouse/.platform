@@ -5,6 +5,7 @@
     "displayName": "nyc_taxi_lakehouse"
   },
   "config": {
-    "version": "2.0"
+    "version": "2.0",
+    "logicalId": "e68be75d-5e2b-482b-8f54-a4caca28fbb5"
   }
 }

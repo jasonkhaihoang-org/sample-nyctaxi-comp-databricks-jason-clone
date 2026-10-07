@@ -5,6 +5,7 @@
     "displayName": "finance"
   },
   "config": {
-    "version": "2.0"
+    "version": "2.0",
+    "logicalId": "c57616d5-5e6d-4227-aa96-842b271c619a"
   }
 }

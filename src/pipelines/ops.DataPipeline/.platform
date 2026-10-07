@@ -5,6 +5,7 @@
     "displayName": "ops"
   },
   "config": {
-    "version": "2.0"
+    "version": "2.0",
+    "logicalId": "ab98b77a-f48b-4c74-9c27-63ce1e895b10"
   }
 }

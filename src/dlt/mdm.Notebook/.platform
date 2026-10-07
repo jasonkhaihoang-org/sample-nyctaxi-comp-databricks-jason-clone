@@ -5,6 +5,7 @@
     "displayName": "mdm"
   },
   "config": {
-    "version": "2.0"
+    "version": "2.0",
+    "logicalId": "c877d9da-3dfa-4163-81c4-5c7e3376fc4d"
   }
 }

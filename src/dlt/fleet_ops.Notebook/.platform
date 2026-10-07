@@ -5,6 +5,7 @@
     "displayName": "fleet_ops"
   },
   "config": {
-    "version": "2.0"
+    "version": "2.0",
+    "logicalId": "3bb695e2-9bd3-4389-8fed-4f7d1ba69ad3"
   }
 }

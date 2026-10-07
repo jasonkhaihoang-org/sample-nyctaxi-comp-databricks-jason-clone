@@ -5,6 +5,7 @@
     "displayName": "ops_dbt"
   },
   "config": {
-    "version": "2.0"
+    "version": "2.0",
+    "logicalId": "46afeaa4-eeae-4568-bc38-29b05efde68d"
   }
 }

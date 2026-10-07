@@ -30,7 +30,7 @@ agent can act on.
    Full-volume landing; no sample clause (dev slicing is a target concern).
 5. **One `DataBuildToolJob`** `src/dbt/nyc_taxi_analytics.DataBuildToolJob/`
    (folder + `.platform:displayName` match project name; `logicalId`
-   assigned on first sync). `dbt-content.json` `folderPath` points at the
+   pre-assigned in Git so imports resolve on first sync). `dbt-content.json` `folderPath` points at the
    shared `dbt/` project — no copies.
 6. **Four driver notebooks** `src/dbt/<staging|marts|finance|ops>_dbt.Notebook/`:
    assert slices, one layer each (staging views; marts = intermediate+core+agg;

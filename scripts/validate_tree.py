@@ -3,15 +3,16 @@
 Checks (spec sections 3, 10):
   1. Every <Name>.<Type>/ dir under src/ has a .platform file holding valid
      JSON whose metadata.type / metadata.displayName match the folder name,
-     with no logicalId key anywhere in the document.
+     with config.logicalId present and a valid UUID.
   2. Every *.Notebook/ has notebook-content.py.
   3. Every *.DataBuildToolJob/ has dbt-content.json.
   4. Every *.DataPipeline/ has pipeline-content.json.
   5. No SAMPLE (case-insensitive) anywhere under src/dlt/.
   6. Each src/dlt/*.Notebook/notebook-content.py contains the strings
      _load_id, _source_file and _loaded_at.
-
-Empty tree passes: no items yet means no violations.
+  7. Every GUID referenced from pipeline-content.json / dbt-content.json
+     resolves to a known item logicalId (except the all-zeros workspaceId);
+     no <PLACEHOLDER> may remain.
 """
 
 import json
@@ -30,12 +31,18 @@ REQUIRED_CONTENT = {
 
 STAMPS = ("_load_id", "_source_file", "_loaded_at")
 
+UUID_RE = re.compile(
+    r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
+    r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+)
+ALL_ZEROS = "00000000-0000-0000-0000-000000000000"
+
 
 def fail(errors, msg):
     errors.append(msg)
 
 
-def check_platform(item_dir, name, item_type, errors):
+def check_platform(item_dir, name, item_type, errors, known_ids):
     platform = os.path.join(item_dir, ".platform")
     if not os.path.isfile(platform):
         fail(errors, "%s: missing .platform" % item_dir)
@@ -46,10 +53,19 @@ def check_platform(item_dir, name, item_type, errors):
     except (json.JSONDecodeError, OSError) as e:
         fail(errors, "%s/.platform: invalid JSON (%s)" % (item_dir, e))
         return
-    if "logicalId" in json.dumps(doc):
-        # Covers top-level logicalId and nested config.logicalId.
-        fail(errors, "%s/.platform: must not contain logicalId" % item_dir)
-    meta = doc.get("metadata", {}) if isinstance(doc, dict) else {}
+    if not isinstance(doc, dict):
+        fail(errors, "%s/.platform: document is not an object" % item_dir)
+        return
+    config = doc.get("config") if isinstance(doc.get("config"), dict) else {}
+    lid = config.get("logicalId")
+    if not lid or not UUID_RE.fullmatch(str(lid)):
+        fail(
+            errors,
+            "%s/.platform: config.logicalId missing or not a UUID" % item_dir,
+        )
+    else:
+        known_ids.add(str(lid).lower())
+    meta = doc.get("metadata") if isinstance(doc.get("metadata"), dict) else {}
     if meta.get("type") != item_type:
         fail(
             errors,
@@ -67,6 +83,7 @@ def check_platform(item_dir, name, item_type, errors):
 def main():
     errors = []
     items = 0
+    known_ids = set()
     if os.path.isdir(SRC):
         for dirpath, dirnames, _filenames in os.walk(SRC):
             for d in sorted(dirnames):
@@ -75,7 +92,7 @@ def main():
                 name, item_type = d.rsplit(".", 1)
                 item_dir = os.path.join(dirpath, d)
                 items += 1
-                check_platform(item_dir, name, item_type, errors)
+                check_platform(item_dir, name, item_type, errors, known_ids)
                 required = REQUIRED_CONTENT.get(item_type)
                 if required and not os.path.isfile(
                     os.path.join(item_dir, required)
@@ -105,11 +122,35 @@ def main():
             nb = os.path.join(dlt, entry, "notebook-content.py")
             if not os.path.isfile(nb):
                 continue  # Already reported by the per-item check.
-            with open(nb, errors="ignore") as f:
-                text = f.read()
+            try:
+                with open(nb, errors="ignore") as f:
+                    text = f.read()
+            except OSError as e:
+                fail(errors, "%s: unreadable (%s)" % (nb, e))
+                continue
             for stamp in STAMPS:
                 if stamp not in text:
                     fail(errors, "%s: missing %s" % (nb, stamp))
+
+        for dirpath, _dirnames, filenames in os.walk(SRC):
+            for fn in sorted(filenames):
+                if fn not in ("pipeline-content.json", "dbt-content.json"):
+                    continue
+                p = os.path.join(dirpath, fn)
+                try:
+                    with open(p, errors="ignore") as f:
+                        text = f.read()
+                except OSError as e:
+                    fail(errors, "%s: unreadable (%s)" % (p, e))
+                    continue
+                if re.search(r"<[A-Za-z_]+>", text):
+                    fail(errors, "%s: contains unfilled <PLACEHOLDER>" % p)
+                for m in UUID_RE.findall(text):
+                    if m.lower() != ALL_ZEROS and m.lower() not in known_ids:
+                        fail(
+                            errors,
+                            "%s: references unknown id %s" % (p, m),
+                        )
 
     if errors:
         print("tree INVALID: %d error(s)" % len(errors))
