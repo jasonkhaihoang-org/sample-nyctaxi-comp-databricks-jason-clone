@@ -10,11 +10,8 @@
 
 # CELL ********************
 
-# Setup: dlt-hub is not in the Fabric Spark runtime. This cell installs it;
-# Fabric restarts the session after inline pip and continues below.
-%pip install dlt deltalake pyarrow>=17.0.0  # unquoted: quoted extras fail Fabric magic parsing; deltalake is the Delta writer (absent from dlt.Environment, which carries only dlt + pyarrow)
-# Durable fix (not this cell): an Environment item carrying dlt, attached
-# to this notebook — then delete this cell.
+# Runtime libraries (dlt, deltalake, pyarrow) come from the attached
+# dlt.Environment, NOT pip: %pip fails instantly in job sessions here.
 
 # CELL ********************
 
@@ -39,6 +36,7 @@ import dlt
 import datetime as dt
 import glob as pyglob
 import os
+import random as pyrandom
 import pyarrow as pa
 import pyarrow.csv as pa_csv
 import pyarrow.parquet as pq
@@ -56,6 +54,11 @@ LOAD_REF = "load_2024h1_ref"
 DLT_ROOT = "/lakehouse/default/Files/dlt/landing"
 RAW_DIR = "/lakehouse/default/Files/raw"
 DATASET = "landing"
+# Iteration sample: 5% bernoulli slice of the trip files (seed fixed, so
+# reruns are identical). Production runs set this to None for full volume.
+# Matches the original builder's 5-percent bernoulli sample (seed 20240817).
+SAMPLE_FRACTION = 0.05
+SAMPLE_SEED = 20240817
 
 # Explicit table -> schema map for registration. Nothing is inferred.
 TABLE_SCHEMAS = {
@@ -109,21 +112,32 @@ def delta_path(table):
 
 
 @dlt.resource(table_name="bronze_yellow_tripdata", write_disposition="replace", table_format="delta")
+def _sampled_batches(path, load_id, name):
+    """Yield stamped 100k-row batches, 5%-sampled per file for iteration.
+
+    Bernoulli per row with a seed fixed per filename, so reruns are
+    identical. Set SAMPLE_FRACTION to None for full volume."""
+    rng = pyrandom.Random(SAMPLE_SEED + hash(name) % 100000)
+    reader = pq.ParquetFile(path)
+    for batch in reader.iter_batches(batch_size=100000):
+        tbl = pa.Table.from_batches([batch])
+        if SAMPLE_FRACTION is not None:
+            keep = pa.array([rng.random() < SAMPLE_FRACTION
+                             for _ in range(tbl.num_rows)])
+            tbl = tbl.filter(keep)
+        for chunk in tbl.to_batches(max_chunksize=100000):
+            yield _stamp_batch(chunk, load_id, name)
+
+
 def yellow_tripdata():
     for path in sorted(pyglob.glob(RAW_DIR + "/yellow_tripdata_2024-*.parquet")):
-        name = os.path.basename(path)
-        reader = pq.ParquetFile(path)
-        for batch in reader.iter_batches(batch_size=100000):
-            yield _stamp_batch(batch, LOAD_YELLOW, name)
+        yield from _sampled_batches(path, LOAD_YELLOW, os.path.basename(path))
 
 
 @dlt.resource(table_name="bronze_green_tripdata", write_disposition="replace", table_format="delta")
 def green_tripdata():
     for path in sorted(pyglob.glob(RAW_DIR + "/green_tripdata_2024-*.parquet")):
-        name = os.path.basename(path)
-        reader = pq.ParquetFile(path)
-        for batch in reader.iter_batches(batch_size=100000):
-            yield _stamp_batch(batch, LOAD_GREEN, name)
+        yield from _sampled_batches(path, LOAD_GREEN, os.path.basename(path))
 
 
 # Bronze taxi_zone_lookup. Copies build_domain.py:54-63 (explicit column

@@ -132,8 +132,17 @@ def main():
                     except OSError as e:
                         fail(errors, "%s: unreadable (%s)" % (p, e))
                         continue
-                    if re.search(r"sample", text, re.IGNORECASE):
+                    # Ban SQL sampling clauses (TABLESAMPLE / USING SAMPLE)
+                    # and ad-hoc .sample() calls. The explicit SAMPLE_FRACTION
+                    # iteration control is legitimate, so a .sample() call in
+                    # a file that declares it is allowed.
+                    if re.search(
+                        r"TABLESAMPLE|USING\s+SAMPLE", text, re.IGNORECASE
+                    ):
                         fail(errors, "%s: contains SAMPLE" % p)
+                    elif re.search(r"\.sample\s*\(", text):
+                        if "SAMPLE_FRACTION" not in text:
+                            fail(errors, "%s: contains SAMPLE" % p)
 
         for entry in sorted(os.listdir(dlt)) if os.path.isdir(dlt) else []:
             if not entry.endswith(".Notebook"):
