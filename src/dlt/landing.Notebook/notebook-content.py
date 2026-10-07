@@ -228,3 +228,10 @@ load_info = pipeline.run([yellow_tripdata, green_tripdata, taxi_zone_lookup,
                           payment_type_ref, rate_code_ref, vendor_ref, trips,
                           zones, payment_types, rate_codes])
 print(load_info)
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }

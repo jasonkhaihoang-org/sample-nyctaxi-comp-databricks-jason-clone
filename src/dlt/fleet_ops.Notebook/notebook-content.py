@@ -505,3 +505,10 @@ load_info = pipeline.run([garage, vehicle, driver, lease_agreement,
                           shift, trip_assignment, driver_status_event,
                           maintenance_event])
 print(load_info)
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }

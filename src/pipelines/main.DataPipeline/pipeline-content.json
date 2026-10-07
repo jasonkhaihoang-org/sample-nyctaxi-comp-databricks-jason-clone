@@ -1,1 +1,184 @@
-{"_comment": "Placeholders like <*_LOGICAL_ID> rebind at apply/sync time; never commit real GUIDs.", "properties": {"activities": [{"name": "landing", "type": "TridentNotebook", "state": "Inactive", "onInactiveMarkAs": "Succeeded", "dependsOn": [], "policy": {"timeout": "0.12:00:00", "retry": 0, "retryIntervalInSeconds": 30, "secureOutput": false, "secureInput": false}, "typeProperties": {"notebookId": "69923256-cb98-4a67-903d-7cf7f016a90b", "workspaceId": "00000000-0000-0000-0000-000000000000"}}, {"name": "mdm", "type": "TridentNotebook", "state": "Inactive", "onInactiveMarkAs": "Succeeded", "dependsOn": [{"activity": "landing", "dependencyConditions": ["Succeeded"]}], "policy": {"timeout": "0.12:00:00", "retry": 0, "retryIntervalInSeconds": 30, "secureOutput": false, "secureInput": false}, "typeProperties": {"notebookId": "c877d9da-3dfa-4163-81c4-5c7e3376fc4d", "workspaceId": "00000000-0000-0000-0000-000000000000"}}, {"name": "fleet_ops", "type": "TridentNotebook", "state": "Inactive", "onInactiveMarkAs": "Succeeded", "dependsOn": [{"activity": "landing", "dependencyConditions": ["Succeeded"]}], "policy": {"timeout": "0.12:00:00", "retry": 0, "retryIntervalInSeconds": 30, "secureOutput": false, "secureInput": false}, "typeProperties": {"notebookId": "3bb695e2-9bd3-4389-8fed-4f7d1ba69ad3", "workspaceId": "00000000-0000-0000-0000-000000000000"}}, {"name": "BuildStagingSlice", "type": "InvokeDataBuildToolJob", "state": "Inactive", "onInactiveMarkAs": "Succeeded", "dependsOn": [{"activity": "mdm", "dependencyConditions": ["Succeeded"]}, {"activity": "fleet_ops", "dependencyConditions": ["Succeeded"]}], "policy": {"timeout": "0.12:00:00", "retry": 0, "retryIntervalInSeconds": 30, "secureOutput": false, "secureInput": false}, "typeProperties": {"dataBuildToolJobId": "d155b1c6-13fc-49c9-9ec6-da19a6a73e62", "workspaceId": "00000000-0000-0000-0000-000000000000", "operation": "build", "select": "staging.*"}}, {"name": "staging_dbt", "type": "TridentNotebook", "state": "Inactive", "onInactiveMarkAs": "Succeeded", "dependsOn": [{"activity": "BuildStagingSlice", "dependencyConditions": ["Succeeded"]}], "policy": {"timeout": "0.12:00:00", "retry": 0, "retryIntervalInSeconds": 30, "secureOutput": false, "secureInput": false}, "typeProperties": {"notebookId": "9624e761-e74b-42be-be85-307efc85f2b0", "workspaceId": "00000000-0000-0000-0000-000000000000"}}, {"name": "BuildMartsSlice", "type": "InvokeDataBuildToolJob", "state": "Inactive", "onInactiveMarkAs": "Succeeded", "dependsOn": [{"activity": "staging_dbt", "dependencyConditions": ["Succeeded"]}], "policy": {"timeout": "0.12:00:00", "retry": 0, "retryIntervalInSeconds": 30, "secureOutput": false, "secureInput": false}, "typeProperties": {"dataBuildToolJobId": "d155b1c6-13fc-49c9-9ec6-da19a6a73e62", "workspaceId": "00000000-0000-0000-0000-000000000000", "operation": "build", "select": "marts.*"}}, {"name": "marts_dbt", "type": "TridentNotebook", "state": "Inactive", "onInactiveMarkAs": "Succeeded", "dependsOn": [{"activity": "BuildMartsSlice", "dependencyConditions": ["Succeeded"]}], "policy": {"timeout": "0.12:00:00", "retry": 0, "retryIntervalInSeconds": 30, "secureOutput": false, "secureInput": false}, "typeProperties": {"notebookId": "6cf7099b-d633-4d3b-93ed-873eff75d0cb", "workspaceId": "00000000-0000-0000-0000-000000000000"}}]}}
+{
+  "properties": {
+    "activities": [
+      {
+        "name": "landing",
+        "type": "TridentNotebook",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "1ee18667-e003-47bb-a801-87dccceda2d7",
+          "workspaceId": "845b86b2-0270-4b04-bfd4-685c3687055a"
+        }
+      },
+      {
+        "name": "mdm",
+        "type": "TridentNotebook",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "landing",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "c092c1af-7658-49eb-a18b-2597bd33f0b2",
+          "workspaceId": "845b86b2-0270-4b04-bfd4-685c3687055a"
+        }
+      },
+      {
+        "name": "fleet_ops",
+        "type": "TridentNotebook",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "landing",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "0c647a0f-41b2-443d-b500-d3814848fb9d",
+          "workspaceId": "845b86b2-0270-4b04-bfd4-685c3687055a"
+        }
+      },
+      {
+        "name": "BuildStagingSlice",
+        "type": "InvokeDataBuildToolJob",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "mdm",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "fleet_ops",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "dataBuildToolJobId": "8adde413-dd23-44ec-b986-c836d4f12df5",
+          "workspaceId": "845b86b2-0270-4b04-bfd4-685c3687055a",
+          "operation": "build",
+          "threads": 4
+        }
+      },
+      {
+        "name": "staging_dbt",
+        "type": "TridentNotebook",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "BuildStagingSlice",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "0c89ee4e-9901-4d1c-91d3-d9e5f94fec08",
+          "workspaceId": "845b86b2-0270-4b04-bfd4-685c3687055a"
+        }
+      },
+      {
+        "name": "BuildMartsSlice",
+        "type": "InvokeDataBuildToolJob",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "staging_dbt",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "dataBuildToolJobId": "8adde413-dd23-44ec-b986-c836d4f12df5",
+          "workspaceId": "845b86b2-0270-4b04-bfd4-685c3687055a",
+          "operation": "build",
+          "threads": 4
+        }
+      },
+      {
+        "name": "marts_dbt",
+        "type": "TridentNotebook",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "BuildMartsSlice",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "061413fb-ab1a-41dc-97ac-abd7eb289efb",
+          "workspaceId": "845b86b2-0270-4b04-bfd4-685c3687055a"
+        }
+      }
+    ]
+  }
+}

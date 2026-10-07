@@ -382,3 +382,10 @@ load_info = pipeline.run([zone_master, vendor_master, payment_method_master,
                           rate_plan_master, fare_regime_master, borough_master,
                           zone_poi, calendar_master, weather_daily])
 print(load_info)
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }

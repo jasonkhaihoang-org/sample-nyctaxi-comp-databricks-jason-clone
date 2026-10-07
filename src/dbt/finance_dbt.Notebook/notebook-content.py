@@ -90,3 +90,10 @@ unbalanced = spark.sql("""
 """).collect()[0].unbalanced_groups
 assert unbalanced == 0, f"mart_revenue_component_bridge: {unbalanced} groups do not tie out"
 print("PASS revenue bridge: components tie to total_amount per group")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }

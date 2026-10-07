@@ -1,27 +1,27 @@
 {
-  "command": {
-    "arguments": {
-      "exclude": "",
-      "threads": 4
-    },
-    "operation": "build"
+  "project": {
+    "projectType": "OneLake",
+    "folderPath": "dbt"
   },
   "profile": {
+    "profileType": "Lakehouse",
+    "schema": "staging",
     "connectionSettings": {
       "name": "nyc_taxi_lakehouse",
       "properties": {
         "type": "Lakehouse",
         "typeProperties": {
-          "workspaceId": "00000000-0000-0000-0000-000000000000",
-          "artifactId": "e68be75d-5e2b-482b-8f54-a4caca28fbb5"
+          "workspaceId": "845b86b2-0270-4b04-bfd4-685c3687055a",
+          "artifactId": "a4dde4fa-dd85-468f-b14f-9fa012565f38"
         }
       }
-    },
-    "profileType": "Lakehouse",
-    "schema": "staging"
+    }
   },
-  "project": {
-    "folderPath": "dbt",
-    "projectType": "OneLake"
+  "command": {
+    "operation": "build",
+    "arguments": {
+      "exclude": "",
+      "threads": 4
+    }
   }
 }

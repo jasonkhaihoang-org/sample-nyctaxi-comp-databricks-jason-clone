@@ -1,1 +1,49 @@
-{"_comment": "Placeholders like <*_LOGICAL_ID> rebind at apply/sync time; never commit real GUIDs.", "properties": {"activities": [{"name": "BuildFinanceSlice", "type": "InvokeDataBuildToolJob", "state": "Inactive", "onInactiveMarkAs": "Succeeded", "dependsOn": [], "policy": {"timeout": "0.12:00:00", "retry": 0, "retryIntervalInSeconds": 30, "secureOutput": false, "secureInput": false}, "typeProperties": {"dataBuildToolJobId": "d155b1c6-13fc-49c9-9ec6-da19a6a73e62", "workspaceId": "00000000-0000-0000-0000-000000000000", "operation": "build", "select": "finance.*"}}, {"name": "finance_dbt", "type": "TridentNotebook", "state": "Inactive", "onInactiveMarkAs": "Succeeded", "dependsOn": [{"activity": "BuildFinanceSlice", "dependencyConditions": ["Succeeded"]}], "policy": {"timeout": "0.12:00:00", "retry": 0, "retryIntervalInSeconds": 30, "secureOutput": false, "secureInput": false}, "typeProperties": {"notebookId": "429698e6-efb3-4d77-ab9f-bf0955db6b82", "workspaceId": "00000000-0000-0000-0000-000000000000"}}]}}
+{
+  "properties": {
+    "activities": [
+      {
+        "type": "InvokeDataBuildToolJob",
+        "typeProperties": {
+          "dataBuildToolJobId": "8adde413-dd23-44ec-b986-c836d4f12df5",
+          "workspaceId": "845b86b2-0270-4b04-bfd4-685c3687055a",
+          "threads": 4,
+          "operation": "build"
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "BuildFinanceSlice",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": []
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "429698e6-efb3-4d77-ab9f-bf0955db6b82",
+          "workspaceId": "00000000-0000-0000-0000-000000000000"
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "finance_dbt",
+        "dependsOn": [
+          {
+            "activity": "BuildFinanceSlice",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

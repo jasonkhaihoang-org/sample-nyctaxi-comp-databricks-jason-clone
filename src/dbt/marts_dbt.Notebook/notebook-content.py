@@ -97,3 +97,10 @@ unmatched = spark.sql("""
 """).collect()[0].unmatched_rows
 assert unmatched == 0, f"fct_trip: {unmatched} zone keys unmatched in dim_zone"
 print("PASS zone-join: zero unmatched zone keys")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
