@@ -36,6 +36,7 @@
 # dlt owns extract+load of raw (with state); Spark owns every transform.
 
 import dlt
+import datetime as dt
 import glob as pyglob
 import os
 import pyarrow as pa
@@ -74,7 +75,10 @@ TABLE_SCHEMAS = {
 def _stamp_batch(batch, load_id, source_file):
     """Append the three loader stamps to one Arrow batch."""
     n = batch.num_rows
-    ts = pa.array([LOADED_AT] * n, type=pa.timestamp("us"))
+    ts = pa.array(
+        [dt.datetime.strptime(LOADED_AT, "%Y-%m-%d %H:%M:%S")] * n,
+        type=pa.timestamp("us"),
+    )
     return (
         batch.append_column("_load_id", pa.array([load_id] * n))
         .append_column("_source_file", pa.array([source_file] * n))
@@ -104,7 +108,7 @@ def delta_path(table):
 # Streamed per file in 100k-row batches: the driver never holds the load.
 
 
-@dlt.resource(table_name="bronze_yellow_tripdata", write_disposition="replace")
+@dlt.resource(table_name="bronze_yellow_tripdata", write_disposition="replace", table_format="delta")
 def yellow_tripdata():
     for path in sorted(pyglob.glob(RAW_DIR + "/yellow_tripdata_2024-*.parquet")):
         name = os.path.basename(path)
@@ -113,7 +117,7 @@ def yellow_tripdata():
             yield _stamp_batch(batch, LOAD_YELLOW, name)
 
 
-@dlt.resource(table_name="bronze_green_tripdata", write_disposition="replace")
+@dlt.resource(table_name="bronze_green_tripdata", write_disposition="replace", table_format="delta")
 def green_tripdata():
     for path in sorted(pyglob.glob(RAW_DIR + "/green_tripdata_2024-*.parquet")):
         name = os.path.basename(path)
@@ -126,13 +130,14 @@ def green_tripdata():
 # list + stamps; path raw/taxi_zone_lookup.csv -> Lakehouse Files).
 # The CSV read leaves LocationID a string; downstream casts before any
 # numeric test.
-@dlt.resource(table_name="bronze_taxi_zone_lookup", write_disposition="replace")
+@dlt.resource(table_name="bronze_taxi_zone_lookup", write_disposition="replace", table_format="delta")
 def taxi_zone_lookup():
     tbl = pa_csv.read_csv(
         RAW_DIR + "/taxi_zone_lookup.csv",
-        read_options=pa_csv.ReadOptions(column_names=[
-            "LocationID", "Borough", "Zone", "service_zone"]),
-        skip_rows=1,
+        read_options=pa_csv.ReadOptions(
+            column_names=[
+                "LocationID", "Borough", "Zone", "service_zone"],
+            skip_rows=1),
     )
     for batch in tbl.to_batches(max_chunksize=100000):
         yield _stamp_batch(batch, LOAD_REF, "taxi_zone_lookup.csv")
@@ -142,7 +147,7 @@ def taxi_zone_lookup():
 # build_domain.py:67-93 (the team keeps these in the warehouse because the
 # TLC data dictionary is a PDF). Stamped like every other write: the source
 # SQL carries no stamps, but stamp-every-write wins.
-@dlt.resource(table_name="bronze_payment_type_ref", write_disposition="replace")
+@dlt.resource(table_name="bronze_payment_type_ref", write_disposition="replace", table_format="delta")
 def payment_type_ref():
     rows = [(0, "Flex Fare trip"), (1, "Credit card"), (2, "Cash"),
             (3, "No charge"), (4, "Dispute"), (5, "Unknown"), (6, "Voided trip")]
@@ -154,7 +159,7 @@ def payment_type_ref():
                "_loaded_at": LOADED_AT}
 
 
-@dlt.resource(table_name="bronze_rate_code_ref", write_disposition="replace")
+@dlt.resource(table_name="bronze_rate_code_ref", write_disposition="replace", table_format="delta")
 def rate_code_ref():
     rows = [(1, "Standard rate"), (2, "JFK"), (3, "Newark"),
             (4, "Nassau or Westchester"), (5, "Negotiated fare"), (6, "Group ride")]
@@ -166,8 +171,7 @@ def rate_code_ref():
                "_loaded_at": LOADED_AT}
 
 
-@dlt.resource(table_name="bronze_vendor_ref", comment="Hand-maintained vendor names",
-              write_disposition="replace")
+@dlt.resource(table_name="bronze_vendor_ref", write_disposition="replace", table_format="delta")
 def vendor_ref():
     rows = [(1, "Creative Mobile Technologies"), (2, "Curb Mobility"),
             (6, "Myle Technologies"), (7, "Helix")]
@@ -188,7 +192,6 @@ pipeline = dlt.pipeline(
                            kwargs={"auto_mkdir": True}),
     dataset_name=DATASET,
     pipelines_dir="/lakehouse/default/Files/dlt/pipelines",
-    table_format="delta",
 )
 load_info = pipeline.run([yellow_tripdata, green_tripdata, taxi_zone_lookup,
                           payment_type_ref, rate_code_ref, vendor_ref])

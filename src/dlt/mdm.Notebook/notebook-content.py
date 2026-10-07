@@ -93,7 +93,7 @@ def hb(col):
 # _load_id / _source_file plus the fixed _loaded_at.
 # VENDOR MASTER -- versioned. Copies build_mdm.py:97-110: VendorID 2 traded
 # as VeriFone until the Curb Mobility rebrand; the contract tier changed too.
-@dlt.resource(table_name="vendor_master", write_disposition="replace")
+@dlt.resource(table_name="vendor_master", write_disposition="replace", table_format="delta")
 def vendor_master():
     rows = [(1, "Creative Mobile Technologies LLC", "CMT", "gold", "2011-01-01", "2099-12-31", 1, True),
             (2, "VeriFone Inc", "VTS", "silver", "2011-01-01", "2023-07-01", 1, True),
@@ -110,7 +110,7 @@ def vendor_master():
         yield rec
 
 
-@dlt.resource(table_name="payment_method_master", write_disposition="replace")
+@dlt.resource(table_name="payment_method_master", write_disposition="replace", table_format="delta")
 def payment_method_master():
     rows = [(0, "Flex Fare trip", "electronic", True, 1, 0.0250, True),
             (1, "Credit card", "electronic", True, 2, 0.0290, True),
@@ -129,7 +129,7 @@ def payment_method_master():
         yield rec
 
 
-@dlt.resource(table_name="rate_plan_master", write_disposition="replace")
+@dlt.resource(table_name="rate_plan_master", write_disposition="replace", table_format="delta")
 def rate_plan_master():
     rows = [(1, "Standard metered", False, None, False, True, "meter"),
             (2, "JFK flat fare", True, 70.00, True, True, "flat"),
@@ -148,7 +148,7 @@ def rate_plan_master():
         yield rec
 
 
-@dlt.resource(table_name="fare_regime_master", write_disposition="replace")
+@dlt.resource(table_name="fare_regime_master", write_disposition="replace", table_format="delta")
 def fare_regime_master():
     rows = [("IMP-2015", "improvement_surcharge", 0.30, "all", "2015-01-01", "2023-12-01"),
             ("IMP-2023", "improvement_surcharge", 1.00, "all", "2023-12-01", "2099-12-31"),
@@ -167,7 +167,7 @@ def fare_regime_master():
         yield rec
 
 
-@dlt.resource(table_name="borough_master", write_disposition="replace")
+@dlt.resource(table_name="borough_master", write_disposition="replace", table_format="delta")
 def borough_master():
     rows = [("Manhattan", "MN", "Manhattan Core", 1694251, 22.83, True, True),
             ("Brooklyn", "BK", "Outer Boroughs", 2736074, 69.50, True, False),
@@ -195,7 +195,6 @@ pipeline = dlt.pipeline(
                            kwargs={"auto_mkdir": True}),
     dataset_name=DATASET,
     pipelines_dir="/lakehouse/default/Files/dlt/pipelines",
-    table_format="delta",
 )
 load_info = pipeline.run([vendor_master, payment_method_master,
                           rate_plan_master, fare_regime_master,

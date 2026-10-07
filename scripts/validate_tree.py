@@ -120,7 +120,11 @@ def main():
         dlt = os.path.join(SRC, "dlt")
         if os.path.isdir(dlt):
             for dirpath, _dirnames, filenames in os.walk(dlt):
+                if "__pycache__" in dirpath:
+                    continue
                 for fn in sorted(filenames):
+                    if fn.endswith((".pyc", ".pyo")):
+                        continue
                     p = os.path.join(dirpath, fn)
                     try:
                         with open(p, errors="ignore") as f:
