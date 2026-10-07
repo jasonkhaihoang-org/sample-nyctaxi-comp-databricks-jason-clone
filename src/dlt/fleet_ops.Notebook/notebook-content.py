@@ -5,6 +5,12 @@
 # META {
 # META   "kernel_info": {
 # META     "name": "synapse_pyspark"
+# META   },
+# META   "dependencies": {
+# META     "environment": {
+# META       "environmentId": "067498ae-0aa8-bca3-420d-e2660cac9cf3",
+# META       "workspaceId": "00000000-0000-0000-0000-000000000000"
+# META     }
 # META   }
 # META }
 
@@ -14,6 +20,13 @@
 # dlt import at all (see below), so there is nothing to install. If a later
 # edit adds dlt resources, run once per session then restart:
 # %pip install "dlt[deltalake]" "pyarrow>=17.0.0"
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
 
 # CELL ********************
 
@@ -563,3 +576,10 @@ for table, dotted in TABLE_SCHEMAS.items():
     spark.sql("CREATE TABLE IF NOT EXISTS %s.%s USING DELTA LOCATION '%s'"
               % (schema, name, delta_path(table)))
 print("registered %d tables" % len(TABLE_SCHEMAS))
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
