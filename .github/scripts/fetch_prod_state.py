@@ -36,7 +36,7 @@ from dbt_version_provenance import pin_install_recorded_versions
 ONELAKE_DFS = "https://onelake.dfs.fabric.microsoft.com"
 
 
-# ─── Artifact-mode result types ─────────────────────────────
+# ─── Artifact-mode result types ──────────────────────────────────────────
 #
 # Artifact mode distinguishes three outcomes:
 #   - success    : manifest fetched and written to prod-state/
@@ -63,7 +63,7 @@ class ArtifactResult(NamedTuple):
     reason: str | None = None
 
 
-# ─── Onelake-mode result type ───────────────────────────────────────
+# ─── Onelake-mode result type ────────────────────────────────────────
 #
 # Mirrors ArtifactResult. A 404 on the fixed canonical OneLake manifest path is
 # the confirmed-greenfield signal: domain-deploy always publishes to this same
@@ -135,7 +135,7 @@ def fetch_artifact_mode(cfg: dict) -> ArtifactResult:
     """Fetch the prod-state baseline, pinned to the dbt/adapter version that produced it.
 
     Returns an ArtifactResult -- see ArtifactResult docstring for the statuses and the
-    category mapping, including `version_mismatch` and `provenance_missing`.
+    category mapping.
 
     `dbt-docs-latest` is only a pointer: its asset list classifies greenfield vs.
     provenance-missing, and its `manifest-source.json` names the `build_sha` plus the

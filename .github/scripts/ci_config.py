@@ -77,7 +77,7 @@ _REQUIRED_KEYS_BY_PLATFORM = {
     DUCKDB_LOCAL: _DUCKDB_LOCAL_REQUIRED_KEYS,
 }
 
-# The ADR-0018 indirection block is validated permissively on purpose: an
+# The indirection block is validated permissively on purpose: an
 # unrecognised key passes through so an older repository does not break on a
 # stale one. No `*_VAR` key is required here — a mapping can
 # be present and correct while the Variable it names is unset, so requiring the

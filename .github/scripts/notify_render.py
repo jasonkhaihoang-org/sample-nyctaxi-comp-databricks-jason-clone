@@ -380,7 +380,7 @@ def _ephemeral_database_line(result: dict) -> str:
     `db_name` is a MotherDuck-only key. This renderer is shared with the Fabric bundle,
     whose Gate 2 emits no such key — an ephemeral Fabric *workspace* is a different
     concept with a different lifecycle, and it must not borrow this wording. The
-    contract is enforced by a test, not assumed.
+    contract is enforced by an invariant test, not assumed.
     """
     db_name = result.get("db_name")
     return f"\n_Ephemeral database: `{db_name}`_\n" if db_name else ""
@@ -480,6 +480,13 @@ def render_gate_4(result: dict | None) -> str:
         return ""
     overall = result.get("overall_status", "")
     passed = overall == "pass"
+
+    if overall == "skipped":
+        return (
+            "## Data Tests (ci/data-tests) ⏭️ Skipped\n\n"
+            "No models are in scope for this PR (the modified-model closure is empty), "
+            "so no data tests ran.\n"
+        )
 
     session_error = result.get("session_error")
     if overall == "error" or session_error:
@@ -1142,7 +1149,7 @@ def render_gate_1_comment(
 ) -> str:
     """Render the ci/state-modified+ PR comment.
 
-    When `platform_error` is set (an artifact-mode failure), the
+    When `platform_error` is set (artifact-mode failure), the
     body distinguishes a platform error from greenfield by carrying the
     Mode / Category / Reason triple plus a remediation footer that tells the
     operator to re-run the job or push a new commit. `platform_error` keys:
@@ -1277,7 +1284,7 @@ def render_gate_3_comment(result) -> str:
     return f"{GATE_3_MARKER}\n{section}"
 
 
-def render_design_drift_comment(result: dict | None, modified_names: list[str] | None = None) -> str:
+def render_design_drift_comment(result: dict | None, compared_models: list[str] | None = None) -> str:
     if result is None:
         return f"{DESIGN_DRIFT_MARKER}\n## Design Drift (ci/design-drift) ⚠️\n\n_No data available._\n"
 
@@ -1290,13 +1297,13 @@ def render_design_drift_comment(result: dict | None, modified_names: list[str] |
 
     if not has_drift:
         models_line = (
-            f"_{len(modified_names)} model(s) evaluated: {', '.join(modified_names)}_\n\n"
-            if modified_names else ""
+            f"_{len(compared_models)} model(s) compared: {', '.join(compared_models)}_\n\n"
+            if compared_models else ""
         )
         section = (
             f"## Design Drift (ci/design-drift) ✅\n\n"
             f"{models_line}"
-            f"No drift detected — the changed model design records match the modified model set.\n"
+            f"No drift detected — the changed model design records match the models they name.\n"
         )
     else:
         rows = "\n".join(
@@ -1373,8 +1380,9 @@ def _preflight_remediation_footer(result: dict) -> str:
     intent = result.get("intent", {})
     if intent.get("status") == "fail":
         bullets.append(
-            "- **intent:** Branch must match `intent/<kebab-summary>` (lowercase letters, digits "
-            "and hyphens), e.g. `intent/add-hvfhv-source`. Rename the branch and push."
+            "- **intent:** The branch name must be `intent/<slug>`. The slug uses only lowercase "
+            "letters, digits and hyphens, and starts with a letter or a digit (for example, "
+            "`intent/orders-daily-refresh`). Rename the branch and push."
         )
 
     ci = result.get("ci_config", {})
@@ -1412,7 +1420,7 @@ def render_preflight_comment(result: dict | None) -> str:
     """Render the <!-- ci-preflight --> upserted PR comment section.
 
     Rows always shown: auto-rebase (informational), intent, ci-config.
-    Capacity row added when the report carries one (Fabric lanes only).
+    Capacity row added when the report carries one (Fabric lanes).
     Violation row added only when auto_merge_disabled check failed.
     """
     if not result:

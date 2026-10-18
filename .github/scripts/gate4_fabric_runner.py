@@ -1,0 +1,172 @@
+"""Thin shell for Gate 4 (ci/data-tests) on Fabric GHA runner."""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import subprocess
+import sys
+
+try:
+    import yaml
+except ImportError:
+    yaml = None
+
+import emit_status
+import runner_io
+from gate4_scope import Run, decide_gate4_scope, scope_outcome
+from fabric_runner_utils import (
+    DeferManifestMissingWorkspaceError,
+    setup_defer as _setup_defer,
+    validate_defer_manifest_workspaces as _validate_defer_manifest_workspaces,
+    write_gate_result as _write_gate_result,
+)
+from parse_run_results import check_store_failures_config, enrich_tests_from_manifest, parse_data_test_results
+
+CONTEXT = "ci/data-tests"
+PROFILE = "dbt_fab_spark"
+TARGET = "ephemeral_ci"
+
+
+def _run_url() -> str:
+    base = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
+    return f"{base}/{os.environ.get('GITHUB_REPOSITORY', '')}/actions/runs/{os.environ.get('GITHUB_RUN_ID', '')}"
+
+
+def _post(head_sha: str, state: str, description: str) -> None:
+    repo = os.environ.get("GITHUB_REPOSITORY", "")
+    if repo:
+        emit_status.emit_status(repo, head_sha, CONTEXT, state, description, _run_url())
+
+
+def _read_text(path: str) -> str | None:
+    try:
+        with open(path) as f:
+            return f.read()
+    except OSError:
+        return None
+
+
+def _load_manifest_nodes(path: str) -> dict:
+    try:
+        with open(path) as f:
+            return json.load(f).get("nodes", {})
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _load_dbt_project(path: str) -> dict:
+    if yaml is None:
+        return {}
+    try:
+        with open(path) as f:
+            return yaml.safe_load(f) or {}
+    except OSError:
+        return {}
+
+
+def cmd_run_gate(args) -> int:
+    head_sha = args.head_sha
+    dbt_project_path = args.dbt_project or runner_io.target_path("dbt_project.yml")
+    dbt_project = _load_dbt_project(dbt_project_path)
+    store_failures_config_ok = check_store_failures_config(dbt_project)
+    if not store_failures_config_ok:
+        print("Advisory: dbt_project.yml missing store_failures config. Gate unaffected.", flush=True)
+
+    _post(head_sha, "pending", "Gate 4: dbt data tests running on Fabric runner")
+
+    env = {
+        **os.environ,
+        "WORKSPACE_ID": args.workspace_id,
+        "WORKSPACE_NAME": args.workspace_name,
+        "LAKEHOUSE": args.lakehouse_name,
+        "LAKEHOUSE_ID": args.lakehouse_id,
+        "SCHEMA": args.schema,
+        "SESSION_ID_FILE": f"Files/ci-artifacts/{head_sha}/livy-session-id-ci-data-test.txt",
+    }
+
+    defer_args = _setup_defer(args.prod_state_dir)
+    profiles_dir = args.profiles_dir
+
+    # A deferred reference must fail visibly rather than silently resolve
+    # against this run's own ephemeral workspace — check before any dbt command runs.
+    if defer_args:
+        try:
+            _validate_defer_manifest_workspaces()
+        except DeferManifestMissingWorkspaceError as e:
+            print(f"ERROR: {e}", flush=True, file=sys.stderr)
+            _post(head_sha, "failure", f"Gate 4: {e}")
+            return 1
+
+    scope = decide_gate4_scope(_read_text(args.deployment_manifest), exclude_ephemeral=True)
+    if not isinstance(scope, Run):
+        state, desc, report = scope_outcome(scope, head_sha)
+        _write_gate_result(args.output, report)
+        _post(head_sha, state, desc)
+        print(f"Gate 4 scope: {desc}", flush=True)
+        return 0 if state == "success" else 1
+
+    subprocess.run(
+        ["dbt", "deps", "--project-dir", runner_io.project_dir(),
+         "--profiles-dir", profiles_dir, "--profile", PROFILE,
+         "--target", TARGET, "--quiet"],
+        env=env,
+    )
+
+    cmd = [
+        "dbt", "test", "--project-dir", runner_io.project_dir(),
+        "--store-failures",
+        "--profiles-dir", profiles_dir, "--profile", PROFILE,
+        "--target", TARGET, "--target-path", "target/data-test",
+        "--exclude", "test_type:unit",
+    ] + defer_args
+    cmd.extend(["--select", " ".join(scope.names)])
+    subprocess.run(cmd, env=env)
+
+    run_results: dict | None = None
+    try:
+        with open(runner_io.target_path("target/data-test/run_results.json")) as f:
+            run_results = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        _post(head_sha, "failure", "Gate 4: run_results.json missing or malformed")
+        return 1
+
+    summary = parse_data_test_results(run_results)
+    manifest_nodes = _load_manifest_nodes(runner_io.target_path("target/data-test/manifest.json"))
+    summary["tests"] = enrich_tests_from_manifest(summary["tests"], manifest_nodes)
+    summary["store_failures_config_ok"] = store_failures_config_ok
+    summary.update({"gate": "4", "head_sha": head_sha})
+
+    _write_gate_result(args.output, summary)
+    overall = summary["overall_status"]
+    gh_state = "success" if overall == "pass" else "failure"
+    counts = summary["counts"]
+    desc = (f"Gate 4: {overall} — "
+            f"{counts['pass']} passed / {counts['fail']} failed / "
+            f"{counts['error']} errored / {counts['skip']} skipped")
+    _post(head_sha, gh_state, desc)
+    print(f"Gate 4 result: {overall} → GitHub status: {gh_state}", flush=True)
+    return 0 if gh_state == "success" else 1
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Gate 4 (ci/data-tests) — Fabric GHA runner")
+    sub = parser.add_subparsers(dest="command", required=True)
+    p = sub.add_parser("run-gate")
+    p.add_argument("--workspace-id", required=True)
+    p.add_argument("--workspace-name", required=True)
+    p.add_argument("--lakehouse-id", required=True)
+    p.add_argument("--lakehouse-name", required=True)
+    p.add_argument("--schema", default="dbo")
+    p.add_argument("--head-sha", required=True)
+    p.add_argument("--deployment-manifest", required=True)
+    p.add_argument("--prod-state-dir", default="prod-state")
+    p.add_argument("--dbt-project", default=None)
+    p.add_argument("--profiles-dir", default=".github/profiles")
+    p.add_argument("--output", default=None)
+    args = parser.parse_args(argv)
+    return {"run-gate": cmd_run_gate}[args.command](args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

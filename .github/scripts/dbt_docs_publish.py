@@ -6,7 +6,8 @@ assets to it. No I/O — the caller resolves release-existence (e.g. via
 `gh release view RELEASE_TAG`) and executes the returned commands.
 
 The tag is named for the dbt Docs site because that was its first payload; it is a
-fixed, clobbered address rather than a version, and the prod-state manifests share it rather than minting a second release.
+fixed, clobbered address rather than a version, and the prod-state manifests share it
+rather than minting a second release.
 
 RELEASE_TAG and the asset-name constants are exported so the caller's own existence-check
 and download commands target the same literals this module publishes to, instead of
@@ -43,7 +44,7 @@ SELECTION_MANIFEST_ASSET = "manifest.json"
 # its single `manifest.json` serves both roles and it publishes only the selection name.
 DEFER_MANIFEST_ASSET = "manifest_prod.json"
 
-# ADR-0027/D-12 provenance asset, published to both the per-build and `dbt-docs-latest` releases.
+# Provenance asset, published to both the per-build and `dbt-docs-latest` releases.
 PROVENANCE_ASSET = "manifest-source.json"
 
 MANIFEST_RELEASE_TAG_PREFIX = "dbt-manifest-"
@@ -141,7 +142,8 @@ def build_prune_commands(
     `existing_releases` is the full, prefix-filtered `(tag, created_at)` set the shell already
     gathered (via a single `--limit 1000` call well past the CLI's default page size) — this function never
     re-queries GitHub. Sorted by `(created_at, tag)` descending: creation time orders newest
-    first, and the tag breaks ties deterministically when two releases share a timestamp. The newest `keep` are retained; everything older is deleted along with its tag.
+    first, and the tag breaks ties deterministically when two releases share a timestamp
+    The newest `keep` are retained; everything older is deleted along with its tag.
     """
     ordered = sorted(existing_releases, key=lambda r: (r[1], r[0]), reverse=True)
     to_prune = list(reversed(ordered[keep:]))

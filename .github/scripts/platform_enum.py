@@ -1,6 +1,6 @@
 """Canonical platform discriminator values for `VD_DOMAIN_DATA_PLATFORM`.
 
-Single source of truth for the platform enum . Every consumer that
+Single source of truth for the platform enum. Every consumer that
 validates, defaults to, or branches on a platform imports these constants instead of
 repeating the string literal — the drift between five independent spellings is what
 let Studio's rename to `fabric_lakehouse` break `ci/preflight` unnoticed.
@@ -11,7 +11,8 @@ would shadow the standard library's `platform` module process-wide.
 
 The platform values are flat peers — each has its own bundle and codepath. There is
 deliberately no "Fabric family" grouping `fabric_lakehouse` with `fabric_warehouse`.
-The two Fabric kinds share only their authentication story: the dbt adapter
+The two Fabric kinds share their authentication story and the Fabric-only modules in
+shared/scripts/ (transport, workspace cleanup, the orchestration deploy): the dbt adapter
 (`dbt-fabricspark` vs `dbt-fabric`), the transport (Livy vs TDS), the ephemeral write
 target, and OneLake writability all differ, which is why each carries its own bundle.
 """

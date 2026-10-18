@@ -6,8 +6,6 @@ CLI:
 Reads GITHUB_REPOSITORY from the environment to post its PR comment;
 omit --pr-number or GITHUB_REPOSITORY to skip commenting (e.g. a local/manual run).
 
-Checks ADR numbering: no duplicate numbers and no `ADR NNNN` citation without a
-matching file.
 """
 
 import glob

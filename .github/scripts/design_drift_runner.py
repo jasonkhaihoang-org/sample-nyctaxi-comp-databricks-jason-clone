@@ -119,11 +119,11 @@ def _post(head_sha: str, state: str, description: str) -> None:
     emit_status.emit_status(repo, head_sha, CONTEXT, state, description, _run_url())
 
 
-def _post_pr_comment(pr_number: str, result: dict | None, modified_names: list[str] | None = None) -> None:
+def _post_pr_comment(pr_number: str, result: dict | None, compared_models: list[str] | None = None) -> None:
     repo = os.environ.get("GITHUB_REPOSITORY", "")
     if not repo:
         return
-    body = notify_render.render_design_drift_comment(result, modified_names)
+    body = notify_render.render_design_drift_comment(result, compared_models)
     try:
         pr_comment.upsert(notify_render.DESIGN_DRIFT_MARKER, body, pr_number, repo)
     except BaseException as e:
@@ -161,11 +161,10 @@ def main(argv: list[str]) -> int:
         api_key = os.environ["LLM_API_KEY"]
         api_url = os.environ.get("LLM_API_URL") or DEFAULT_LLM_API_URL
         model = os.environ.get("LLM_MODEL") or DEFAULT_LLM_MODEL
-        prompt = build_llm_prompt(design_text, manifest, sorted(set(modified_names) | record_artifacts))
+        prompt = build_llm_prompt(design_text, manifest, sorted(record_artifacts))
         llm_content = call_llm(api_key, prompt, api_url, model)
     except Exception as e:  # gather/call failure → emit failure status, exit 1
-        # Print before posting: a failed status post
-        # must not replace the original diagnostic.
+        # Print before posting: a failed status post must not replace the original diagnostic.
         print(f"design-drift error: {type(e).__name__}: {e}", flush=True)
         _post(args.head_sha, "failure", f"design-drift error: {type(e).__name__}: {e}")
         _post_pr_comment(args.pr_number, result=None)
@@ -176,7 +175,7 @@ def main(argv: list[str]) -> int:
     for finding in result["findings"]:
         print(f"design drift: {finding['kind']} {finding['model']}: {finding['detail']}", flush=True)
     _post(args.head_sha, "failure" if result["has_drift"] else "success", _summary(result))
-    _post_pr_comment(args.pr_number, result=result, modified_names=modified_names)
+    _post_pr_comment(args.pr_number, result=result, compared_models=sorted(record_artifacts))
     return 1 if result["has_drift"] else 0
 
 

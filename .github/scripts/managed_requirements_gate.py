@@ -1,7 +1,7 @@
 """Fail a Domain change that gives a version to a package the managed constraints name.
 
 A managed package is any package in `.github/managed-constraints.txt`, the file the bundle
-delivers (ADR 0023), so this check keeps no list of its own. A pin is any version specifier
+delivers, so this check keeps no list of its own. A pin is any version specifier
 (`==`, `>=`, `~=`, `<`, `!=`, ranges) on such a package in the Domain's
 `ingestion/requirements.txt` or a vendored connector's
 `ingestion/sources/<connector>/requirements.txt`. Vibedata manages the version, and a stale

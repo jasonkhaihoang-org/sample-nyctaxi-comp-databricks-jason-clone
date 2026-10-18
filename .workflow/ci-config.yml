@@ -1,16 +1,61 @@
-# Domain CI Configuration — LocalDuck (DuckDB-local) platform
+# Domain CI Configuration
 #
 # Installed once by the `/install-ci` skill, which copies this template and
 # substitutes this Domain's coordinates. The file then belongs to the
 # repository: nothing rewrites it, and your edits persist.
 
-# Platform discriminator. Must be exactly "duckdb_local" for this bundle.
-VD_DOMAIN_DATA_PLATFORM: duckdb_local
+# Platform discriminator. Must be exactly "fabric_lakehouse" for this bundle.
+VD_DOMAIN_DATA_PLATFORM: fabric_lakehouse
 
-# Short slug identifying this domain (kebab-case).
-VD_DOMAIN_SLUG: nyc-taxi-duckdb-demo
+VD_DOMAIN_SLUG: nyc-taxi-fabric-demo
 
-# LocalDuck runs database-free static PR validation (ADR hygiene, linting, secret
-# scanning, dbt parse/compile, schema validation, scorecard) — there is no target
-# platform, no production database, and no prod-state manifest to configure, so
-# no further keys are required.
+VD_DOMAIN_FABRIC_LAKEHOUSE_WORKSPACE_ID: b9e3c113-ca4b-4b05-9c98-6b71c3e5805f            # Production Fabric workspace ID
+VD_DOMAIN_FABRIC_LAKEHOUSE_WORKSPACE_NAME: nyc-taxi-fabric-demo        # Production Fabric workspace display name
+VD_DOMAIN_FABRIC_LAKEHOUSE_ID: 2e80c60f-fa7e-4215-81a2-b66ceba7da3a            # Production Fabric lakehouse ID
+VD_DOMAIN_FABRIC_LAKEHOUSE_NAME: nyc_taxi_lakehouse        # Production Fabric lakehouse display name
+VD_DOMAIN_SCHEMA: dbo                       # Production schema models resolve to
+
+# GHA Variable/Secret name indirection. Values here are the *names*
+# Studio provisions as repo Variables/Secrets, not domain data. Renaming on
+# Studio's side is a content change to this file, not a change to the CI bundle's code.
+# These names are CI-only; trusted default-branch automation uses CD_* directly.
+AZURE_TENANT_ID_VAR: VD_CI_TENANT_ID
+AZURE_CLIENT_ID_VAR: VD_CI_SPN_CLIENT_ID
+FABRIC_CAPACITY_ID_VAR: VD_CI_FABRIC_CAPACITY_ID
+LLM_API_KEY_VAR: VD_CI_LLM_API_KEY
+LLM_API_URL_VAR: VD_CI_LLM_API_URL
+LLM_MODEL_VAR: VD_CI_LLM_MODEL
+
+# Optional. dbt profile target name used by Slim CI Build / Test / Clone commands
+# when gates run dbt on the GitHub runner. Must match an `outputs:` entry in your profiles.yml.
+# Defaults to "ephemeral_ci" when omitted.
+# VD_DOMAIN_CI_DBT_PROFILE: ephemeral_ci
+
+# Optional. Overrides Spark driver/executor sizing on top of the fixed Starter Pool
+# (the instance pool itself is not configurable — every domain runs on Starter Pool).
+# Omit entirely to run with Starter Pool defaults and no size overrides. All keys
+# below are independent — set only the ones you need.
+# VD_DOMAIN_CI_SPARK_COMPUTE:
+#   driver_cores: 4
+#   driver_memory: 28g
+#   executor_cores: 4
+#   executor_memory: 28g
+#   dynamic_executor_allocation:
+#     enabled: true
+#     min_executors: 1
+#     max_executors: 3
+
+# VD_DOMAIN_PROD_MANIFEST_SOURCE configures how the CI pipeline fetches the
+# production dbt manifest for Slim CI (dbt build --defer --state). If omitted,
+# greenfield fallback is used.
+
+VD_DOMAIN_PROD_MANIFEST_SOURCE:
+  mode: artifact
+  workflow: publish-prod-manifest.yml
+  artifact_name: prod-manifest
+  main_branch: main
+
+#   # onelake mode (future — post-CD, see design doc §4.5 ADR):
+#   # workspace_id: <prod-ws-guid>    # production Fabric workspace ID
+#   # lakehouse_id: <prod-lh-guid>    # production Fabric lakehouse ID
+#   # file_path: Files/ci-artifacts/prod-state/manifest.json
