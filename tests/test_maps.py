@@ -209,3 +209,10 @@ def test_orchestration_runs_every_pipeline_notebook_then_dbt():
     assert upstream(loads["tlc"]) == set()
     assert upstream(loads["ops"]) == upstream(loads["mdm"]) == {by_id[loads["tlc"]]}
     assert upstream(dbt) == {by_id[loads[n]] for n in ("tlc", "ops", "mdm")}
+
+
+def test_ops_pipeline_reads_the_window_tlc_loads():
+    """The ops generator derives from the yellow trips; reading a fixed window instead orphans its shifts."""
+    notebook = (ROOT / "ingestion/ops_pipeline.Notebook/notebook-content.py").read_text()
+    assert "trips=yellow_trips" in notebook
+    assert "trip_tables(" not in notebook

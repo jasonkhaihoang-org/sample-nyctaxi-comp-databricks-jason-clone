@@ -20,7 +20,8 @@ models:
     description: >
       Daily zone demand with period-over-period context. The window functions are
       the point: a raw count answers "how many", the lag and rolling average
-      answer "is that normal".
+      answer "is that normal". `revenue_rank_that_day` ranks revenue at the cent,
+      so two zones that took the same money share a rank.
 
   - name: agg_od_flow_matrix
     description: >

@@ -15,7 +15,7 @@ Operator conventions for dbt models in `transformation/`. Where files live is de
 
 ## Time zones (B17)
 
-dlt lands timestamps as UTC instants, and Spark shows a timestamp in the session time zone, which is not always UTC. Staging converts every dlt-loaded timestamp with `to_utc_timestamp(col, current_timezone())`, so later models see the wall-clock value the source recorded. A source date lands as a timestamp at UTC midnight: staging turns it back into the calendar date with the `utc_date()` macro. A model that reads bronze without the conversion, or hashes a key from a converted and an unconverted timestamp, matches nothing and stays green.
+dlt lands timestamps as UTC instants, and Spark shows a timestamp in the session time zone, which is not always UTC. Staging converts every dlt-loaded timestamp with `to_utc_timestamp(col, current_timezone())`, so later models see the wall-clock value the source recorded. Some source dates land as timestamps at UTC midnight (the ops generator's hire, lease, maintenance and vehicle dates): staging turns each back into the calendar date with the `utc_date()` macro. Use it only on a timestamp; a column that already lands as a date needs nothing. A model that reads bronze without the conversion, or hashes a key from a converted and an unconverted timestamp, matches nothing and stays green.
 
 ## Division by a constant (B17b)
 

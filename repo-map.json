@@ -187,7 +187,7 @@
     },
     "staging": {
       "path": "transformation/models/staging/",
-      "description": "Views: one per source table, renamed and typed. Also holds _sources.yml."
+      "description": "Tables: one per source table, renamed and typed. Also holds _sources.yml."
     },
     "intermediate": {
       "path": "transformation/models/intermediate/",

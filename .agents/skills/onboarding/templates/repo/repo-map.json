@@ -29,7 +29,7 @@
     "dbt_sources": "transformation/models/staging/_sources.yml",
     "singular_tests": "transformation/tests/",
     "ingestion_root": "ingestion/",
-    "pipeline": "ingestion/{name}_pipeline.py",
+    "pipeline": "ingestion/{name}_pipeline.Notebook/",
     "resource_docs": "ingestion/docs/{connection}.yml",
     "orchestration": "orchestration/",
     "test_map": "test-map.json",

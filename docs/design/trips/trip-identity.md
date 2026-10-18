@@ -13,7 +13,8 @@ One `trip_key` per distinct TLC trip: the md5 of service type, vendor, pickup an
 ## Decisions
 
 - `D-01` The `trip_natural_key` macro is the only definition of the key. `int_trips_conformed`, both extras models and `stg_ops__trip_assignments` call it; none writes the expression out. Two copies drift, and a drifted copy joins nothing without failing. Cites [ADR 0007](../../adr/0007-trip-key-has-one-definition.md).
-- `D-02` The macro's inputs are the staging forms of each column: timestamps converted with `timezone('UTC', col)`. dlt lands TLC timestamps as `TIMESTAMPTZ`; hashing that on one side and the converted value on the other produces different keys for the same trip (see [the case record](../../cases/2026-10-14-airport-fee-rejoin-matches-nothing.md)).
+- `D-02` The macro's inputs are the staging forms of each column: timestamps converted with `timezone('UTC', col)`. dlt lands TLC timestamps as `TIMESTAMPTZ`; hashing that on one side and the converted value on the other produces different keys for the same trip (see [the case record](../../cases/2026-10-14-airport-fee-rejoin-matches-nothing.md)). Superseded by `D-05`.
+- `D-05` The macro's inputs are the staging forms of each column: timestamps converted with `to_utc_timestamp(col, current_timezone())`, and every input cast to a string inside the macro. Hashing an unconverted timestamp on one side and the converted value on the other produces different keys for the same trip (see [the case record](../../cases/2026-10-14-airport-fee-rejoin-matches-nothing.md)).
 - `D-03` The fleet operator's source carries the trip's natural columns, not the key; `stg_ops__trip_assignments` derives the key with the same macro. A source system cannot know the warehouse's key. Cites [ADR 0007](../../adr/0007-trip-key-has-one-definition.md).
 - `D-04` Service type is part of the key, so a yellow and a green trip with identical other columns are two trips.
 
@@ -38,3 +39,4 @@ Everything downstream of `int_trips_conformed` and `fct_trip`; see their design 
 ## History
 
 - 2026-10-14 — setup-dlt-ingestion — area record written; staging-form inputs after the airport-fee case — D-01, D-02, D-03, D-04
+- 2026-10-19 — fabric-port — Spark conversion and explicit string casts — D-05

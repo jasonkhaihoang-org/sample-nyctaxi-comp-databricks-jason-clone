@@ -7,7 +7,7 @@ raw/
 *.csv.gz
 
 # ---------------------------------------------------------------
-# Warehouse. Rebuilt by orchestration/run_all.py.
+# Local database files (the data lives in the Domain Lakehouse; nothing local is committed).
 # ---------------------------------------------------------------
 *.duckdb
 *.duckdb.wal

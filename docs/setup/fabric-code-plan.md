@@ -17,8 +17,8 @@
 ## Global Constraints
 
 - **Domain coordinates:**
-  - workspace `nyc-taxi-fabric-demo` `b9e3c113-ca4b-4b05-9c98-6b71c3e5805f`
-  - Lakehouse `nyc_taxi_lakehouse` `2e80c60f-fa7e-4215-81a2-b66ceba7da3a`, schema-enabled, default schema `dbo`
+  - workspace `nyc-taxi-fabric-demo` (ids in `transformation/profiles.yml` `prod`)
+  - Lakehouse `nyc_taxi_lakehouse`, schema-enabled, default schema `dbo`
   - slug `nyc-taxi-fabric-demo`
 - **Where coordinates are committed:** only in `transformation/profiles.yml` `prod` and `ingestion/.dlt/config.toml` `[destination.filesystem]`.
 - **Names:** pipeline notebooks `tlc_pipeline`, `ops_pipeline`, `mdm_pipeline`; Data Pipeline `nyc_taxi_refresh`; dbt job notebook `nyc_taxi_build_dbt`; dbt project and profile `nyc_taxi_analytics`.
