@@ -1,5 +1,3 @@
-{{ config(materialized='view') }}
-
 -- Decomposes each trip total into its parts and states what is left over.
 --
 -- The residual is the point of this model. A total that does not equal the sum

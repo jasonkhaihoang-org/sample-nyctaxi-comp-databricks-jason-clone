@@ -82,3 +82,17 @@ def test_guid_guard_allows_the_ids_the_plugin_requires():
     assert _guid_hits("orchestration/nyc_taxi_refresh.DataPipeline/pipeline-content.json", activity) == []
     assert _guid_hits(".workflow/ci-config.yml", f"VD_DOMAIN_FABRIC_LAKEHOUSE_ID: {guid}") == []
     assert _guid_hits("docs/setup/notes.md", f"workspace {guid}") == [f"docs/setup/notes.md: {guid}"]
+
+
+def test_dbt_project_is_fabricspark():
+    import yaml
+
+    project = ROOT / "transformation"
+    profile = yaml.safe_load((project / "profiles.yml").read_text())["nyc_taxi_analytics"]
+    assert profile["target"] == "prod"
+    assert profile["outputs"]["prod"]["type"] == "fabricspark"
+    assert (project / "macros" / "source_defer.sql").exists()
+    assert not (project / "macros" / "relations.sql").exists()
+    # The Lakehouse SQL analytics endpoint cannot read a Spark view.
+    sql = [(project / "dbt_project.yml").read_text()] + [p.read_text() for p in (project / "models").rglob("*.sql")]
+    assert not [s for s in sql if re.search(r"materialized\s*[:=]\s*['\"]?view", s)]

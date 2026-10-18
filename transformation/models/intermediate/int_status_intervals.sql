@@ -33,14 +33,14 @@ select
     coalesce(o.next_event_ts, s.effective_end_ts) as interval_end_ts,
     o.next_event_ts is null as is_terminal_interval,
     greatest(
-        date_diff(
-            'second', o.interval_start_ts,
+        timestampdiff(
+            second, o.interval_start_ts,
             coalesce(o.next_event_ts, s.effective_end_ts)
         ),
         0
     ) as interval_seconds,
-    date_diff(
-        'second', o.interval_start_ts,
+    timestampdiff(
+        second, o.interval_start_ts,
         coalesce(o.next_event_ts, s.effective_end_ts)
     ) < 0 as is_negative_interval,
     o.skew_seconds,

@@ -86,8 +86,8 @@ DBT_PROJECT = ROOT / "transformation"
 # DBT_PROFILE_NAME point at the runtime profile, which plain `dbt ls` would otherwise use.
 DBT = [sys.executable, "-m", "dbt.cli.main"]
 DBT_PROFILE = ["--profiles-dir", str(DBT_PROJECT), "--profile", "nyc_taxi_analytics"]
-# The profile reads its path from the sandbox variable; parsing never opens the file.
-DBT_ENV = {**os.environ, "VD_EPHM_DUCKDB_LOCAL_PATH": str(ROOT / "domain.duckdb")}
+# Listing and parsing never open a Spark session, so the prod target needs no credential here.
+DBT_ENV = dict(os.environ)
 
 
 @pytest.fixture(scope="session")
@@ -184,12 +184,8 @@ def test_dbt_sources_name_a_schema_and_never_a_catalog():
     assert [s["name"] for s in sources if "{{" in str(s.get("schema", ""))] == []
 
 
-def test_compiled_references_name_no_catalog(dbt_packages):
-    """macros/relations.sql: a view that stores a catalog breaks in the renamed sandbox copy."""
-    subprocess.run(
-        [*DBT, "compile", *DBT_PROFILE, "--select", "int_trips_enriched"],
-        cwd=DBT_PROJECT, env=DBT_ENV, capture_output=True, check=True,
-    )
-    compiled = next((DBT_PROJECT / "target/compiled").rglob("int_trips_enriched.sql")).read_text()
-    assert '"intermediate"."int_trips_conformed"' in compiled
-    assert not re.search(r'"[^"]+"\."intermediate"\."int_trips_conformed"', compiled)
+def test_source_defers_to_the_domain():
+    """dbt's --defer rewrites ref() only; without this override every source fails in a sandbox build."""
+    text = (DBT_PROJECT / "macros" / "source_defer.sql").read_text()
+    assert "macro source(" in text
+

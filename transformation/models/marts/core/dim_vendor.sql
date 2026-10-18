@@ -4,7 +4,7 @@
 -- trip must resolve against the version in force when it happened, or a 2022
 -- trip is attributed to a company that did not yet trade under that name.
 select
-    md5(v.vendor_id::varchar || '|' || v.valid_from_date::varchar) as vendor_key,
+    md5(cast(v.vendor_id as string) || '|' || cast(v.valid_from_date as string)) as vendor_key,
     v.vendor_id as vendor_natural_key,
     v.source_version as vendor_version,
     v.valid_from_date,

@@ -5,6 +5,6 @@ select
     lease_type,
     lease_rate,
     revenue_share_pct,
-    lease_start_date,
-    lease_end_date
+    {{ utc_date('lease_start_date') }} as lease_start_date,
+    {{ utc_date('lease_end_date') }} as lease_end_date
 from {{ source('ops_raw', 'lease_agreement') }}

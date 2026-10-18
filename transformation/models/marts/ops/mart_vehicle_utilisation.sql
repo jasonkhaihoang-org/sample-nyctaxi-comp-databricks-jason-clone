@@ -22,7 +22,7 @@ select
     sum(m.available_days) as available_days,
 
     {{ safe_divide('sum(m.on_trip_hours)', 'nullif(sum(m.online_hours), 0)') }} as occupancy_rate,
-    {{ safe_divide('sum(m.active_days)::double', 'nullif(sum(m.available_days), 0)::double') }}
+    {{ safe_divide('cast(sum(m.active_days) as double)', 'cast(nullif(sum(m.available_days), 0) as double)') }}
         as availability_adjusted_rate,
     {{ safe_divide('sum(m.gross_revenue)', 'nullif(sum(m.online_hours), 0)') }} as revenue_per_online_hour,
     {{ safe_divide('sum(m.gross_revenue) - sum(m.maintenance_cost)', 'nullif(sum(m.active_days), 0)') }}

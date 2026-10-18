@@ -20,8 +20,8 @@ select
     sum(f.total_amount) as total_revenue,
     avg(f.total_amount) as avg_fare,
     avg(f.trip_distance) as avg_distance,
-    avg(f.trip_seconds) / 60.0 as avg_minutes,
-    {{ safe_divide('avg(f.trip_distance)', 'avg(f.trip_seconds) / 3600.0') }} as avg_corridor_mph
+    avg(f.trip_seconds) / 60e0 as avg_minutes,
+    {{ safe_divide('avg(f.trip_distance)', 'avg(f.trip_seconds) / 3600e0') }} as avg_corridor_mph
 from {{ ref('fct_trip') }} f
 join {{ ref('dim_zone') }} o on f.pickup_zone_key = o.zone_key
 join {{ ref('dim_zone') }} dz on f.dropoff_zone_key = dz.zone_key

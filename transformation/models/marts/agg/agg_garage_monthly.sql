@@ -17,7 +17,7 @@ select
 
     {{ safe_divide('sum(v.on_trip_hours)', 'nullif(sum(v.online_hours), 0)') }} as occupancy_rate,
     {{ safe_divide('sum(v.gross_revenue)', 'nullif(sum(v.online_hours), 0)') }} as revenue_per_online_hour,
-    {{ safe_divide('count(distinct v.vehicle_key)::double', 'nullif(g.bay_capacity, 0)::double') }}
+    {{ safe_divide('cast(count(distinct v.vehicle_key) as double)', 'cast(nullif(g.bay_capacity, 0) as double)') }}
         as bay_occupancy_rate
 from {{ ref('agg_vehicle_monthly') }} v
 join {{ ref('dim_garage') }} g on v.garage_key = g.garage_key

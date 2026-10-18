@@ -26,7 +26,7 @@ join {{ ref('dim_daypart') }} dp on f.pickup_hour = dp.hour_of_day
 join {{ ref('distance_bands') }} db
     on f.trip_distance >= db.min_miles and f.trip_distance < db.max_miles
 join {{ ref('duration_bands') }} ub
-    on f.trip_seconds / 60.0 >= ub.min_minutes and f.trip_seconds / 60.0 < ub.max_minutes
+    on f.trip_seconds / 60e0 >= ub.min_minutes and f.trip_seconds / 60e0 < ub.max_minutes
 join {{ ref('fare_bands') }} fb
     on f.total_amount >= fb.min_total and f.total_amount < fb.max_total
 where {{ in_report_window('f.pickup_datetime') }}

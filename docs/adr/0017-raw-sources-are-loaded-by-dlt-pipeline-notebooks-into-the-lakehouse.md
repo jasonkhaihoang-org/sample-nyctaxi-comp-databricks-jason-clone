@@ -16,7 +16,7 @@ The TLC trips and zone lookup, the fleet operator's platform (`ops_raw`) and the
 ## Consequences
 
 - Source column names are kept verbatim (`naming = "direct"`) and every row carries `_dlt_load_id` and `_dlt_id`.
-- Bronze timestamps arrive tagged UTC, so staging converts them to plain timestamps.
+- Bronze timestamps arrive as UTC instants and Spark shows them in the session time zone, so staging converts each to the wall-clock value the source recorded. A source date arrives as a timestamp at UTC midnight, and staging turns it back into that date.
 - A one-off fixed window has no freshness check.
 - Delta `merge` does not deduplicate. Every resource here is `replace`, so this does not apply until a resource changes disposition.
 - Changing the dlt normalisation settings against existing tables fails; the dataset's tables are dropped and reloaded instead.

@@ -16,7 +16,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      # pytest and dbt-duckdb in one interpreter: the map tests call dbt.
+      # pytest and dbt-fabricspark in one interpreter: the map tests call dbt.
       - name: Install dev requirements
         run: pip install -r requirements-dev.txt
       - name: Run python_tests

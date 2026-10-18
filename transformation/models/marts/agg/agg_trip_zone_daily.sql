@@ -33,8 +33,10 @@ select
         order by d.pickup_date
         rows between 27 preceding and current row
     ) as revenue_28d_rolling,
+    -- Ranked at the cent: summed doubles differ in the last bits between engines and runs,
+    -- which would break a tie the money does not.
     rank() over (
-        partition by d.pickup_date order by d.total_revenue desc
+        partition by d.pickup_date order by round(d.total_revenue, 2) desc
     ) as revenue_rank_that_day
 from daily d
 window w as (partition by d.pickup_location_id order by d.pickup_date)

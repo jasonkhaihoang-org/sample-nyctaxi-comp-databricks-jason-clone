@@ -9,8 +9,9 @@
 -#}
 {% macro trip_natural_key(service_type, vendor, pickup, dropoff, pu, do, distance, total) -%}
     md5(concat_ws('|',
-        {{ service_type }}, {{ vendor }}, {{ pickup }}, {{ dropoff }},
-        {{ pu }}, {{ do }}, {{ distance }}, {{ total }}
+        {%- for part in [service_type, vendor, pickup, dropoff, pu, do, distance, total] %}
+        cast({{ part }} as string){{ ',' if not loop.last }}
+        {%- endfor %}
     ))
 {%- endmacro %}
 

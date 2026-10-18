@@ -20,13 +20,13 @@ poi as (
     select
         location_id,
         count(*) as poi_count,
-        string_agg(distinct poi_category, ',') as poi_categories
+        array_join(array_sort(collect_set(poi_category)), ',') as poi_categories
     from {{ ref('stg_mdm__zone_poi') }}
     group by 1
 )
 
 select
-    md5(v.location_id::varchar || '|' || v.valid_from_date::varchar) as zone_key,
+    md5(cast(v.location_id as string) || '|' || cast(v.valid_from_date as string)) as zone_key,
     v.location_id as zone_natural_key,
     v.source_version as zone_version,
     v.valid_from_date,

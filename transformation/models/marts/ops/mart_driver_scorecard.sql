@@ -31,7 +31,7 @@ select
     {{ safe_divide('p.on_trip_hours', 'nullif(p.online_hours, 0)') }} as occupancy_rate,
     {{ safe_divide('p.gross_revenue', 'nullif(p.online_hours, 0)') }} as revenue_per_online_hour,
     {{ safe_divide('p.gross_revenue', 'nullif(p.trip_count, 0)') }} as revenue_per_trip,
-    {{ safe_divide('p.trip_count::double', 'nullif(p.online_hours, 0)') }} as trips_per_online_hour,
+    {{ safe_divide('cast(p.trip_count as double)', 'nullif(p.online_hours, 0)') }} as trips_per_online_hour,
     {{ safe_divide('p.tip_revenue', 'nullif(p.gross_revenue, 0)') }} as tip_share,
     p.online_hours < 40 as is_below_ranking_floor,
     rank() over (

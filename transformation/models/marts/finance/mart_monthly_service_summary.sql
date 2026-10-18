@@ -2,7 +2,7 @@
 -- reporting. Carries the settlement class so that a receivable can be told
 -- apart from cash already in hand.
 select
-    date_trunc('month', f.pickup_datetime) as trip_month,
+    date_trunc('MONTH', f.pickup_datetime) as trip_month,
     f.service_type_key as service_type,
     p.payment_method_name,
     p.settlement_class,

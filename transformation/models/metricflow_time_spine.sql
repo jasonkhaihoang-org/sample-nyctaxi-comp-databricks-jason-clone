@@ -7,5 +7,4 @@
 {% set start_date = '2020-01-01' %}
 {% set end_date = '2035-12-31' %}
 
-SELECT CAST(day AS DATE) AS date_day
-FROM GENERATE_SERIES(CAST('{{ start_date }}' AS DATE), CAST('{{ end_date }}' AS DATE), INTERVAL 1 DAY) AS t (day)
+SELECT EXPLODE(SEQUENCE(TO_DATE('{{ start_date }}'), TO_DATE('{{ end_date }}'), INTERVAL 1 DAY)) AS date_day

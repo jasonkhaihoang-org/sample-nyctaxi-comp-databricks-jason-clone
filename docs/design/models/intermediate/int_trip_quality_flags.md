@@ -16,7 +16,8 @@ One row per trip (`trip_key`).
 - `D-02` `is_billable` is a positive total and nothing else; it does not look at the payment method ([ADR 0003](../../../adr/0003-billable-trip-definition-and-where-it-applies.md), [ADR 0013](../../../adr/0013-no-charge-and-dispute-payments-are-not-excluded-by-the-billable-rule.md)). Source: [ADR 0003](../../../adr/0003-billable-trip-definition-and-where-it-applies.md), [ADR 0013](../../../adr/0013-no-charge-and-dispute-payments-are-not-excluded-by-the-billable-rule.md).
 - `D-03` The implausible-duration and implausible-speed thresholds are the project variables `min_plausible_seconds` and `max_plausible_mph`, so changing one changes flags, not rows. Source: [ADR 0004](../../../adr/0004-quality-verdicts-flag-trips-and-never-delete-them.md).
 - `D-04` A trip touching an unresolved zone is flagged on both ends and kept ([ADR 0012](../../../adr/0012-unresolved-zones-are-retained-and-flagged.md)). Source: [ADR 0012](../../../adr/0012-unresolved-zones-are-retained-and-flagged.md).
-- `D-05` Materialise as a view. The trip grain is stored once, in `fct_trip`; storing it again here made the seeded Domain file 1,158 MiB for one month, over Studio's 1 GiB upload, and only `fct_trip`'s build reads this model in full. Source: user answer, new-intent seed-domain (2026-10-15).
+- `D-05` Materialise as a view. The trip grain is stored once, in `fct_trip`; storing it again here made the seeded Domain file 1,158 MiB for one month, over Studio's 1 GiB upload, and only `fct_trip`'s build reads this model in full. Superseded by `D-06`. Source: user answer, new-intent seed-domain (2026-10-15).
+- `D-06` Materialise as a table. On the Fabric Lakehouse the SQL analytics endpoint cannot read a Spark view, and the Domain has no file-size limit, so the reason for `D-05` no longer applies. Source: [`dbt-models`](../../../../.agents/skills/dbt-models/SKILL.md) B15.
 
 ## Rejected
 
@@ -31,3 +32,4 @@ Depended on by: `agg_od_flow_matrix`, `agg_trip_band_profile`, `agg_trip_zone_da
 
 - - 2026-10-14 — setup-dlt-ingestion — design record written — D-01, D-02, D-03, D-04
 - 2026-10-15 — seed-domain — materialised as a view — D-05
+- 2026-10-19 — fabric-port — materialised as a table — D-06

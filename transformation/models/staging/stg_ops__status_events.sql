@@ -7,8 +7,8 @@ with source as (
         shift_id,
         driver_id,
         vehicle_id,
-        timezone('UTC', event_ts) as event_ts,
-        timezone('UTC', received_ts) as received_ts,
+        to_utc_timestamp(event_ts, current_timezone()) as event_ts,
+        to_utc_timestamp(received_ts, current_timezone()) as received_ts,
         status_code,
         zone_id,
         source_system
@@ -25,7 +25,7 @@ select
     status_code,
     zone_id,
     source_system,
-    date_diff('second', event_ts, received_ts) as skew_seconds,
+    timestampdiff(second, event_ts, received_ts) as skew_seconds,
     status_code in ('ON_TRIP') as is_occupied_status,
     status_code in ('AVAILABLE', 'DISPATCHED') as is_available_status
 from source

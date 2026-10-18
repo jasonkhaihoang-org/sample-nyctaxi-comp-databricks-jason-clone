@@ -16,13 +16,13 @@ select
     count(*) as interval_count,
     count(distinct i.driver_key) as distinct_drivers,
     count(distinct i.vehicle_key) as distinct_vehicles,
-    sum(i.interval_seconds) / 3600.0 as total_hours,
-    sum(i.interval_seconds) filter (where i.status_code = 'ON_TRIP') / 3600.0 as on_trip_hours,
-    sum(i.interval_seconds) filter (where i.status_code = 'AVAILABLE') / 3600.0 as available_hours,
-    sum(i.interval_seconds) filter (where i.status_code = 'BREAK') / 3600.0 as break_hours,
+    sum(i.interval_seconds) / 3600e0 as total_hours,
+    sum(i.interval_seconds) filter (where i.status_code = 'ON_TRIP') / 3600e0 as on_trip_hours,
+    sum(i.interval_seconds) filter (where i.status_code = 'AVAILABLE') / 3600e0 as available_hours,
+    sum(i.interval_seconds) filter (where i.status_code = 'BREAK') / 3600e0 as break_hours,
     {{ safe_divide(
-        "sum(i.interval_seconds) filter (where i.status_code = 'ON_TRIP')::double",
-        'nullif(sum(i.interval_seconds), 0)::double') }} as zone_occupancy_rate
+        "cast(sum(i.interval_seconds) filter (where i.status_code = 'ON_TRIP') as double)",
+        'cast(nullif(sum(i.interval_seconds), 0) as double)') }} as zone_occupancy_rate
 from {{ ref('fct_status_interval') }} i
 join {{ ref('dim_zone') }} z on i.zone_key = z.zone_key
 group by 1, 2, 3, 4, 5, 6, 7

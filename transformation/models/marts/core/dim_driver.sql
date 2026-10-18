@@ -10,7 +10,7 @@ select
     d.is_wav_certified,
     d.hire_date,
     d.termination_date,
-    date_diff('day', d.hire_date, date '{{ var("report_end") }}') as tenure_days,
+    datediff(date '{{ var("report_end") }}', d.hire_date) as tenure_days,
     d.home_garage_id as garage_key,
     g.garage_name as home_garage_name,
     l.lease_id,

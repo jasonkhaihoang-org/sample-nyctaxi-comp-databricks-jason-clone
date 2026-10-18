@@ -6,7 +6,7 @@
 -- is a finding about the source, not a rounding difference to bury.
 with base as (
     select
-        date_trunc('month', f.pickup_datetime) as trip_month,
+        date_trunc('MONTH', f.pickup_datetime) as trip_month,
         f.service_type_key,
         z.borough_name,
         sum(f.fare_amount) as c_fare,
@@ -33,10 +33,10 @@ select
     component_name, component_order, component_amount,
     {{ safe_divide('component_amount', 'nullif(total_amount, 0)') }} as component_share
 from base
-unpivot (component_amount for component_name in (
-    c_fare, c_tip, c_tolls, c_extra, c_mta_tax,
-    c_improvement, c_congestion, c_airport_fee, c_residual
-))
+    unpivot (component_amount for component_name in (
+        c_fare, c_tip, c_tolls, c_extra, c_mta_tax,
+        c_improvement, c_congestion, c_airport_fee, c_residual
+    ))
 join (
     values
     ('c_fare', 1), ('c_tip', 2), ('c_tolls', 3), ('c_extra', 4),

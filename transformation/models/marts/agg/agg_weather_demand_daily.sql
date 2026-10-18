@@ -27,7 +27,7 @@ select
     sum(f.total_amount) as total_revenue,
     avg(f.trip_distance) as avg_trip_distance,
     avg(f.total_amount) as avg_fare,
-    {{ safe_divide('sum(f.trip_seconds) / 3600.0', 'count(f.trip_key)::double') }} as avg_paid_hours_per_trip
+    {{ safe_divide('sum(f.trip_seconds) / 3600e0', 'cast(count(f.trip_key) as double)') }} as avg_paid_hours_per_trip
 from {{ ref('stg_mdm__weather') }} w
 join {{ ref('dim_date') }} d on w.obs_date = d.calendar_date
 left join {{ ref('dim_zone') }} z

@@ -18,7 +18,7 @@ poi_rollup as (
         count(*) as poi_count,
         sum(demand_weight) as poi_demand_weight,
         max(case when poi_category = 'AIRPORT' then 1 else 0 end) = 1 as has_airport_poi,
-        string_agg(distinct poi_category, ',') as poi_categories
+        array_join(array_sort(collect_set(poi_category)), ',') as poi_categories
     from {{ ref('stg_mdm__zone_poi') }}
     group by 1
 )

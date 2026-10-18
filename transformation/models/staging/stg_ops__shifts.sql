@@ -8,9 +8,9 @@ with source as (
         shift_id,
         vehicle_id,
         driver_id,
-        timezone('UTC', shift_start_ts) as shift_start_ts,
-        timezone('UTC', shift_end_ts) as shift_end_ts,
-        timezone('UTC', derived_end_ts) as derived_end_ts,
+        to_utc_timestamp(shift_start_ts, current_timezone()) as shift_start_ts,
+        to_utc_timestamp(shift_end_ts, current_timezone()) as shift_end_ts,
+        to_utc_timestamp(derived_end_ts, current_timezone()) as derived_end_ts,
         reported_trip_count,
         odometer_start,
         odometer_end,
@@ -27,8 +27,8 @@ select
     derived_end_ts,
     coalesce(shift_end_ts, derived_end_ts) as effective_end_ts,
     shift_end_ts is null as is_unclosed_shift,
-    date_diff(
-        'second', shift_start_ts,
+    timestampdiff(
+        second, shift_start_ts,
         coalesce(shift_end_ts, derived_end_ts)
     ) as shift_seconds,
     cast(shift_start_ts as date) as shift_date,

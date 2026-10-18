@@ -5,7 +5,7 @@ select
     m.maintenance_id,
     m.vehicle_id as vehicle_key,
     v.garage_key,
-    cast(strftime(m.started_date, '%Y%m%d') as integer) as started_date_key,
+    cast(date_format(m.started_date, 'yyyyMMdd') as integer) as started_date_key,
     m.started_date,
     m.ended_date,
     m.down_days,

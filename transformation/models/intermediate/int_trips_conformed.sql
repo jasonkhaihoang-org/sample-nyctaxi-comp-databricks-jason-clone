@@ -1,5 +1,3 @@
-{{ config(materialized='view') }}
-
 -- Yellow and green trips conformed onto one grain: shared column names, a
 -- service_type discriminator, one row per distinct trip. Columns that exist on
 -- only one fleet are dropped here rather than carried as a column that is null
@@ -71,9 +69,9 @@ select
     improvement_surcharge,
     congestion_surcharge,
     total_amount,
-    date_diff('second', pickup_datetime, dropoff_datetime) as trip_seconds,
+    timestampdiff(second, pickup_datetime, dropoff_datetime) as trip_seconds,
     {{ safe_divide('trip_distance',
-        'date_diff(\'second\', pickup_datetime, dropoff_datetime) / 3600.0') }} as avg_mph,
+        'timestampdiff(second, pickup_datetime, dropoff_datetime) / 3600e0') }} as avg_mph,
     _dlt_load_id
 from keyed
 where dup_rank = 1

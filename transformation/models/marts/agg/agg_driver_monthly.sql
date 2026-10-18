@@ -3,7 +3,7 @@
 -- month disagreed with the sum of its days, one of them would be wrong and
 -- nobody would know which.
 select
-    date_trunc('month', a.shift_date) as month_start_date,
+    trunc(a.shift_date, 'MM') as month_start_date,
     a.driver_key,
     a.driver_ref,
     a.engagement_type,
@@ -23,7 +23,7 @@ select
 
     {{ safe_divide('sum(a.on_trip_hours)', 'nullif(sum(a.online_hours), 0)') }} as occupancy_rate,
     {{ safe_divide('sum(a.gross_revenue)', 'nullif(sum(a.online_hours), 0)') }} as revenue_per_online_hour,
-    {{ safe_divide('sum(a.trip_count)::double', 'nullif(sum(a.online_hours), 0)') }} as trips_per_online_hour,
+    {{ safe_divide('cast(sum(a.trip_count) as double)', 'nullif(sum(a.online_hours), 0)') }} as trips_per_online_hour,
     {{ safe_divide('sum(a.total_margin)', 'nullif(sum(a.gross_revenue), 0)') }} as margin_rate
 from {{ ref('agg_driver_daily') }} a
 group by 1, 2, 3, 4, 5, 6

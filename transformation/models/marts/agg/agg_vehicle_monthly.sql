@@ -5,7 +5,7 @@
 -- published alongside utilisation so the two can be told apart.
 with monthly as (
     select
-        date_trunc('month', a.shift_date) as month_start_date,
+        trunc(a.shift_date, 'MM') as month_start_date,
         a.vehicle_key,
         a.medallion_number,
         a.make_model,
@@ -24,7 +24,7 @@ with monthly as (
 
 downtime as (
     select
-        date_trunc('month', m.started_date) as month_start_date,
+        trunc(m.started_date, 'MM') as month_start_date,
         m.vehicle_key,
         sum(m.down_days) as down_days,
         sum(m.cost_usd) as maintenance_cost
@@ -36,17 +36,11 @@ select
     mo.*,
     coalesce(dt.down_days, 0) as down_days,
     coalesce(dt.maintenance_cost, 0) as maintenance_cost,
-    date_diff(
-        'day', mo.month_start_date,
-        mo.month_start_date + interval 1 month
-    ) as calendar_days,
-    date_diff(
-        'day', mo.month_start_date,
-        mo.month_start_date + interval 1 month
-    )
+    datediff(add_months(mo.month_start_date, 1), mo.month_start_date) as calendar_days,
+    datediff(add_months(mo.month_start_date, 1), mo.month_start_date)
     - coalesce(dt.down_days, 0) as available_days,
-    {{ safe_divide('mo.active_days::double',
-        '(date_diff(\'day\', mo.month_start_date, mo.month_start_date + interval 1 month) - coalesce(dt.down_days, 0))::double') }} as availability_adjusted_activity_rate,
+    {{ safe_divide('cast(mo.active_days as double)',
+        'cast(datediff(add_months(mo.month_start_date, 1), mo.month_start_date) - coalesce(dt.down_days, 0) as double)') }} as availability_adjusted_activity_rate,
     {{ safe_divide('mo.on_trip_hours', 'nullif(mo.online_hours, 0)') }} as occupancy_rate,
     {{ safe_divide('mo.gross_revenue', 'nullif(mo.online_hours, 0)') }} as revenue_per_online_hour
 from monthly mo

@@ -33,8 +33,9 @@ models:
     +persist_docs:
       relation: true
       columns: true
+    # Every layer is a table: the Lakehouse SQL analytics endpoint cannot read a Spark view.
     staging:
-      +materialized: view
+      +materialized: table
       +schema: staging
     intermediate:
       +materialized: table

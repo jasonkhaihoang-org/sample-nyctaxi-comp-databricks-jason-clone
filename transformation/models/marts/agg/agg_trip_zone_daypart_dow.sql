@@ -33,18 +33,20 @@ select
     sum(f.tip_amount) as tip_revenue,
     sum(f.total_surcharges) as surcharge_revenue,
     sum(f.trip_distance) as total_miles,
-    sum(f.trip_seconds) / 3600.0 as total_paid_hours,
+    sum(f.trip_seconds) / 3600e0 as total_paid_hours,
 
     avg(f.total_amount) as avg_total_amount,
     avg(f.trip_distance) as avg_trip_distance,
-    avg(f.trip_seconds) / 60.0 as avg_trip_minutes,
-    median(f.total_amount) as median_total_amount,
+    avg(f.trip_seconds) / 60e0 as avg_trip_minutes,
+    percentile(f.total_amount, 0.5) as median_total_amount,
 
     -- Tip rate over the measurable population only, with its own denominator
     -- published so the reader can see how much of the traffic it covers.
     avg(f.measurable_tip_rate) as avg_measurable_tip_rate,
     count(f.measurable_tip_rate) as measurable_tip_trip_count,
-    {{ safe_divide('count(f.measurable_tip_rate)::double', 'count(*)::double') }} as tip_measurable_share
+    {{ safe_divide(
+        'cast(count(f.measurable_tip_rate) as double)',
+        'cast(count(*) as double)') }} as tip_measurable_share
 from {{ ref('fct_trip') }} f
 join {{ ref('dim_zone') }} z on f.pickup_zone_key = z.zone_key
 join {{ ref('dim_date') }} d on f.pickup_date_key = d.date_key

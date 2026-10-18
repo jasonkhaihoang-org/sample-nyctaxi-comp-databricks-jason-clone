@@ -6,7 +6,7 @@ select
     i.shift_id,
     i.driver_id as driver_key,
     i.vehicle_id as vehicle_key,
-    cast(strftime(i.interval_date, '%Y%m%d') as integer) as interval_date_key,
+    cast(date_format(i.interval_date, 'yyyyMMdd') as integer) as interval_date_key,
     i.interval_date,
     i.interval_hour,
     dp.daypart_code,

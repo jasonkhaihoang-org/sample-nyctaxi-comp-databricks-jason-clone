@@ -2,7 +2,7 @@
 -- (occupancy, leases) and the revenue world (trips).
 select
     e.shift_id,
-    cast(strftime(e.shift_date, '%Y%m%d') as integer) as shift_date_key,
+    cast(date_format(e.shift_date, 'yyyyMMdd') as integer) as shift_date_key,
     e.shift_date,
     e.driver_id as driver_key,
     e.vehicle_id as vehicle_key,

@@ -1,5 +1,3 @@
-{{ config(materialized='view') }}
-
 -- Yellow-only columns that conforming drops. Recomputes the trip natural key so
 -- the fleet-specific fee can be rejoined to a trip. Staging reads only source():
 -- the same timestamp conversion as stg_tlc__yellow_tripdata is applied before the
@@ -15,16 +13,32 @@ select
     pickup_datetime
 from (
     select
-        {{ trip_natural_key("'yellow'", 'y."VendorID"', "timezone('UTC', y.tpep_pickup_datetime)",
-           "timezone('UTC', y.tpep_dropoff_datetime)", 'y."PULocationID"', 'y."DOLocationID"',
-           'y.trip_distance', 'y.total_amount') }} as trip_key,
-        y."Airport_fee" as airport_fee,
-        y."PULocationID" as pickup_location_id,
-        timezone('UTC', y.tpep_pickup_datetime) as pickup_datetime,
+        {{ trip_natural_key(
+            "'yellow'",
+            'y.`VendorID`',
+            "to_utc_timestamp(y.tpep_pickup_datetime, current_timezone())",
+            "to_utc_timestamp(y.tpep_dropoff_datetime, current_timezone())",
+            'y.`PULocationID`',
+            'y.`DOLocationID`',
+            'y.trip_distance',
+            'y.total_amount'
+        ) }} as trip_key,
+        y.`Airport_fee` as airport_fee,
+        y.`PULocationID` as pickup_location_id,
+        to_utc_timestamp(
+            y.tpep_pickup_datetime, current_timezone()
+        ) as pickup_datetime,
         row_number() over (
-            partition by {{ trip_natural_key("'yellow'", 'y."VendorID"', "timezone('UTC', y.tpep_pickup_datetime)",
-               "timezone('UTC', y.tpep_dropoff_datetime)", 'y."PULocationID"', 'y."DOLocationID"',
-               'y.trip_distance', 'y.total_amount') }}
+            partition by {{ trip_natural_key(
+                "'yellow'",
+                'y.`VendorID`',
+                "to_utc_timestamp(y.tpep_pickup_datetime, current_timezone())",
+                "to_utc_timestamp(y.tpep_dropoff_datetime, current_timezone())",
+                'y.`PULocationID`',
+                'y.`DOLocationID`',
+                'y.trip_distance',
+                'y.total_amount'
+            ) }}
             order by y._dlt_load_id
         ) as dup_rank
     from {{ source('bronze', 'yellow_tripdata') }} y

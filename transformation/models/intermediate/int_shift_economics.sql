@@ -54,7 +54,7 @@ select
         when 'lease_weekly' then l.lease_rate / 6.0
         when 'owner_operator' then coalesce(r.gross_revenue, 0) * l.revenue_share_pct
     end as shift_margin,
-    {{ safe_divide('coalesce(r.gross_revenue, 0)', 'o.online_seconds / 3600.0') }} as revenue_per_online_hour,
+    {{ safe_divide('coalesce(r.gross_revenue, 0)', 'o.online_seconds / 3600e0') }} as revenue_per_online_hour,
     {{ safe_divide('coalesce(r.gross_revenue, 0)', 'nullif(r.paid_miles, 0)') }} as revenue_per_paid_mile
 from {{ ref('int_shift_occupancy') }} o
 left join trip_rollup r on o.shift_id = r.shift_id

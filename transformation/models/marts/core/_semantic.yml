@@ -80,11 +80,11 @@ semantic_models:
       - name: online_hours
         description: Hours a driver was signed on.
         agg: sum
-        expr: online_seconds / 3600.0
+        expr: online_seconds / 3600e0
       - name: on_trip_hours
         description: Hours a driver was carrying a fare.
         agg: sum
-        expr: on_trip_seconds / 3600.0
+        expr: on_trip_seconds / 3600e0
       - name: gross_revenue
         description: Revenue earned on the shift's trips.
         agg: sum

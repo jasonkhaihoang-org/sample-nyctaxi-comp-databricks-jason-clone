@@ -1,5 +1,3 @@
-{{ config(materialized='view') }}
-
 -- The cross-layer model. int_trips_conformed is the conformed intersection of the
 -- two fleet schemas, so the fleet-specific columns it drops have to be
 -- rejoined from bronze by recomputing the natural key on both sides.

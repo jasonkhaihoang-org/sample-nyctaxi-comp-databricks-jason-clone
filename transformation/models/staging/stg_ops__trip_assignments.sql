@@ -6,8 +6,8 @@ with source as (
         assignment_id,
         service_type,
         vendor_id,
-        timezone('UTC', pickup_datetime) as pickup_datetime,
-        timezone('UTC', dropoff_datetime) as dropoff_datetime,
+        to_utc_timestamp(pickup_datetime, current_timezone()) as pickup_datetime,
+        to_utc_timestamp(dropoff_datetime, current_timezone()) as dropoff_datetime,
         pickup_location_id,
         dropoff_location_id,
         trip_distance,
@@ -15,7 +15,7 @@ with source as (
         shift_id,
         driver_id,
         vehicle_id,
-        timezone('UTC', assigned_ts) as assigned_ts,
+        to_utc_timestamp(assigned_ts, current_timezone()) as assigned_ts,
         assignment_method
     from {{ source('ops_raw', 'trip_assignment') }}
 )

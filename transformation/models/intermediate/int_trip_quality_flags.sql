@@ -1,5 +1,3 @@
-{{ config(materialized='view') }}
-
 -- One row per trip carrying every quality verdict, so that downstream models
 -- filter on a named condition rather than re-deriving the rule.
 --
