@@ -24,6 +24,11 @@ connector = "custom"
 connector_source = "local"
 entry_point = "ops_source"
 
+# The Domain's secret store. No source here reads a secret, but the Fabric notebook unit
+# always registers the vault as dlt's secret provider (fabric_lakehouse/dlt.md).
+[providers.azure_key_vault]
+vault_url = "https://ukvdtestkv1.vault.azure.net/"
+
 # The Domain Lakehouse (fabric_lakehouse/destination-staging.md). Studio retargets an Intent
 # run to its Ephemeral Lakehouse through dlt's DESTINATION__FILESYSTEM__* environment override.
 [destination.filesystem]
