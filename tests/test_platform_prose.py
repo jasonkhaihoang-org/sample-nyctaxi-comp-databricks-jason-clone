@@ -22,11 +22,12 @@ DUCKDB_RUNTIME = [
 ]
 
 GUID = re.compile(r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b", re.IGNORECASE)
-# The Domain's own coordinates are committed where the plugin reads them: the `prod` dbt target
-# and the dlt destination. Studio retargets both to an Intent's Ephemeral Lakehouse at run time.
-DOMAIN_COORDINATE_FILES = {"transformation/profiles.yml", "ingestion/.dlt/config.toml"}
-# Portable ids Fabric binds on deploy: an item's logicalId, and the all-zeros workspace placeholder.
-PORTABLE_ID_LINE = re.compile(r'"logicalId"|00000000-0000-0000-0000-000000000000')
+# The Domain's own coordinates are committed where the plugin reads them: the `prod` dbt target,
+# the dlt destination and the CI config. Studio retargets an Intent run to its Ephemeral Lakehouse.
+DOMAIN_COORDINATE_FILES = {"transformation/profiles.yml", "ingestion/.dlt/config.toml", ".workflow/ci-config.yml"}
+# Portable ids Fabric binds on deploy: an item's logicalId, a Data Pipeline activity's reference
+# to one (`notebookId`), and the all-zeros workspace placeholder.
+PORTABLE_ID_LINE = re.compile(r'"logicalId"|"notebookId"|00000000-0000-0000-0000-000000000000')
 
 
 def _superseded_adr(path: Path) -> bool:
@@ -60,11 +61,24 @@ def test_no_committed_guid():
     tracked = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True, check=True).stdout.split()
     hits = []
     for name in tracked:
-        if name.startswith(".github/") or name in DOMAIN_COORDINATE_FILES:
-            continue
         try:
-            lines = (ROOT / name).read_text().splitlines()
-        except (UnicodeDecodeError, FileNotFoundError):
+            text = (ROOT / name).read_text()
+        except (UnicodeDecodeError, FileNotFoundError, IsADirectoryError):
             continue
-        hits += [f"{name}: {m}" for line in lines if not PORTABLE_ID_LINE.search(line) for m in GUID.findall(line)]
+        hits += _guid_hits(name, text)
     assert hits == []
+
+
+def _guid_hits(name: str, text: str) -> list[str]:
+    if name.startswith(".github/") or name in DOMAIN_COORDINATE_FILES:
+        return []
+    return [f"{name}: {m}" for line in text.splitlines() if not PORTABLE_ID_LINE.search(line) for m in GUID.findall(line)]
+
+
+def test_guid_guard_allows_the_ids_the_plugin_requires():
+    # Built, not written out, so this file holds no id of its own.
+    guid = "-".join(["1b2c3d4e", "0000", "4000", "8000", "0123456789ab"])
+    activity = f'          "notebookId": "{guid}",'
+    assert _guid_hits("orchestration/nyc_taxi_refresh.DataPipeline/pipeline-content.json", activity) == []
+    assert _guid_hits(".workflow/ci-config.yml", f"VD_DOMAIN_FABRIC_LAKEHOUSE_ID: {guid}") == []
+    assert _guid_hits("docs/setup/notes.md", f"workspace {guid}") == [f"docs/setup/notes.md: {guid}"]

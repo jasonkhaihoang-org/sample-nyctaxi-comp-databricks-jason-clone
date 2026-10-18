@@ -216,7 +216,7 @@
     },
     "macros": {
       "path": "transformation/macros/",
-      "description": "trip_natural_key (the only definition of trip_key), report window, schema naming, finance helpers, and relations.sql, which renders ref() and source() without a catalog so stored views work in the renamed sandbox copy."
+      "description": "trip_natural_key (the only definition of trip_key), report window, schema naming, finance helpers, and source_defer.sql, which resolves source() in the Ephemeral Lakehouse and, under --defer, in the Domain's."
     },
     "tests": {
       "path": "transformation/tests/",

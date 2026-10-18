@@ -54,12 +54,12 @@ dbt and dlt run in the Intent's sandbox against its Ephemeral Lakehouse, through
 
 The Python tests need `requirements-dev.txt` installed in the same interpreter (`pip install -r requirements-dev.txt`): the map tests call dbt through `python3 -m dbt.cli.main`, and fail with `No module named 'dbt'` otherwise.
 
-The command for each layer's tests is in `test-map.json`. Lint Python with `ruff check` (the `python_lint` command in `repo-map.json`), which reads `ruff.toml`; do not use the `check_python` tool, which applies rules this repo does not use. Before a push, run `python_tests`, `python_lint`, `sqlfluff lint transformation/models` and the dbt data and unit tests (`dbt_data_tests`, `dbt_unit_tests` in `repo-map.json`).
+The command for each layer's tests is in `test-map.json`. Lint Python with `ruff check` (the `python_lint` command in `repo-map.json`), which reads `ruff.toml`; do not use the `check_python` tool, which applies rules this repo does not use. Before a push, run `python_tests`, `python_lint`, `sqlfluff lint transformation/models` and the dbt data and unit tests (`dbt_data_tests`, `dbt_unit_tests` in `repo-map.json`). Run every dbt command through the sandbox wrapper in the [`workarounds`](.agents/skills/workarounds/SKILL.md) skill: a bare `dbt` reads `transformation/profiles.yml`, whose default target is the Domain's `prod`.
 
 ## Safety
 
 - The warehouse is the Domain Lakehouse. Only a release writes it; an Intent writes its own Ephemeral Lakehouse. Never commit downloaded data.
-- Commit only the Domain's coordinates (the `prod` target in `transformation/profiles.yml`, `[destination.filesystem]` in `ingestion/.dlt/config.toml`), never an Ephemeral Lakehouse or workspace-item id. `tests/test_platform_prose.py` fails on any other id.
+- Commit only the Domain's coordinates (the `prod` target in `transformation/profiles.yml`, `[destination.filesystem]` in `ingestion/.dlt/config.toml`, `.workflow/ci-config.yml`) and the portable `logicalId` of each Fabric item, which activities reference as `notebookId`. Never commit an Ephemeral Lakehouse id or a workspace object id; `tests/test_platform_prose.py` fails on one.
 - Never commit secrets. dlt reads them from the bound secret store.
 - Do not edit `transformation/profiles.yml` to make a failure pass.
 

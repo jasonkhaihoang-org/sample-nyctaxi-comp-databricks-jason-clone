@@ -23,7 +23,7 @@ models:
       columns: true
     # One block per confirmed layer: folder, materialisation, schema.
     staging:
-      +materialized: view
+      +materialized: table
       +schema: staging
     intermediate:
       +materialized: table

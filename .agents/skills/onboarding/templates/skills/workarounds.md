@@ -25,7 +25,7 @@ The runtime provides the profile (`DBT_PROFILES_DIR`, `DBT_PROFILE_NAME`) and it
 cd <dbt project> && <plugin>/scripts/vd-intent-context-run.sh "dbt <command> --target ephemeral_dev --defer --state /cache/prod-target"
 ```
 
-Every command except `parse`, `ls`, `deps`, `clean` and `init` opens a Spark session, which takes minutes on a cold capacity: launch it as the plugin's `fabric_lakehouse/dbt.md` says and wait for it. Run `dbt deps` the same way first if `dbt_packages/` is missing. The plain commands in `repo-map.json` `commands` are for a local checkout.
+Every command except `parse`, `ls`, `deps`, `clean` and `init` opens a Spark session, which takes minutes on a cold capacity: launch it as the plugin's `fabric_lakehouse/dbt.md` says and wait for it. Run `dbt deps` the same way first if `dbt_packages/` is missing. The dbt commands in `repo-map.json` `commands` and `test-map.json` give the arguments only: run each through this wrapper, never bare, because a bare `dbt` reads the repo's profile, whose default target is the Domain's `prod`.
 
 Remove when: the platform `fabric_lakehouse/dbt.md` states this command (plugin change).
 

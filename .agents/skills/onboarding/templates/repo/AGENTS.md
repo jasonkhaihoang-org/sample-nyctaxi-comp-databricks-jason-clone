@@ -94,7 +94,7 @@ reason: Platform safety; the same for every domain.
 -->
 
 - The warehouse is the Domain Lakehouse. Only a release writes it; an Intent writes its own Ephemeral Lakehouse. Never commit downloaded data.
-- Commit only the Domain's coordinates (the `prod` target in `transformation/profiles.yml`, `[destination.filesystem]` in `ingestion/.dlt/config.toml`), never an Ephemeral Lakehouse or workspace-item id.
+- Commit only the Domain's coordinates (the `prod` target in `transformation/profiles.yml`, `[destination.filesystem]` in `ingestion/.dlt/config.toml`, `.workflow/ci-config.yml`) and the portable `logicalId` of each Fabric item, which activities reference as `notebookId`. Never commit an Ephemeral Lakehouse id or a workspace object id.
 - Never commit secrets. dlt reads them from the bound secret store.
 - Do not edit `transformation/profiles.yml` to make a failure pass.
 

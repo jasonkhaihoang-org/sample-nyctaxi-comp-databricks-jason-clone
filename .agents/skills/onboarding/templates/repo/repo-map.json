@@ -14,7 +14,7 @@
   },
   "layers": {
     "<raw schema>": {"schema": "<raw schema>", "built_by": "dlt", "path": "ingestion/", "notes": "<source system>, verbatim."},
-    "staging": {"schema": "staging", "built_by": "dbt", "path": "transformation/models/staging/", "notes": "One view per source table."},
+    "staging": {"schema": "staging", "built_by": "dbt", "path": "transformation/models/staging/", "notes": "One table per source table."},
     "intermediate": {"schema": "intermediate", "built_by": "dbt", "path": "transformation/models/intermediate/", "notes": "Business logic and joins."},
     "core": {"schema": "core", "built_by": "dbt", "path": "transformation/models/marts/core/", "notes": "Facts and conformed dimensions."}
   },
