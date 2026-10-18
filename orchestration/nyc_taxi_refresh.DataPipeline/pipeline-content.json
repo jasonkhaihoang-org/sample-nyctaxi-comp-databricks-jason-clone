@@ -1,0 +1,130 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "name": "tlc_pipeline",
+        "type": "TridentNotebook",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.02:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "c6a1e614-a160-4cfc-b50d-6be85040c952",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "DOMAIN_SLUG": {
+              "value": "nyc-taxi-fabric-demo",
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "ops_pipeline",
+        "type": "TridentNotebook",
+        "dependsOn": [
+          {
+            "activity": "tlc_pipeline",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.02:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "caf758f7-765b-4bd8-a834-b8f207c34073",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "DOMAIN_SLUG": {
+              "value": "nyc-taxi-fabric-demo",
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "mdm_pipeline",
+        "type": "TridentNotebook",
+        "dependsOn": [
+          {
+            "activity": "tlc_pipeline",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.02:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "d09644c9-02d2-48eb-bfd8-31f518681acb",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "DOMAIN_SLUG": {
+              "value": "nyc-taxi-fabric-demo",
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "nyc_taxi_build_dbt",
+        "type": "TridentNotebook",
+        "dependsOn": [
+          {
+            "activity": "tlc_pipeline",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "ops_pipeline",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "mdm_pipeline",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.02:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "1c7191f9-79c2-49f4-9b33-cb817e65851b",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "DBT_OUTPUT_DIR": {
+              "value": {
+                "value": "@pipeline().RunId",
+                "type": "Expression"
+              },
+              "type": "string"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

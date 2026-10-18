@@ -189,3 +189,23 @@ def test_source_defers_to_the_domain():
     text = (DBT_PROJECT / "macros" / "source_defer.sql").read_text()
     assert "macro source(" in text
 
+
+def test_orchestration_runs_every_pipeline_notebook_then_dbt():
+    """nyc_taxi_refresh lands tlc, then ops and mdm, then builds every model once all three landed."""
+    def logical_id(item: Path) -> str:
+        return json.loads((item / ".platform").read_text())["config"]["logicalId"]
+
+    pipeline = json.loads((ROOT / "orchestration/nyc_taxi_refresh.DataPipeline/pipeline-content.json").read_text())
+    activities = {a["name"]: a for a in pipeline["properties"]["activities"]}
+    notebooks = {name: a["typeProperties"]["notebookId"] for name, a in activities.items()}
+    loads = {n: logical_id(ROOT / f"ingestion/{n}_pipeline.Notebook") for n in ("tlc", "ops", "mdm")}
+    dbt = logical_id(ROOT / "orchestration/nyc_taxi_build_dbt.Notebook")
+    assert sorted(notebooks.values()) == sorted([*loads.values(), dbt])
+    by_id = {v: k for k, v in notebooks.items()}
+
+    def upstream(notebook_id: str) -> set[str]:
+        return {d["activity"] for d in activities[by_id[notebook_id]]["dependsOn"]}
+
+    assert upstream(loads["tlc"]) == set()
+    assert upstream(loads["ops"]) == upstream(loads["mdm"]) == {by_id[loads["tlc"]]}
+    assert upstream(dbt) == {by_id[loads[n]] for n in ("tlc", "ops", "mdm")}

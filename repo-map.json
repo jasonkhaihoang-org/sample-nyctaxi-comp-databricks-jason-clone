@@ -59,13 +59,12 @@
     }
   ],
   "entrypoints": {
-    "run_all": "orchestration/run_all.py",
-    "run_ingest": "orchestration/run_ingest.py",
-    "run_transform": "orchestration/run_transform.py",
     "dbt_project": "transformation/dbt_project.yml",
-    "tlc_pipeline": "ingestion/tlc_pipeline.py",
-    "ops_pipeline": "ingestion/ops_pipeline.py",
-    "mdm_pipeline": "ingestion/mdm_pipeline.py"
+    "tlc_pipeline": "ingestion/tlc_pipeline.Notebook/notebook-content.py",
+    "ops_pipeline": "ingestion/ops_pipeline.Notebook/notebook-content.py",
+    "mdm_pipeline": "ingestion/mdm_pipeline.Notebook/notebook-content.py",
+    "nyc_taxi_refresh": "orchestration/nyc_taxi_refresh.DataPipeline/pipeline-content.json",
+    "nyc_taxi_build_dbt": "orchestration/nyc_taxi_build_dbt.Notebook/notebook-content.py"
   },
   "layers": {
     "bronze": {
@@ -122,7 +121,7 @@
     "tlc": {
       "kind": "dlt",
       "dataset": "bronze",
-      "pipeline": "ingestion/tlc_pipeline.py",
+      "pipeline": "ingestion/tlc_pipeline.Notebook/",
       "docs": "ingestion/docs/tlc.yml",
       "description": "NYC TLC yellow and green trips and the zone lookup, fetched from the public TLC site.",
       "module": "ingestion/sources/tlc.py",
@@ -133,7 +132,7 @@
     "ops": {
       "kind": "dlt",
       "dataset": "ops_raw",
-      "pipeline": "ingestion/ops_pipeline.py",
+      "pipeline": "ingestion/ops_pipeline.Notebook/",
       "docs": "ingestion/docs/ops.yml",
       "description": "Fleet operator's platform, generated from the yellow trips.",
       "module": "ingestion/sources/ops.py",
@@ -144,7 +143,7 @@
     "mdm": {
       "kind": "dlt",
       "dataset": "mdm_raw",
-      "pipeline": "ingestion/mdm_pipeline.py",
+      "pipeline": "ingestion/mdm_pipeline.Notebook/",
       "docs": "ingestion/docs/mdm.yml",
       "description": "Master-data platform: zones, vendors, payment methods, rate plans, regimes, boroughs, points of interest, calendar, weather.",
       "module": "ingestion/sources/mdm.py",
@@ -163,7 +162,7 @@
     "dbt_sources": "transformation/models/staging/_sources.yml",
     "singular_tests": "transformation/tests/",
     "ingestion_root": "ingestion/",
-    "pipeline": "ingestion/{name}_pipeline.py",
+    "pipeline": "ingestion/{name}_pipeline.Notebook/",
     "resource_docs": "ingestion/docs/{connection}.yml",
     "orchestration": "orchestration/",
     "test_map": "test-map.json",
@@ -184,7 +183,7 @@
     },
     "orchestration": {
       "path": "orchestration/",
-      "description": "Scripts that run ingestion and the dbt build, in order."
+      "description": "The nyc_taxi_refresh Data Pipeline (tlc, then ops and mdm, then dbt) and the nyc_taxi_build_dbt job notebook it runs. Authored by the plugin's generating-orchestration; no schedule is committed."
     },
     "staging": {
       "path": "transformation/models/staging/",
@@ -224,7 +223,7 @@
     },
     "python_tests": {
       "path": "tests/",
-      "description": "pytest tests for ingestion, orchestration and the two maps."
+      "description": "pytest tests for ingestion, orchestration wiring and the maps."
     },
     "decisions": {
       "path": "docs/adr/",
@@ -257,7 +256,7 @@
   },
   "key_directories": {
     "ingestion/": "dlt pipelines and sources",
-    "orchestration/": "run scripts",
+    "orchestration/": "Data Pipeline and dbt job notebook",
     "transformation/": "dbt project",
     "tests/": "pytest tests",
     "docs/adr/": "ADRs",
@@ -270,9 +269,6 @@
     "docs/proposal/": "Proposals that become intents. Read one only when the intent links to it."
   },
   "commands": {
-    "all": "python3 orchestration/run_all.py",
-    "ingest": "python3 orchestration/run_ingest.py",
-    "transform": "python3 orchestration/run_transform.py",
     "dbt_deps": "cd transformation && dbt deps",
     "dbt_build": "cd transformation && dbt build",
     "dbt_data_tests": "cd transformation && dbt test --exclude test_type:unit",

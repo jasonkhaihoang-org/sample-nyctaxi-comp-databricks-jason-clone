@@ -46,6 +46,16 @@ def trip_tables(fleet: str, fetch: Fetch = http_get, months: list[str] = MONTHS)
         yield pq.read_table(io.BytesIO(fetch(trip_url(fleet, month))))
 
 
+def configured_months() -> list[str]:
+    """The months `[sources.tlc] months` names (env `SOURCES__TLC__MONTHS`), else the default window."""
+    return dlt.config.get("sources.tlc.months", list) or MONTHS
+
+
+def yellow_trips(fetch: Fetch = http_get) -> Iterator:
+    """The yellow trips of the window the tlc pipeline loads, for a generator that derives from them."""
+    return trip_tables("yellow", fetch, configured_months())
+
+
 @dlt.source(name="tlc")
 def tlc_source(fetch: Fetch = http_get, months: list[str] | None = None):
     months = months or MONTHS

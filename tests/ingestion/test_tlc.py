@@ -68,3 +68,21 @@ def test_months_can_be_set_from_the_environment(monkeypatch):
     monkeypatch.setenv("SOURCES__TLC__MONTHS", '["2024-01"]')
     source = tlc.tlc_source.clone(name="tlc", section="tlc")(fetch=_fetch)
     assert len(list(source.resources["green_tripdata"])) == 1
+
+
+def test_yellow_trips_reads_the_months_tlc_loads(monkeypatch):
+    """The ops generator re-reads the yellow trips: it must read the window tlc loaded, no more."""
+    monkeypatch.setenv("SOURCES__TLC__MONTHS", '["2024-01"]')
+    asked = []
+
+    def fetch(url: str) -> bytes:
+        asked.append(url)
+        return _parquet_bytes(2)
+
+    assert len(list(tlc.yellow_trips(fetch))) == 1
+    assert asked == [tlc.trip_url("yellow", "2024-01")]
+
+
+def test_yellow_trips_defaults_to_the_three_month_window(monkeypatch):
+    monkeypatch.delenv("SOURCES__TLC__MONTHS", raising=False)
+    assert len(list(tlc.yellow_trips(lambda url: _parquet_bytes(1)))) == 3

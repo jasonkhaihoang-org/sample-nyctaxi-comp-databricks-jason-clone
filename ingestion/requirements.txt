@@ -1,5 +1,6 @@
+# What the pipelines need. No runtime unit here: the notebook and the Studio sandbox each
+# install their own vibedata.dlt.fabric unit (fabric_lakehouse/pipeline-notebook.md).
 dlt
 duckdb
 pyarrow
 requests
-vibedata-dlt-duckdb-studio

@@ -21,11 +21,11 @@
       "sources": [
         "orchestration/"
       ],
-      "unit": [
-        "tests/orchestration/"
+      "structural": [
+        "tests/test_maps.py"
       ],
       "commands": {
-        "unit": "python3 -m pytest tests/orchestration -q"
+        "structural": "python3 -m pytest tests/test_maps.py -q -k orchestration"
       }
     },
     "staging": {
