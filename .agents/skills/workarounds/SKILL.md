@@ -45,7 +45,7 @@ Remove when: `verifying` says where independent figures come from for an ingesti
 
 ## Tier-1 tests after a safety run
 
-A `DEV_MODE` safety run (the `generating-dlt-pipeline` skill's) loads into a timestamped dev dataset (`bronze_<timestamp>`), printed by the run. Pass that name to the plugin's `scripts/run_bronze_tier1_tests.py --dataset`, not `bronze`. After the full load, pass `bronze`.
+A `DEV_MODE` safety run (the `generating-dlt-pipeline` skill's) loads into a timestamped dev dataset (`bronze_<timestamp>`), printed by the run. Pass that name to the plugin's `scripts/run_bronze_tier1_tests.py --dataset`, not `bronze`. After the full load, pass `bronze`. A Tier 2 or 3 pytest suite cannot reach the Lakehouse: record its execution as deferred, as the plugin's `fabric_lakehouse/dlt.md` § Bronze tests says.
 
 Remove when: the Tier-1 runner finds the dev dataset itself (`skill-changes.md`).
 

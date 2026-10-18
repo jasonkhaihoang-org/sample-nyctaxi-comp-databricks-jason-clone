@@ -17,7 +17,7 @@ Set per resource, never per run: `append` for immutable events that arrive once,
 
 ## Schema contract (D7)
 
-`columns: freeze`, `tables: evolve` while a pipeline is new then `freeze` once every resource has loaded into a database that persists, `data_type: freeze`. Every pipeline here keeps `tables: evolve`: each Intent's Ephemeral Lakehouse starts empty, so freezing would forbid creating the tables in a sample load. Any other value carries a `# why:` line in the pipeline and a decision in its design record.
+`columns: freeze`, `tables: evolve`, `data_type: freeze`. `tables` stays `evolve` because each Intent's Ephemeral Lakehouse starts empty, so freezing it would forbid creating the tables in a sample load. Any other value carries a `# why:` line in the pipeline and a decision in its design record.
 
 ## Delta merge (D6b)
 
