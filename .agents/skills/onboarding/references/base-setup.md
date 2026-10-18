@@ -2,19 +2,19 @@
 
 What every onboarded repo has, so the first build intent does not spend its calls discovering the environment. It comes from how agents, the sandbox and the CI bundle work, not from the repo's code.
 
-## Empty Domain database
+## Empty Domain Lakehouse
 
-Check the Domain database first. When it has no tables, every Intent's sandbox (a copy of it) starts empty, and the base commands, data tests and dry run have nothing to read. Load it in this sandbox before the base commands: a sample load of every source (`DLT_INGEST_LIMIT`), then `dbt build`.
+Check the Domain Lakehouse first. An Intent builds only what it changes and defers everything else to the Domain's released models (`--defer --state /cache/prod-target`). When the Domain has no released model, there is nothing to defer to: every unselected `ref()` and `source()` fails, and the base commands, data tests and dry run have nothing to read.
 
-When that cannot be done, or is a lot of work (missing source credentials, very large sources, run scripts that fail), do not attempt it: write a proposal under `docs/proposal/` for seeding the Domain database (the sources, their size, the steps, what blocks it) and continue without data.
+Releasing the Domain is not a sandbox step: a release writes the Domain Lakehouse and publishes its production manifest, and the sandbox never writes the Domain. Write a proposal under `docs/proposal/` for seeding it (the sources, their size, the steps, what blocks it), and run the base commands on a sample load of every source (`DLT_INGEST_LIMIT`) in this Intent's Ephemeral Lakehouse, building without `--defer`.
 
-Either way the data stays in this sandbox: the Domain database is still empty for later Intents. Say so in the PR description.
+That data stays in this Intent: the Domain is still empty for later Intents. Say so in the PR description.
 
 ## Base commands
 
 Put these in `repo-map.json` `commands`, using the repo's own paths: `dbt_deps`, `dbt_parse`, `dbt_build`, `python_tests`, `python_lint`, plus the run scripts if the repo has them, and one entry per CI check script an agent should run rather than read (for example `adr_lint` for `.github/scripts/adr_lint.py`).
 
-In the design phase, before the inventory, run each once in the sandbox: dbt through the runtime wrapper with `--target dev`, after `dbt deps` when `packages.yml` exists. Record every result. A failure you cannot fix with a change from the two lists below is a review finding, `platform` or `bug`.
+In the design phase, before the inventory, run each once in the sandbox: dbt through the runtime wrapper with `--target ephemeral_dev` and `--defer --state /cache/prod-target` (as the `workarounds` skill says), after `dbt deps` when `packages.yml` exists. Record every result. A failure you cannot fix with a change from the two lists below is a review finding, `platform` or `bug`.
 
 ## Changes the build needs
 
@@ -23,8 +23,8 @@ The only edits to existing files. List each in the PR description.
 | File | Change | Why |
 | --- | --- | --- |
 | `dbt_project.yml` | `profile: "{{ env_var('DBT_PROFILE_NAME', '<current name>') }}"` | The sandbox wrapper selects its profile through `DBT_PROFILE_NAME`; a fixed name means no dbt command runs in the sandbox. Local and CI runs keep the current name. |
-| `_sources.yml` (every sources file) | Remove each source's `database:` and any var that feeds it or its `schema:`; give the schema as a literal. Remove the then-unused vars from `dbt_project.yml`. | The Studio sandbox is a byte copy of the Domain file under another name, so its catalog differs and a source that names one fails with `Catalog ... does not exist`. Schemas carry over unchanged. |
-| `profiles.yml` (the repo's own, used locally and to seed the Domain) | One `dev` target whose `path` is `"{{ env_var('VD_EPHM_DUCKDB_LOCAL_PATH') }}"`, no literal path; run scripts set the variable. | Matches the runtime profile the sandbox uses, so local runs and Intents build the same way; Studio ignores this file in an Intent. |
+| `_sources.yml` (every sources file) | Remove each source's `database:` and any var that feeds it or its `schema:`; give the schema as a literal. Remove the then-unused vars from `dbt_project.yml`. | In an Intent, `macros/source_defer.sql` resolves a source in the Ephemeral Lakehouse and, under `--defer`, in the Domain's; a source that names a database is pinned to one Lakehouse. Schemas are the same in both. |
+| `profiles.yml` (the repo's own, read by the Domain's dbt job notebooks and its release) | A `prod` target holding the Domain's literal coordinates, as in [templates/dbt/profiles.yml](../templates/dbt/profiles.yml); never an `env_var()`. If `prod` already uses one or a placeholder, ask the user to fix it rather than rewriting it. | A Fabric notebook has none of the agent's environment, so an `env_var()` cannot resolve there; Studio ignores this file in an Intent. |
 | `dbt_project.yml` | Under `models:` and `seeds:`, `dbt_project_evaluator: +enabled: "{{ var('dbt_project_evaluator_enabled', false) }}"` | Keeps the evaluator out of normal builds; the CI quality workflow and `verifying` switch it on. Only with the `packages.yml` entry below. |
 
 ## Behaviour-free cleanups
@@ -42,7 +42,8 @@ Only when the repo has none. When the repo has its own that conflicts, leave it 
 
 | File | Content |
 | --- | --- |
-| `macros/relations.sql` (dbt) | Copy [templates/dbt/relations.sql](../templates/dbt/relations.sql) into the project's macro path. It overrides `ref()` and `source()` to render `schema.table`. If the project already overrides either macro, merge the `.include(database=False)` into it and say so in the PR. | dbt-duckdb writes the catalog name into every view it stores; in the renamed sandbox copy those views fail with `Catalog ... does not exist`. Part of setting up the dbt models, not a review finding. |
+| `macros/source_defer.sql` (dbt) | Copy the plugin's `fabric_lakehouse/templates/source_defer.sql` into the project's macro path unchanged. If the project already overrides `source()`, merge and say so in the PR. dbt's `--defer` rewrites `ref()` but never `source()`; without it every source fails in a sandbox that holds only what the Intent builds. Part of setting up the dbt models, not a review finding. |
+| `macros/generate_schema_name.sql` (dbt) | Copy [templates/dbt/generate_schema_name.sql](../templates/dbt/generate_schema_name.sql) (the plugin's `fabric_lakehouse` template). Delete any `fabricspark_generate_schema_name_for_env.sql`: the adapter never calls it. `dbt-fabricspark` honours a custom `+schema` only on a target named `prod`; without the override a sandbox build puts every model in one schema and defer breaks. |
 | `packages.yml` entry | `dbt-labs/dbt_project_evaluator`, `version: [">=1.1.0", "<2.0.0"]`, added to an existing `packages.yml` or a new one. The CI quality workflow builds it. |
 | `tests/test_adr_links.py` | Copy [templates/tests/test_adr_links.py](../templates/tests/test_adr_links.py): every design record that cites an ADR is in that ADR's `## Affected designs`, and every record listed there exists and cites it. `adr_lint` checks only numbering and dangling citations. |
 | `tests/test_maps.py` | Every map path exists; every source is registered; every `test-map.json` dbt selector resolves to a test. Its dbt calls name the repo's own profile (`--profiles-dir <dbt project> --profile <name>`) and run `dbt deps` once when `dbt_packages/` is missing, so they pass locally, in the sandbox and in CI. |
@@ -75,9 +76,9 @@ Write these into the repo's own convention skills beside its conventions:
 | `dbt-models` | Sources name a schema and tables, never a database, and no var feeds either. |
 | `dlt` | Mirror the repo's existing source of the same kind for batching and file handling. |
 | `adr` | Check citations with the `adr_lint` command (or the repo's equivalent) and the two-way links with `tests/test_adr_links.py`; run them, do not read the scripts. |
-| `dbt-models` | dlt lands naive Arrow timestamps as `TIMESTAMPTZ` and the sandbox session is not UTC: staging converts every dlt-loaded timestamp with `timezone('UTC', col)`. |
+| `dbt-models` | dlt lands timestamps tagged UTC and the session time zone is not always UTC: staging converts every dlt-loaded timestamp to the wall-clock value the source recorded, and the skill names the function once a sample load proves it. |
 | `dbt-testing` | A left join on a derived key gets a singular test that every left row finds its match, or that the unmatched rows are the expected ones. |
-| `dbt-testing` | Rebuilt values are compared at the cent for money and at a stated tolerance otherwise, never by hashing raw doubles: DuckDB float aggregation is not reproducible bit for bit. |
+| `dbt-testing` | Rebuilt values are compared at the cent for money and at a stated tolerance otherwise, never by hashing raw doubles: Spark float aggregation is not reproducible bit for bit. |
 
 ## Agent entry points
 
@@ -96,9 +97,9 @@ File each as a finding when it fails; change nothing.
 | Parquet or Arrow sources stamp `_dlt_load_id` and `_dlt_id` (`[normalize.parquet_normalizer] add_dlt_load_id`, `add_dlt_id`) | `platform` |
 | Staging reads bronze only through `source()` | `platform` |
 | Staging converts dlt-loaded timestamps to UTC | `bug` if a key or join depends on them, else `convention` |
-| Run scripts install dbt packages before building | `bug` |
+| The dbt job notebook runs `dbt deps` before building when the project has a `packages.yml` | `bug` |
 | `.sqlfluff` (or the SQL lint config) resolves its profile and project paths | `gap` |
 
 ## Verify
 
-The base commands pass, or each failure is a filed finding. `tests/test_maps.py` passes in the sandbox. A renamed copy of the built database (what the sandbox is) passes the data tests without a rebuild, so every stored view resolves.
+The base commands pass, or each failure is a filed finding. `tests/test_maps.py` passes in the sandbox. A sandbox build of one model with `--defer --state /cache/prod-target` resolves every unselected `ref()` and `source()` against the Domain.

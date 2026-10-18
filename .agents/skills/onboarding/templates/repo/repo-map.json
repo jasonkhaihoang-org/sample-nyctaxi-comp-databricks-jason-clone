@@ -3,16 +3,13 @@
   "repo_root": ".",
   "primary_languages": ["python", "sql"],
   "package_managers": [{"name": "pip", "manifest": "ingestion/requirements.txt"}, {"name": "pip", "manifest": "requirements-dev.txt"}],
-  "build_systems": [{"name": "dbt", "config_files": ["transformation/dbt_project.yml"]}],
+  "build_systems": [{"name": "dbt (fabricspark)", "config_files": ["transformation/dbt_project.yml", "transformation/profiles.yml"]}],
   "test_frameworks": [
-    {"name": "pytest", "scope": "ingestion, orchestration, maps", "config_files": []},
+    {"name": "pytest", "scope": "ingestion sources and the maps, offline", "config_files": []},
     {"name": "dbt", "scope": "data and unit tests", "config_files": ["transformation/dbt_project.yml"]}
   ],
   "applications": [{"name": "<domain slug>", "type": "data product", "description": "<one line>"}],
   "entrypoints": {
-    "run_all": "orchestration/run_all.py",
-    "run_ingest": "orchestration/run_ingest.py",
-    "run_transform": "orchestration/run_transform.py",
     "dbt_project": "transformation/dbt_project.yml"
   },
   "layers": {
@@ -58,7 +55,7 @@
   },
   "key_directories": {
     "ingestion/": "dlt pipelines and sources",
-    "orchestration/": "run scripts",
+    "orchestration/": "Data Pipelines and dbt job notebooks, authored by the plugin's generating-orchestration",
     "transformation/": "dbt project",
     "tests/": "pytest tests",
     ".agents/skills/": "convention and procedure skills",
@@ -67,9 +64,6 @@
     "docs/proposal/": "proposals"
   },
   "commands": {
-    "all": "python3 orchestration/run_all.py",
-    "ingest": "python3 orchestration/run_ingest.py",
-    "transform": "python3 orchestration/run_transform.py",
     "dbt_deps": "cd transformation && dbt deps",
     "dbt_parse": "cd transformation && dbt parse",
     "dbt_build": "cd transformation && dbt build",
@@ -83,9 +77,9 @@
   "key_references": {"agents": "AGENTS.md", "vocabulary": "CONTEXT.md", "conventions": ".agents/skills/", "test_map": "test-map.json", "schema": "repo-map.schema.json"},
   "notes_for_agents": {
     "startup": "Read this file first. AGENTS.md says how to work; the skills in .agents/skills/ hold the conventions.",
-    "new_source": "The first source sets the pattern; every later source mirrors an existing entry in `sources` and creates every artifact it lists. Register it in orchestration/run_ingest.py and test-map.json.",
-    "dlt_environment": "Pipelines need VD_DOMAIN_DATA_PLATFORM=duckdb_local, VD_DOMAIN_SECRET_STORE_KIND=local_toml and VD_EPHM_DUCKDB_LOCAL_PATH; orchestration/run_ingest.py sets them.",
-    "dbt_sources": "dbt sources name a schema and never a database: the Studio sandbox is a renamed copy of the Domain file. dbt runs use the dev target.",
+    "new_source": "The first source sets the pattern; every later source mirrors an existing entry in `sources` and creates every artifact it lists. Its pipeline is a notebook, ingestion/<name>_pipeline.Notebook/, from the plugin generator; add it as an activity to the Domain's Data Pipeline and register it in test-map.json.",
+    "dlt_environment": "Pipelines import vibedata.dlt.fabric and write Delta through the filesystem destination. In an Intent, run a pipeline notebook through the plugin's runtime wrapper, which supplies the destination and credential; never set them by hand.",
+    "dbt_sources": "dbt sources name a schema and never a database: macros/source_defer.sql resolves a source in the Ephemeral Lakehouse and, under --defer, in the Domain's. dbt runs in the sandbox use the ephemeral_dev target.",
     "artifact_paths": "Every artifact location is declared here: requirement, plan, verification and case_record per intent, design records per model or pipeline (layered: design_record_model) or area. The plugin names an intent's artifacts; this map places them.",
     "reviews_and_proposals": "docs/review/ holds review findings for triage; do not read it for build tasks. Read a docs/proposal/ file only when the intent's requirement links to it."
   }

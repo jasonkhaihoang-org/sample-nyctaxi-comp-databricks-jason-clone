@@ -1,7 +1,5 @@
 # Added by onboarding
-# Warehouse and downloaded data: rebuilt by orchestration/run_all.py
-*.duckdb
-*.duckdb.wal
+# Downloaded data: the pipelines fetch it again
 *.parquet
 # Secrets: dlt reads them from the bound secret store
 **/secrets.toml

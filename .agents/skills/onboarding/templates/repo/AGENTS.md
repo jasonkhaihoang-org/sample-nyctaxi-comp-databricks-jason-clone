@@ -79,11 +79,11 @@ reason: The base commands; the same as repo-map.json commands.
 -->
 
 ```bash
-python3 orchestration/run_all.py          # ingestion, then dbt build
-python3 orchestration/run_ingest.py       # dlt pipelines
-python3 orchestration/run_transform.py    # dbt build
-python3 -m pytest tests -q                # Python tests
+python3 -m pytest tests -q                # Python tests, offline
+ruff check .                              # Python lint
 ```
+
+dbt and dlt run in the Intent's sandbox against its Ephemeral Lakehouse, through the plugin's runtime wrapper: the `workarounds` skill has the dbt command, and the plugin's `fabric_lakehouse/pipeline-notebook.md` has the pipeline-notebook run. Unselected models and sources resolve against the released Domain (`--defer --state /cache/prod-target`).
 
 The command for each layer's tests is in `test-map.json`. Lint Python with `ruff check` (the `python_lint` command in `repo-map.json`), which reads `ruff.toml`; do not use the `check_python` tool, which applies rules this repo does not use.
 
@@ -93,7 +93,8 @@ ask: no
 reason: Platform safety; the same for every domain.
 -->
 
-- The local warehouse is `domain.duckdb` at the repo root. It is ignored by git and rebuilt by `orchestration/run_all.py`. Never commit it or downloaded data.
+- The warehouse is the Domain Lakehouse. Only a release writes it; an Intent writes its own Ephemeral Lakehouse. Never commit downloaded data.
+- Commit only the Domain's coordinates (the `prod` target in `transformation/profiles.yml`, `[destination.filesystem]` in `ingestion/.dlt/config.toml`), never an Ephemeral Lakehouse or workspace-item id.
 - Never commit secrets. dlt reads them from the bound secret store.
 - Do not edit `transformation/profiles.yml` to make a failure pass.
 

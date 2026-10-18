@@ -15,15 +15,15 @@ Remove when: the `planning`, `executing-the-plan` and `verifying` skills write t
 
 ## Run dbt in the sandbox
 
-The repo's `transformation/profiles.yml` has `domain` and `slice` targets for local and CI use. Do not open it, or `~/.dbt/profiles.yml`, for any reason: not to work out how to run dbt, and not for the shipping contract check, which has nothing to read on this platform (no contracts are published for `duckdb_local`). The runtime provides the profile (`DBT_PROFILES_DIR`, `DBT_PROFILE_NAME`) and one target, `dev`, which writes the sandbox file. Run dbt through the runtime wrapper from `transformation/`:
+The runtime provides the profile (`DBT_PROFILES_DIR`, `DBT_PROFILE_NAME`) and its one target, `ephemeral_dev`, which writes the Intent's Ephemeral Lakehouse. Do not open the repo's `transformation/profiles.yml` (its `prod` target is the Domain's, read by the job notebook and the release) or `~/.dbt/profiles.yml`, for any reason. Run dbt through the runtime wrapper from `transformation/`, deferring to the released Domain:
 
 ```bash
-cd transformation && <plugin>/scripts/vd-intent-context-run.sh "dbt <command> --target dev"
+cd transformation && <plugin>/scripts/vd-intent-context-run.sh "dbt <command> --target ephemeral_dev --defer --state /cache/prod-target"
 ```
 
-Run `dbt deps` the same way first if `dbt_packages/` is missing. The plain commands in `repo-map.json` `commands` are for a local checkout.
+Every command except `parse`, `ls`, `deps`, `clean` and `init` opens a Spark session, which takes minutes on a cold capacity: launch it as the plugin's `fabric_lakehouse/dbt.md` says and wait for it. Run `dbt deps` the same way first if `dbt_packages/` is missing. The plain commands in `repo-map.json` `commands` are for a local checkout.
 
-Remove when: the platform `duckdb_local/dbt.md` states this command (`skill-changes.md`).
+Remove when: the platform `fabric_lakehouse/dbt.md` states this command (`skill-changes.md`).
 
 ## Change large files with a script, not the file editor
 
@@ -53,4 +53,4 @@ Remove when: the Tier-1 runner finds the dev dataset itself (`skill-changes.md`)
 
 `DLT_INGEST_LIMIT` bounds pages, not rows, and dlt does not trim the last page. A file source with row groups lands a whole row group: a Parquet sample load can land about a million rows for a limit of 1,000. Do not write "N rows" for a sample load into a Requirement or Plan, and do not read a larger count as a failed limit. Check the landed count against the source's row-group size instead.
 
-Remove when: `duckdb_local/dlt.md` and `generating-dlt-pipeline` state that the limit bounds pages (`skill-changes.md`).
+Remove when: `fabric_lakehouse/dlt.md` and `generating-dlt-pipeline` state that the limit bounds pages (`skill-changes.md`).

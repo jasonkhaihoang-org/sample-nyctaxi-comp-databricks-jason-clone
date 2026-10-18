@@ -20,7 +20,8 @@ PROFILE = yaml.safe_load((DBT_PROJECT / "dbt_project.yml").read_text())["name"]
 # Name the repo's own profile: in the Studio sandbox DBT_PROFILES_DIR and DBT_PROFILE_NAME point at the runtime's.
 DBT = [sys.executable, "-m", "dbt.cli.main"]
 DBT_PROFILE = ["--profiles-dir", str(DBT_PROJECT), "--profile", PROFILE]
-DBT_ENV = {**os.environ, "VD_EPHM_DUCKDB_LOCAL_PATH": str(ROOT / "domain.duckdb")}
+# Parsing and listing never open a Spark session, so the prod target needs no credential here.
+DBT_ENV = dict(os.environ)
 
 
 def _is_pattern(path: str) -> bool:
@@ -75,11 +76,10 @@ def test_dbt_sources_name_a_schema_and_never_a_catalog():
     assert [s["name"] for s in sources if "{{" in str(s.get("schema", ""))] == []
 
 
-def test_ref_and_source_render_without_a_catalog():
-    """A view that stores a catalog breaks in the sandbox, a renamed copy of the Domain file."""
-    text = (DBT_PROJECT / "macros/relations.sql").read_text()
-    assert "macro ref()" in text and "macro source()" in text
-    assert text.count("include(database=False)") == 2
+def test_source_defers_to_the_domain():
+    """dbt's --defer rewrites ref() only; without this override every source fails in a sandbox build."""
+    text = (DBT_PROJECT / "macros/source_defer.sql").read_text()
+    assert "macro source(" in text
 
 
 @pytest.fixture(scope="session")

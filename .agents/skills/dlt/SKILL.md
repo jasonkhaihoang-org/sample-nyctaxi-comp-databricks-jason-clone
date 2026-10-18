@@ -17,7 +17,11 @@ Set per resource, never per run: `append` for immutable events that arrive once,
 
 ## Schema contract (D7)
 
-`columns: freeze`, `tables: evolve` while a pipeline is new then `freeze` once every resource has loaded into a database that persists, `data_type: freeze`. A pipeline whose database is rebuilt from empty on every run keeps `tables: evolve`, because freezing it would forbid creating the tables. Any other value carries a `# why:` line in the pipeline and a decision in its design record.
+`columns: freeze`, `tables: evolve` while a pipeline is new then `freeze` once every resource has loaded into a database that persists, `data_type: freeze`. Every pipeline here keeps `tables: evolve`: each Intent's Ephemeral Lakehouse starts empty, so freezing would forbid creating the tables in a sample load. Any other value carries a `# why:` line in the pipeline and a decision in its design record.
+
+## Delta merge (D6b)
+
+On the Lakehouse, Delta `merge` does not deduplicate: a repeated key in the source lands every copy, or fails a later merge. A resource that moves to `merge` deduplicates its source first and records how in its design record.
 
 ## Bronze carries no logic (D8)
 
@@ -48,7 +52,8 @@ Profile a remote source file once per intent: row count, columns and types, null
 - A new source mirrors an existing entry in `repo-map.json` `sources`: create every artifact it lists (module, config section, pipeline, resource docs, tests, design record). Mirror `tlc` for a downloaded file source.
 - Mirror `tlc.py` for a large file: it yields pyarrow tables per parquet row group, which is proven on three months of TLC data.
 - Sources are custom modules under `ingestion/sources/`, registered as `[sources.<name>]` with `connector = "custom"` and `connector_source = "local"`. The connector catalog is not used.
-- Then register the pipeline in `orchestration/run_ingest.py`, and add the source to `repo-map.json` and `test-map.json`.
+- The pipeline is a notebook, `ingestion/<name>_pipeline.Notebook/`, scaffolded by the plugin's generator (`fabric_lakehouse/pipeline-notebook.md`), never a `<name>_pipeline.py` script.
+- Then add a `TridentNotebook` activity for it to `orchestration/nyc_taxi_refresh.DataPipeline/` (the plugin's `_family/fabric/orchestration-authoring.md`), and add the source to `repo-map.json` and `test-map.json`.
 - `tests/test_maps.py` fails when a source's listed paths or its config section are missing.
 - To see whether a source exists, read `repo-map.json` `sources`; query the lakehouse only for data questions.
 

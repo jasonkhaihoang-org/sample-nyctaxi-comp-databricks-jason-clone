@@ -21,24 +21,24 @@ fills: <raw schemas>, <mart areas>
 -->
 
 - **Bronze**: raw data loaded by the dlt pipelines in `ingestion/` into <raw schemas, one per source system>. dbt reads it as sources and never writes to it.
-- **Silver**: dbt `staging` (views) and `intermediate` (tables). Staging renames and casts one source table. Intermediate applies business logic and joins, with no grain commitment of its own.
+- **Silver**: dbt `staging` and `intermediate` (tables). Staging renames and casts one source table. Intermediate applies business logic and joins, with no grain commitment of its own.
 - **Gold**: dbt marts in <mart areas, `core` first>: grain-committed facts, conformed dimensions, aggregates.
 
 ## Time zones (B17)
 <!-- onboarding
 ask: no
-reason: dlt and the sandbox time zone; the same for every DuckDB-local domain.
+reason: dlt and the session time zone; the same for every Fabric Lakehouse domain.
 -->
 
-dlt lands naive Arrow timestamps as `TIMESTAMPTZ`, and the session time zone is not always UTC (the sandbox is not). Staging converts every dlt-loaded timestamp with `timezone('UTC', col)`, so later models see the wall-clock value the source recorded. A model that reads bronze without the conversion, or hashes a key from a converted and an unconverted timestamp, matches nothing and stays green.
+dlt lands timestamps tagged UTC, and the session time zone is not always UTC. Staging converts every dlt-loaded timestamp to the wall-clock value the source recorded, so later models see that value; prove the conversion on a sample load the first time a staging model makes it, and name the function here. A model that reads bronze without the conversion, or hashes a key from a converted and an unconverted timestamp, matches nothing and stays green.
 
 ## Sources name no database (B18)
 <!-- onboarding
 ask: no
-reason: The sandbox is a renamed copy of the Domain file; the same for every domain.
+reason: Defer resolves sources in two Lakehouses; the same for every domain.
 -->
 
-A source in `_sources.yml` names its `schema` and tables, never a `database`, and no var feeds either. In a Studio Intent the sandbox is a copy of the Domain file under another name, so its catalog differs; a source that names one fails with `Catalog ... does not exist`. `macros/relations.sql` renders every `ref()` and `source()` without the catalog for the same reason.
+A source in `_sources.yml` names its `schema` and tables, never a `database`, and no var feeds either. In a Studio Intent `macros/source_defer.sql` resolves a source in the Intent's Ephemeral Lakehouse and, under `--defer`, falls back to the Domain's; a source that names a database is pinned to one Lakehouse and breaks that fallback.
 
 ## Naming (B2, B3)
 <!-- onboarding
@@ -95,12 +95,12 @@ None unless a requirement asks for them. When one does: gold only, all or none o
 <!-- onboarding
 ask: yes
 question: How is each layer materialised?
-recommended: Staging views; intermediate tables, or views at the grain of a fact that stores it; gold tables.
-alternatives: intermediate always tables; incremental facts from the start.
+recommended: Every layer a table: the Lakehouse's SQL analytics endpoint cannot read a Spark view.
+alternatives: incremental facts from the start.
 -->
 
 | Layer | Default |
 | --- | --- |
-| staging | view |
-| intermediate | table; a view when it is at the grain of a fact that stores it, so the grain is stored once |
+| staging | table |
+| intermediate | table |
 | gold | table |

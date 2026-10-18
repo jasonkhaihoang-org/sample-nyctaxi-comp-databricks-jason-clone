@@ -83,6 +83,6 @@ reason: Follows from the repo-map and the map tests.
 -->
 
 - The first source sets the pattern; every later source mirrors an existing entry in `repo-map.json` `sources` and creates every artifact it lists (module, config section, pipeline, resource docs, tests, design record).
-- Register the pipeline in `orchestration/run_ingest.py`, and add the source to `repo-map.json` and `test-map.json`. `tests/test_maps.py` fails when a source's listed paths or its config section are missing.
+- The pipeline is a notebook, `ingestion/<name>_pipeline.Notebook/`, scaffolded by the plugin's generator (`fabric_lakehouse/pipeline-notebook.md`). Add it as an activity to the Domain's Data Pipeline in `orchestration/`, and add the source to `repo-map.json` and `test-map.json`. `tests/test_maps.py` fails when a source's listed paths or its config section are missing.
 - To see whether a source exists, read `repo-map.json` `sources`; query the lakehouse only for data questions.
 - Mirror the existing source of the same kind for batching and file handling.

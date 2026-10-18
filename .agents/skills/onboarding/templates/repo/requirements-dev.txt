@@ -1,6 +1,6 @@
 # The base commands: python tests, the map tests, lint, and dbt.
 -r ingestion/requirements.txt
-dbt-duckdb
+dbt-fabricspark
 jsonschema
 pytest
 pyyaml

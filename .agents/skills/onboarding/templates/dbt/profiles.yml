@@ -1,11 +1,23 @@
-# Local runs and Domain seeding. In a Studio Intent the runtime supplies its own
-# profile (DBT_PROFILE_NAME, DBT_PROFILES_DIR) and this file is not read.
-# The path comes from the variable the sandbox uses, never a literal; the run scripts set it.
+# The profile the Domain's dbt job notebook and its release read. `prod` holds the Domain's
+# literal coordinates: a Fabric notebook has none of the agent's environment, so an env_var()
+# here cannot resolve. A Studio Intent runs with its own profile, which the runtime renders
+# outside the repository (DBT_PROFILE_NAME, DBT_PROFILES_DIR); this file is not read there.
+# Shape: the plugin's _family/fabric/templates/dbt-profiles-lakehouse.yml.
 <project_name>:
-  target: dev
+  target: prod
   outputs:
-    dev:
-      type: duckdb
-      path: "{{ env_var('VD_EPHM_DUCKDB_LOCAL_PATH') }}"
-      schema: main
-      threads: 8
+    prod:
+      type: fabricspark
+      method: livy
+      authentication: fabric_notebook
+      endpoint: https://api.fabric.microsoft.com/v1
+      workspaceid: "<VD_DOMAIN_FABRIC_LAKEHOUSE_WORKSPACE_ID>"
+      lakehouse: "<VD_DOMAIN_FABRIC_LAKEHOUSE_NAME>"
+      lakehouseid: "<VD_DOMAIN_FABRIC_LAKEHOUSE_ID>"
+      schema: "<VD_DOMAIN_SCHEMA>"
+      spark_config:
+        name: "<VD_DOMAIN_SLUG>_dbt"
+      connect_retries: 3
+      retry_all: true
+      session_start_timeout: 900
+      threads: 4

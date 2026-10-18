@@ -19,7 +19,7 @@ dlt lands naive Arrow timestamps as `TIMESTAMPTZ`, and the session time zone is 
 
 ## Sources name no database (B18)
 
-A source in `_sources.yml` names its `schema` and tables, never a `database`, and no var feeds either. In a Studio Intent the sandbox is a copy of the Domain file under another name, so its catalog differs; a source that names one fails with `Catalog ... does not exist`.
+A source in `_sources.yml` names its `schema` and tables, never a `database`, and no var feeds either. In a Studio Intent `macros/source_defer.sql` resolves a source in the Intent's Ephemeral Lakehouse and, under `--defer`, falls back to the Domain's; a source that names a database is pinned to one Lakehouse and breaks that fallback.
 
 ## Naming (B2, B3)
 

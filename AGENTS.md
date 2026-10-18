@@ -1,6 +1,6 @@
-# NYC Taxi Analytics (nyc-taxi-duckdb-demo): Agent Conventions
+# NYC Taxi Analytics (nyc-taxi-fabric-demo): Agent Conventions
 
-A DuckDB lakehouse for NYC taxi analytics: real TLC trip records, plus two simulated source systems (fleet operations and master data). Read [`CONTEXT.md`](CONTEXT.md) for the vocabulary.
+A Fabric Lakehouse for NYC taxi analytics: real TLC trip records, plus two simulated source systems (fleet operations and master data). Read [`CONTEXT.md`](CONTEXT.md) for the vocabulary.
 
 Read [`repo-map.json`](repo-map.json) first. It says where everything is: layers, entrypoints, commands and artifact locations. This file says how to work.
 
@@ -46,11 +46,11 @@ Operator conventions are skills in `.agents/skills/`, and the agent's skill list
 ## Commands
 
 ```bash
-python3 orchestration/run_all.py          # ingestion, then dbt build
-python3 orchestration/run_ingest.py       # dlt pipelines: tlc, ops, mdm
-python3 orchestration/run_transform.py    # dbt build
-python3 -m pytest tests -q                # Python tests
+python3 -m pytest tests -q                # Python tests, offline
+ruff check .                              # Python lint
 ```
+
+dbt and dlt run in the Intent's sandbox against its Ephemeral Lakehouse, through the plugin's runtime wrapper: the [`workarounds`](.agents/skills/workarounds/SKILL.md) skill has the dbt command, and the plugin's `fabric_lakehouse/pipeline-notebook.md` has the pipeline-notebook run. Unselected models and sources resolve against the released Domain (`--defer --state /cache/prod-target`). In production the `nyc_taxi_refresh` Data Pipeline in `orchestration/` runs the three pipeline notebooks and then the `nyc_taxi_build_dbt` notebook.
 
 The Python tests need `requirements-dev.txt` installed in the same interpreter (`pip install -r requirements-dev.txt`): the map tests call dbt through `python3 -m dbt.cli.main`, and fail with `No module named 'dbt'` otherwise.
 
@@ -58,7 +58,8 @@ The command for each layer's tests is in `test-map.json`. Lint Python with `ruff
 
 ## Safety
 
-- The warehouse is `domain.duckdb` at the repo root. It is ignored by git and rebuilt by `orchestration/run_all.py`. Never commit it or downloaded data.
+- The warehouse is the Domain Lakehouse. Only a release writes it; an Intent writes its own Ephemeral Lakehouse. Never commit downloaded data.
+- Commit only the Domain's coordinates (the `prod` target in `transformation/profiles.yml`, `[destination.filesystem]` in `ingestion/.dlt/config.toml`), never an Ephemeral Lakehouse or workspace-item id. `tests/test_platform_prose.py` fails on any other id.
 - Never commit secrets. dlt reads them from the bound secret store.
 - Do not edit `transformation/profiles.yml` to make a failure pass.
 

@@ -1,6 +1,6 @@
 # Greenfield
 
-The repo has no dbt project and no pipelines, and the Domain database is empty. Onboarding sets up an empty, working project so the first intent is a plain "add a source".
+The repo has no dbt project and no pipelines, and the Domain Lakehouse is empty. Onboarding sets up an empty, working project so the first intent is a plain "add a source".
 
 ## Requirement
 
@@ -24,11 +24,11 @@ Write from [templates/](../templates/), filling the confirmed answers:
 | Write | From |
 | --- | --- |
 | `transformation/dbt_project.yml`, `packages.yml`, `profiles.yml` | `templates/dbt/` |
-| `transformation/macros/relations.sql`, `generate_schema_name.sql` | `templates/dbt/` |
+| `transformation/macros/generate_schema_name.sql` | `templates/dbt/` |
+| `transformation/macros/source_defer.sql` | the plugin's `fabric_lakehouse/templates/source_defer.sql`, unchanged |
 | `transformation/models/<layer>/` per confirmed layer, `models/staging/_sources.yml` (`version: 2`, no sources), `transformation/tests/` | empty, with a `.gitkeep` where a folder would be empty |
 | `ingestion/.dlt/config.toml`, `ingestion/sources/`, `ingestion/requirements.txt` | `templates/dlt/` |
-| `tests/conftest.py`, `tests/orchestration/test_run.py` | `templates/tests/` (`test_run.py` goes under `tests/orchestration/`) |
-| `orchestration/run_ingest.py`, `run_transform.py`, `run_all.py` | `templates/orchestration/` |
+| `tests/conftest.py` | `templates/tests/` |
 | `tests/test_maps.py`, `tests/test_adr_links.py` | `templates/tests/` |
 | Where the repo checks run | The Repo checks question in [base-setup.md](base-setup.md); recommended `.github/workflows/repo-checks.yml` from `templates/repo/` |
 | `repo-map.json`, `repo-map.schema.json`, `test-map.json` | `templates/repo/`, layers from the answers, `sources` empty |
@@ -43,14 +43,15 @@ Fill the placeholders:
 
 | Placeholder | Value |
 | --- | --- |
-| `<project_name>` | The confirmed dbt project name, in `dbt_project.yml`, `profiles.yml` and `run_transform.py` |
+| `<project_name>` | The confirmed dbt project name, in `dbt_project.yml` and `profiles.yml` |
+| `<VD_DOMAIN_…>` in `profiles.yml` | That Domain setting's value, written out as a literal |
 | `<Domain name>`, `<domain paragraph>` | The requirement answer |
 | `<domain slug>`, `<one line>` | `repo-map.json` `applications`: the slug and the domain paragraph's first sentence |
 | `<raw schema>`, `<source system>` | `repo-map.json` `layers`: one entry per confirmed raw schema, keyed by its name, `path` `ingestion/` |
 | mart areas | One `layers` entry and one `dbt_project.yml` block under `marts` per confirmed area, path `transformation/models/marts/<area>/` |
 | `<UTC timestamp>` | The time of writing, in both maps |
 
-Write no source, pipeline, model or design record: the first intent adds them. Write no review file: there is nothing to review.
+Write no source, pipeline, model or design record: the first intent adds them. Write no orchestration either: the plugin's `generating-orchestration` authors the Data Pipeline and dbt job notebook once there is a pipeline and a model to run. Write no review file: there is nothing to review.
 
 ## Verify
 

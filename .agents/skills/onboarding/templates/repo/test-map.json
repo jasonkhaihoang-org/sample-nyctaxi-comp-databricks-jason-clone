@@ -12,17 +12,6 @@
       ],
       "commands": {}
     },
-    "orchestration": {
-      "sources": [
-        "orchestration/"
-      ],
-      "unit": [
-        "tests/orchestration/"
-      ],
-      "commands": {
-        "unit": "python3 -m pytest tests/orchestration -q"
-      }
-    },
     "maps": {
       "sources": [
         "repo-map.json",

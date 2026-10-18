@@ -53,10 +53,10 @@ A left join on a derived key (a hashed or concatenated key built in two places) 
 ## Comparing values
 <!-- onboarding
 ask: no
-reason: A DuckDB property; an exact comparison of rebuilt measures never settles.
+reason: A Spark property; an exact comparison of rebuilt measures never settles.
 -->
 
-DuckDB float aggregation is not reproducible bit for bit: two builds of the same model from the same inputs can differ in the last bits of a `double`. Compare money at the cent (`round(x, 2)`) and other measures with an explicit tolerance, never by hashing raw values. A column the change does not touch counts as unchanged when every row agrees at that precision. A requirement's acceptance condition that compares values names this precision ("equal at the cent", "within 1e-6"), so verification does not read "equal" as bit-for-bit.
+Spark float aggregation is not reproducible bit for bit: two builds of the same model from the same inputs can differ in the last bits of a `double`. Compare money at the cent (`round(x, 2)`) and other measures with an explicit tolerance, never by hashing raw values. A column the change does not touch counts as unchanged when every row agrees at that precision. A requirement's acceptance condition that compares values names this precision ("equal at the cent", "within 1e-6"), so verification does not read "equal" as bit-for-bit.
 
 ## Unit tests (C5)
 <!-- onboarding

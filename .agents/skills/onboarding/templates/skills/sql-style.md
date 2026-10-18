@@ -21,8 +21,8 @@ alternatives: uppercase keywords.
 <!-- onboarding
 ask: yes
 question: How is style enforced?
-recommended: sqlfluff in CI, DuckDB dialect, 120-character lines; list every excluded rule and why.
+recommended: sqlfluff in CI, Spark SQL dialect, 120-character lines; list every excluded rule and why.
 alternatives: no linter; a longer line limit.
 -->
 
-Formatting is checked in CI by sqlfluff (DuckDB dialect) using the repo's `.sqlfluff`: lines up to 120 characters. List here every rule `.sqlfluff` switches off and why. Fix with care: check the diff, because `sqlfluff fix` can drop a `values` column alias list.
+Formatting is checked in CI by sqlfluff (`sparksql` dialect) using the repo's `.sqlfluff`: lines up to 120 characters. List here every rule `.sqlfluff` switches off and why. Fix with care: check the diff, because `sqlfluff fix` can drop a `values` column alias list.

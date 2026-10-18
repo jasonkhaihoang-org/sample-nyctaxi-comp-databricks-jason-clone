@@ -1,5 +1,4 @@
 dlt
-duckdb
 pyarrow
 requests
-vibedata-dlt-duckdb-studio
+vibedata-dlt-fabric-studio
