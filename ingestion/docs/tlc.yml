@@ -1,0 +1,159 @@
+# Resource docs for the tlc pipeline: every emitted field, including _dlt_* columns.
+connection: tlc
+dataset: bronze
+resources:
+  yellow_tripdata:
+    description: One row per yellow taxi trip record, as published by the TLC for the loaded months.
+    columns:
+    - name: VendorID
+      description: Code for the technology provider that supplied the trip record.
+      source_ref: tlc.yellow_tripdata.VendorID
+    - name: tpep_pickup_datetime
+      description: Date and time when the meter was engaged.
+      source_ref: tlc.yellow_tripdata.tpep_pickup_datetime
+    - name: tpep_dropoff_datetime
+      description: Date and time when the meter was disengaged.
+      source_ref: tlc.yellow_tripdata.tpep_dropoff_datetime
+    - name: passenger_count
+      description: Number of passengers in the vehicle, as entered by the driver.
+      source_ref: tlc.yellow_tripdata.passenger_count
+    - name: trip_distance
+      description: Trip distance in miles reported by the taximeter.
+      source_ref: tlc.yellow_tripdata.trip_distance
+    - name: RatecodeID
+      description: Rate code in effect at the end of the trip.
+      source_ref: tlc.yellow_tripdata.RatecodeID
+    - name: store_and_fwd_flag
+      description: 'Whether the record was held in vehicle memory before being sent to the provider: Y
+        or N.'
+      source_ref: tlc.yellow_tripdata.store_and_fwd_flag
+    - name: PULocationID
+      description: TLC taxi zone in which the meter was engaged.
+      source_ref: tlc.yellow_tripdata.PULocationID
+    - name: DOLocationID
+      description: TLC taxi zone in which the meter was disengaged.
+      source_ref: tlc.yellow_tripdata.DOLocationID
+    - name: payment_type
+      description: Numeric code for how the passenger paid.
+      source_ref: tlc.yellow_tripdata.payment_type
+    - name: fare_amount
+      description: Time-and-distance fare calculated by the meter.
+      source_ref: tlc.yellow_tripdata.fare_amount
+    - name: extra
+      description: Miscellaneous extras and surcharges, such as rush-hour and overnight charges.
+      source_ref: tlc.yellow_tripdata.extra
+    - name: mta_tax
+      description: Tax triggered by the metered rate in use.
+      source_ref: tlc.yellow_tripdata.mta_tax
+    - name: tip_amount
+      description: Tip amount. Populated automatically for card payments; cash tips are not recorded.
+      source_ref: tlc.yellow_tripdata.tip_amount
+    - name: tolls_amount
+      description: Total of all tolls paid on the trip.
+      source_ref: tlc.yellow_tripdata.tolls_amount
+    - name: improvement_surcharge
+      description: Improvement surcharge assessed at the flag drop.
+      source_ref: tlc.yellow_tripdata.improvement_surcharge
+    - name: total_amount
+      description: Total charged to the passenger. Excludes cash tips.
+      source_ref: tlc.yellow_tripdata.total_amount
+    - name: congestion_surcharge
+      description: Total collected on the trip for the New York State congestion surcharge.
+      source_ref: tlc.yellow_tripdata.congestion_surcharge
+    - name: Airport_fee
+      description: Fee for pickups at the airports. Present on yellow trips only.
+      source_ref: tlc.yellow_tripdata.Airport_fee
+    - name: _dlt_load_id
+      description: Identifier of the dlt load package that wrote this row. Joins to `_dlt_loads.load_id`.
+    - name: _dlt_id
+      description: Synthetic row identifier assigned by dlt at load time. Unique within the bronze table;
+        not a natural primary key.
+  green_tripdata:
+    description: One row per green taxi trip record, as published by the TLC for the loaded months.
+    columns:
+    - name: VendorID
+      description: Code for the technology provider that supplied the trip record.
+      source_ref: tlc.green_tripdata.VendorID
+    - name: lpep_pickup_datetime
+      description: Date and time when the meter was engaged.
+      source_ref: tlc.green_tripdata.lpep_pickup_datetime
+    - name: lpep_dropoff_datetime
+      description: Date and time when the meter was disengaged.
+      source_ref: tlc.green_tripdata.lpep_dropoff_datetime
+    - name: store_and_fwd_flag
+      description: 'Whether the record was held in vehicle memory before being sent to the provider: Y
+        or N.'
+      source_ref: tlc.green_tripdata.store_and_fwd_flag
+    - name: RatecodeID
+      description: Rate code in effect at the end of the trip.
+      source_ref: tlc.green_tripdata.RatecodeID
+    - name: PULocationID
+      description: TLC taxi zone in which the meter was engaged.
+      source_ref: tlc.green_tripdata.PULocationID
+    - name: DOLocationID
+      description: TLC taxi zone in which the meter was disengaged.
+      source_ref: tlc.green_tripdata.DOLocationID
+    - name: passenger_count
+      description: Number of passengers in the vehicle, as entered by the driver.
+      source_ref: tlc.green_tripdata.passenger_count
+    - name: trip_distance
+      description: Trip distance in miles reported by the taximeter.
+      source_ref: tlc.green_tripdata.trip_distance
+    - name: fare_amount
+      description: Time-and-distance fare calculated by the meter.
+      source_ref: tlc.green_tripdata.fare_amount
+    - name: extra
+      description: Miscellaneous extras and surcharges, such as rush-hour and overnight charges.
+      source_ref: tlc.green_tripdata.extra
+    - name: mta_tax
+      description: Tax triggered by the metered rate in use.
+      source_ref: tlc.green_tripdata.mta_tax
+    - name: tip_amount
+      description: Tip amount. Populated automatically for card payments; cash tips are not recorded.
+      source_ref: tlc.green_tripdata.tip_amount
+    - name: tolls_amount
+      description: Total of all tolls paid on the trip.
+      source_ref: tlc.green_tripdata.tolls_amount
+    - name: ehail_fee
+      description: Fee for trips ordered through an e-hail app. Present on green trips only.
+      source_ref: tlc.green_tripdata.ehail_fee
+    - name: improvement_surcharge
+      description: Improvement surcharge assessed at the flag drop.
+      source_ref: tlc.green_tripdata.improvement_surcharge
+    - name: total_amount
+      description: Total charged to the passenger. Excludes cash tips.
+      source_ref: tlc.green_tripdata.total_amount
+    - name: payment_type
+      description: Numeric code for how the passenger paid.
+      source_ref: tlc.green_tripdata.payment_type
+    - name: trip_type
+      description: Whether the trip was a street hail or a dispatch. Present on green trips only.
+      source_ref: tlc.green_tripdata.trip_type
+    - name: congestion_surcharge
+      description: Total collected on the trip for the New York State congestion surcharge.
+      source_ref: tlc.green_tripdata.congestion_surcharge
+    - name: _dlt_load_id
+      description: Identifier of the dlt load package that wrote this row. Joins to `_dlt_loads.load_id`.
+    - name: _dlt_id
+      description: Synthetic row identifier assigned by dlt at load time. Unique within the bronze table;
+        not a natural primary key.
+  taxi_zone_lookup:
+    description: 'The TLC taxi zone lookup: one row per zone.'
+    columns:
+    - name: LocationID
+      description: TLC taxi zone identifier.
+      source_ref: tlc.taxi_zone_lookup.LocationID
+    - name: Borough
+      description: Borough the zone belongs to.
+      source_ref: tlc.taxi_zone_lookup.Borough
+    - name: Zone
+      description: Name of the zone.
+      source_ref: tlc.taxi_zone_lookup.Zone
+    - name: service_zone
+      description: TLC service zone grouping for the zone.
+      source_ref: tlc.taxi_zone_lookup.service_zone
+    - name: _dlt_load_id
+      description: Identifier of the dlt load package that wrote this row. Joins to `_dlt_loads.load_id`.
+    - name: _dlt_id
+      description: Synthetic row identifier assigned by dlt at load time. Unique within the bronze table;
+        not a natural primary key.

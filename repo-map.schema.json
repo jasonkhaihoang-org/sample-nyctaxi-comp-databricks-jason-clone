@@ -1,0 +1,261 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "repo-map",
+  "description": "Compact map of a data-engineering repository for agent startup. Modelled on studio's repo-map schema, tailored for dlt and dbt: adds layers, sources and artifact_paths; has no conventions (those are skills in .agents/skills/). Refresh when a layer, entrypoint, command, artifact location or directory changes.",
+  "type": "object",
+  "required": [
+    "generated_at",
+    "repo_root",
+    "primary_languages",
+    "package_managers",
+    "build_systems",
+    "test_frameworks",
+    "applications",
+    "entrypoints",
+    "layers",
+    "sources",
+    "artifact_paths",
+    "modules",
+    "key_directories",
+    "commands",
+    "key_references",
+    "notes_for_agents"
+  ],
+  "properties": {
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "repo_root": {
+      "type": "string"
+    },
+    "primary_languages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "package_managers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "manifest"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "manifest": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "build_systems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "config_files"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "config_files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "test_frameworks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "scope"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "config_files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "applications": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "type",
+          "description"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "entrypoints": {
+      "type": "object",
+      "description": "Label to file path for each runnable entrypoint.",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "layers": {
+      "type": "object",
+      "description": "One entry per schema: what builds it and where its code lives. Skills read built_by to choose a procedure.",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "schema",
+          "built_by",
+          "path"
+        ],
+        "properties": {
+          "schema": {
+            "type": "string"
+          },
+          "built_by": {
+            "enum": [
+              "dlt",
+              "dbt",
+              "script"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "sources": {
+      "type": "object",
+      "description": "Each raw source loaded by dlt.",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "kind",
+          "dataset",
+          "pipeline",
+          "docs",
+          "module",
+          "config_section",
+          "tests",
+          "design_record"
+        ],
+        "properties": {
+          "kind": {
+            "enum": [
+              "dlt"
+            ]
+          },
+          "dataset": {
+            "type": "string"
+          },
+          "pipeline": {
+            "type": "string"
+          },
+          "docs": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "module": {
+            "type": "string"
+          },
+          "config_section": {
+            "type": "string"
+          },
+          "tests": {
+            "type": "string"
+          },
+          "design_record": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "artifact_paths": {
+      "type": "object",
+      "description": "Role to path. {placeholders} stand for names; skills resolve them.",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "modules": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "path",
+          "description"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "key_directories": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "commands": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "key_references": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "notes_for_agents": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  }
+}

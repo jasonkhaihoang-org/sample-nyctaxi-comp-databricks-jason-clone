@@ -1,0 +1,23 @@
+# The Domain's own checks: the map tests and the ADR link test (python_tests in
+# repo-map.json). Owned by this repo, not the CI bundle; install-ci does not touch it.
+name: Repo checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  python-tests:
+    name: Python tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # pytest and dbt-duckdb in one interpreter: the map tests call dbt.
+      - name: Install dev requirements
+        run: pip install -r requirements-dev.txt
+      - name: Run python_tests
+        run: python3 -m pytest tests -q

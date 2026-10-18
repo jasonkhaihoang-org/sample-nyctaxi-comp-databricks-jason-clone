@@ -1,0 +1,11 @@
+# Local runs and Domain seeding. In a Studio Intent the runtime supplies its own
+# profile (DBT_PROFILE_NAME, DBT_PROFILES_DIR) and this file is not read.
+# The path comes from the variable the sandbox uses, never a literal; the run scripts set it.
+<project_name>:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('VD_EPHM_DUCKDB_LOCAL_PATH') }}"
+      schema: main
+      threads: 8

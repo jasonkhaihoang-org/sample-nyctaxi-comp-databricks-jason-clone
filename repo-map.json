@@ -1,0 +1,306 @@
+{
+  "generated_at": "2026-10-14T07:04:48Z",
+  "repo_root": "sample-nyctaxi-comp",
+  "primary_languages": [
+    "SQL",
+    "Python",
+    "YAML",
+    "Markdown"
+  ],
+  "package_managers": [
+    {
+      "name": "pip",
+      "manifest": "ingestion/requirements.txt"
+    },
+    {
+      "name": "pip",
+      "manifest": "requirements-dev.txt"
+    }
+  ],
+  "build_systems": [
+    {
+      "name": "dbt (duckdb)",
+      "config_files": [
+        "transformation/dbt_project.yml",
+        "transformation/profiles.yml",
+        "transformation/packages.yml"
+      ],
+      "notes": "Project profile comes from DBT_PROFILE_NAME, default nyc_taxi_analytics."
+    },
+    {
+      "name": "dlt",
+      "config_files": [
+        "ingestion/.dlt/config.toml"
+      ],
+      "notes": "Run from ingestion/. Pipelines import vibedata.dlt.duckdb; orchestration/run_ingest.py sets the three variables it needs."
+    }
+  ],
+  "test_frameworks": [
+    {
+      "name": "dbt tests",
+      "scope": "Generic tests in _*.yml, singular tests in transformation/tests/, unit tests in models/intermediate/_unit_tests.yml.",
+      "config_files": [
+        "test-map.json"
+      ]
+    },
+    {
+      "name": "pytest",
+      "scope": "Offline unit tests for ingestion, orchestration, and the two maps.",
+      "config_files": [
+        "test-map.json"
+      ]
+    }
+  ],
+  "applications": [
+    {
+      "name": "nyc-taxi-duckdb-demo",
+      "type": "DuckDB lakehouse (dlt + dbt)",
+      "description": "NYC taxi analytics over real TLC trip records for 2024-01 to 2024-03, plus two simulated source systems (fleet operations and master data). Warehouse file: domain.duckdb at the repo root."
+    }
+  ],
+  "entrypoints": {
+    "run_all": "orchestration/run_all.py",
+    "run_ingest": "orchestration/run_ingest.py",
+    "run_transform": "orchestration/run_transform.py",
+    "dbt_project": "transformation/dbt_project.yml",
+    "tlc_pipeline": "ingestion/tlc_pipeline.py",
+    "ops_pipeline": "ingestion/ops_pipeline.py",
+    "mdm_pipeline": "ingestion/mdm_pipeline.py"
+  },
+  "layers": {
+    "bronze": {
+      "schema": "bronze",
+      "built_by": "dlt",
+      "path": "ingestion/",
+      "notes": "TLC trips and zone lookup, verbatim."
+    },
+    "ops_raw": {
+      "schema": "ops_raw",
+      "built_by": "dlt",
+      "path": "ingestion/",
+      "notes": "Simulated fleet-operations source."
+    },
+    "mdm_raw": {
+      "schema": "mdm_raw",
+      "built_by": "dlt",
+      "path": "ingestion/",
+      "notes": "Simulated master-data source."
+    },
+    "staging": {
+      "schema": "staging",
+      "built_by": "dbt",
+      "path": "transformation/models/staging/",
+      "notes": "Flat: one folder, stg_<source>__<entity> files."
+    },
+    "intermediate": {
+      "schema": "intermediate",
+      "built_by": "dbt",
+      "path": "transformation/models/intermediate/"
+    },
+    "core": {
+      "schema": "core",
+      "built_by": "dbt",
+      "path": "transformation/models/marts/core/"
+    },
+    "agg": {
+      "schema": "agg",
+      "built_by": "dbt",
+      "path": "transformation/models/marts/agg/"
+    },
+    "finance": {
+      "schema": "finance",
+      "built_by": "dbt",
+      "path": "transformation/models/marts/finance/"
+    },
+    "ops": {
+      "schema": "ops",
+      "built_by": "dbt",
+      "path": "transformation/models/marts/ops/"
+    }
+  },
+  "sources": {
+    "tlc": {
+      "kind": "dlt",
+      "dataset": "bronze",
+      "pipeline": "ingestion/tlc_pipeline.py",
+      "docs": "ingestion/docs/tlc.yml",
+      "description": "NYC TLC yellow and green trips and the zone lookup, fetched from the public TLC site.",
+      "module": "ingestion/sources/tlc.py",
+      "config_section": "sources.tlc",
+      "tests": "tests/ingestion/test_tlc.py",
+      "design_record": "docs/design/pipelines/tlc.md"
+    },
+    "ops": {
+      "kind": "dlt",
+      "dataset": "ops_raw",
+      "pipeline": "ingestion/ops_pipeline.py",
+      "docs": "ingestion/docs/ops.yml",
+      "description": "Fleet operator's platform, generated from the yellow trips.",
+      "module": "ingestion/sources/ops.py",
+      "config_section": "sources.ops",
+      "tests": "tests/ingestion/test_ops.py",
+      "design_record": "docs/design/pipelines/ops.md"
+    },
+    "mdm": {
+      "kind": "dlt",
+      "dataset": "mdm_raw",
+      "pipeline": "ingestion/mdm_pipeline.py",
+      "docs": "ingestion/docs/mdm.yml",
+      "description": "Master-data platform: zones, vendors, payment methods, rate plans, regimes, boroughs, points of interest, calendar, weather.",
+      "module": "ingestion/sources/mdm.py",
+      "config_section": "sources.mdm",
+      "tests": "tests/ingestion/test_mdm.py",
+      "design_record": "docs/design/pipelines/mdm.md"
+    }
+  },
+  "artifact_paths": {
+    "design_record_model": "docs/design/models/{layer}/{model}.md",
+    "design_record_pipeline": "docs/design/pipelines/{pipeline}.md",
+    "design_record_area": "docs/design/{area}/{subject}.md",
+    "context": "CONTEXT.md",
+    "adr": "docs/adr/{nnnn}-{slug}.md",
+    "dbt_project": "transformation/",
+    "dbt_sources": "transformation/models/staging/_sources.yml",
+    "singular_tests": "transformation/tests/",
+    "ingestion_root": "ingestion/",
+    "pipeline": "ingestion/{name}_pipeline.py",
+    "resource_docs": "ingestion/docs/{connection}.yml",
+    "orchestration": "orchestration/",
+    "test_map": "test-map.json",
+    "source_module": "ingestion/sources/{name}.py",
+    "source_tests": "tests/ingestion/test_{name}.py",
+    "source_config": "ingestion/.dlt/config.toml",
+    "review": "docs/review/{date}-{type}-{slug}.md",
+    "proposal": "docs/proposal/{nnnn}-{slug}.md",
+    "requirement": "docs/requirement/{intent}.md",
+    "plan": "docs/plans/{intent}.md",
+    "verification": "docs/verify/{intent}.md",
+    "case_record": "docs/cases/{intent}.md"
+  },
+  "modules": {
+    "ingestion": {
+      "path": "ingestion/",
+      "description": "dlt pipelines (one per source), their source code under sources/, resource docs under docs/, and .dlt/config.toml."
+    },
+    "orchestration": {
+      "path": "orchestration/",
+      "description": "Scripts that run ingestion and the dbt build, in order."
+    },
+    "staging": {
+      "path": "transformation/models/staging/",
+      "description": "Views: one per source table, renamed and typed. Also holds _sources.yml."
+    },
+    "intermediate": {
+      "path": "transformation/models/intermediate/",
+      "description": "Business logic and joins: conformed trips, enrichment, fare components, quality flags, status intervals, shift occupancy and economics. Unit tests in _unit_tests.yml."
+    },
+    "core": {
+      "path": "transformation/models/marts/core/",
+      "description": "Facts and conformed dimensions, plus the semantic model (_semantic.yml)."
+    },
+    "agg": {
+      "path": "transformation/models/marts/agg/",
+      "description": "Aggregates built from the facts."
+    },
+    "finance": {
+      "path": "transformation/models/marts/finance/",
+      "description": "Revenue marts. Apply the billable rule (ADR 0003): filter on `fct_trip.is_billable`, inside the report window."
+    },
+    "ops": {
+      "path": "transformation/models/marts/ops/",
+      "description": "Fleet-operations marts: driver scorecard, vehicle utilisation, trip quality scorecard."
+    },
+    "seeds": {
+      "path": "transformation/seeds/",
+      "description": "Analyst-owned banding tables."
+    },
+    "macros": {
+      "path": "transformation/macros/",
+      "description": "trip_natural_key (the only definition of trip_key), report window, schema naming, finance helpers, and relations.sql, which renders ref() and source() without a catalog so stored views work in the renamed sandbox copy."
+    },
+    "tests": {
+      "path": "transformation/tests/",
+      "description": "Singular dbt tests."
+    },
+    "python_tests": {
+      "path": "tests/",
+      "description": "pytest tests for ingestion, orchestration and the two maps."
+    },
+    "decisions": {
+      "path": "docs/adr/",
+      "description": "ADRs, including the standing business answers."
+    },
+    "designs": {
+      "path": "docs/design/",
+      "description": "Design records per model and pipeline."
+    },
+    "requirements": {
+      "path": "docs/requirement/",
+      "description": "Requirements, one file per intent at artifact_paths.requirement; plans and verifications go to artifact_paths.plan and artifact_paths.verification when first written."
+    },
+    "conventions": {
+      "path": ".agents/skills/",
+      "description": "Operator conventions as skills (OpenHands lists each one): naming, style, testing, dlt, and what goes in context, ADRs and design records."
+    },
+    "setup": {
+      "path": "docs/setup/",
+      "description": "Repo maintenance documents (requirements, work plan, conventions inventory, skill changes, data provenance). Not for ingestion or transformation tasks; not maintained by build agents."
+    },
+    "reviews": {
+      "path": "docs/review/",
+      "description": "Review outputs (onboarding, security, performance and others) whose findings are triaged: intent, proposal, declined or deferred."
+    },
+    "proposals": {
+      "path": "docs/proposal/",
+      "description": "Optional proposals for major functional or design items that need discussion before they become intents."
+    }
+  },
+  "key_directories": {
+    "ingestion/": "dlt pipelines and sources",
+    "orchestration/": "run scripts",
+    "transformation/": "dbt project",
+    "tests/": "pytest tests",
+    "docs/adr/": "ADRs",
+    "docs/design/": "design records",
+    "docs/requirement/": "requirements",
+    ".agents/skills/": "convention and procedure skills",
+    ".github/": "Domain CI workflows and scripts",
+    "docs/setup/": "Repo maintenance: how this repo was built, its decisions, the data-provenance notes, the skill changes it implies and the script that seeds the Studio Domain database. Not for ingestion or transformation tasks; do not read it for them, and do not maintain it.",
+    "docs/review/": "Review findings for triage. Not read during build tasks.",
+    "docs/proposal/": "Proposals that become intents. Read one only when the intent links to it."
+  },
+  "commands": {
+    "all": "python3 orchestration/run_all.py",
+    "ingest": "python3 orchestration/run_ingest.py",
+    "transform": "python3 orchestration/run_transform.py",
+    "dbt_deps": "cd transformation && dbt deps",
+    "dbt_build": "cd transformation && dbt build",
+    "dbt_data_tests": "cd transformation && dbt test --exclude test_type:unit",
+    "dbt_unit_tests": "cd transformation && dbt test --select test_type:unit",
+    "dbt_parse": "cd transformation && dbt parse",
+    "dbt_docs": "cd transformation && dbt docs generate",
+    "python_tests": "python3 -m pytest tests -q",
+    "python_lint": "ruff check .",
+    "adr_lint": "python3 .github/scripts/adr_lint.py"
+  },
+  "key_references": {
+    "agents": "AGENTS.md",
+    "vocabulary": "CONTEXT.md",
+    "conventions": ".agents/skills/",
+    "test_map": "test-map.json",
+    "schema": "repo-map.schema.json"
+  },
+  "notes_for_agents": {
+    "startup": "Read this file first. AGENTS.md says how to work; the skills in .agents/skills/ hold the conventions.",
+    "reporting_window": "report_start and report_end are dbt vars in dbt_project.yml and define the business reporting window. They are not a sampling control.",
+    "synthetic_data": "ops_raw and mdm_raw are simulated. TLC trips are real.",
+    "trip_key": "Produced only by the trip_natural_key macro. The operator source carries natural columns, not the key.",
+    "warehouse": "domain.duckdb at the repo root is ignored by git and rebuilt by orchestration/run_all.py.",
+    "dlt_environment": "Pipelines need VD_DOMAIN_DATA_PLATFORM=duckdb_local, VD_DOMAIN_SECRET_STORE_KIND=local_toml and VD_EPHM_DUCKDB_LOCAL_PATH; orchestration/run_ingest.py sets them.",
+    "new_source": "A new source mirrors an existing entry in `sources`: create every artifact it lists (module, config section, pipeline, resource docs, tests, design record). Mirror `tlc` for a downloaded file source. Then register it in orchestration/run_ingest.py and test-map.json.",
+    "setup_docs": "docs/setup/ is repo maintenance. Do not read or maintain it for ingestion or transformation work.",
+    "reviews_and_proposals": "docs/review/ holds review findings for triage; do not read it for build tasks. Read a docs/proposal/ file only when the intent's requirement links to it.",
+    "dbt_sources": "dbt sources name a schema and never a database: the Studio sandbox is a renamed copy of the Domain file, so a catalog name never resolves there. dbt runs use the dev target.",
+    "artifact_paths": "Every artifact location is declared here: requirement, plan, verification and case_record per intent, design records per model or pipeline (layered: design_record_model) or area. The plugin names an intent's artifacts; this map places them."
+  }
+}

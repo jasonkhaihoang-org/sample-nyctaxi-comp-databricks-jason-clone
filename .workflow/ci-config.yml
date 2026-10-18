@@ -1,0 +1,16 @@
+# Domain CI Configuration — LocalDuck (DuckDB-local) platform
+#
+# Installed once by the `/install-ci` skill, which copies this template and
+# substitutes this Domain's coordinates. The file then belongs to the
+# repository: nothing rewrites it, and your edits persist.
+
+# Platform discriminator. Must be exactly "duckdb_local" for this bundle.
+VD_DOMAIN_DATA_PLATFORM: duckdb_local
+
+# Short slug identifying this domain (kebab-case).
+VD_DOMAIN_SLUG: nyc-taxi-duckdb-demo
+
+# LocalDuck runs database-free static PR validation (ADR hygiene, linting, secret
+# scanning, dbt parse/compile, schema validation, scorecard) — there is no target
+# platform, no production database, and no prod-state manifest to configure, so
+# no further keys are required.

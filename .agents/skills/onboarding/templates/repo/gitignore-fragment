@@ -1,0 +1,22 @@
+# Added by onboarding
+# Warehouse and downloaded data: rebuilt by orchestration/run_all.py
+*.duckdb
+*.duckdb.wal
+*.parquet
+# Secrets: dlt reads them from the bound secret store
+**/secrets.toml
+.env
+# dbt
+dbt_packages/
+target/
+logs/
+**/.user.yml
+# dlt preview, written on every sample load
+ingestion/last-run-preview.md
+# Python and tools
+__pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.agents_tmp/
+*.log

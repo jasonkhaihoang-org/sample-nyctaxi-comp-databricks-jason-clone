@@ -1,0 +1,28 @@
+---
+artifacts: [stg_tlc__yellow_tripdata]
+---
+
+# stg_tlc__yellow_tripdata
+
+Yellow taxi trips as loaded, renamed and typed.
+
+## Grain
+
+One row per row of `bronze.yellow_tripdata`.
+
+## Decisions
+
+- `D-01` Rename and type only, one-to-one with the bronze table. Every bronze column is carried, including the yellow-only airport fee and `_dlt_load_id`. Source: docs/requirement/2026-10-14-load-every-raw-source-with-dlt-and-build-silver-in-dbt.md R-01, [ADR 0005](../../../adr/0005-all-raw-sources-are-loaded-by-dlt.md).
+- `D-02` Bring the UTC-tagged timestamps back to plain timestamps with `timezone('UTC', ...)`, so the trip key and every date derived from them do not depend on the session's time zone ([ADR 0006](../../../adr/0006-silver-is-built-in-dbt.md)). Source: docs/requirement/2026-10-14-load-every-raw-source-with-dlt-and-build-silver-in-dbt.md R-02, [ADR 0006](../../../adr/0006-silver-is-built-in-dbt.md).
+
+## Rejected
+
+- Converting with a bare cast: it uses the session time zone and shifts every date on a machine that is not on UTC.
+
+## Consumers
+
+Depended on by: `agg_driver_daily`, `agg_driver_monthly`, `agg_garage_monthly`, `agg_od_flow_matrix`, `agg_trip_band_profile`, `agg_trip_zone_daily`, `agg_trip_zone_daypart_dow`, `agg_vehicle_daily`, `agg_vehicle_monthly`, `agg_weather_demand_daily`, `dim_trip_quality`, `fct_shift`, `fct_trip`, `int_shift_economics`, `int_trip_fare_components`, `int_trip_quality_flags`, `int_trips_conformed`, `int_trips_enriched`, `mart_daily_zone_revenue`, `mart_driver_scorecard`, `mart_monthly_service_summary`, `mart_revenue_component_bridge`, `mart_trip_quality_scorecard`, `mart_vehicle_utilisation`.
+
+## History
+
+- - 2026-10-14 — setup-dlt-ingestion — design record written — D-01, D-02

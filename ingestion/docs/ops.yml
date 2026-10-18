@@ -1,0 +1,285 @@
+# Resource docs for the ops pipeline: every emitted field, including _dlt_* columns.
+connection: ops
+dataset: ops_raw
+resources:
+  garage:
+    description: Garages the operator runs.
+    columns:
+    - name: garage_id
+      description: Identifier of the garage.
+      source_ref: ops.garage.garage_id
+    - name: garage_name
+      description: Name of the garage.
+      source_ref: ops.garage.garage_name
+    - name: borough
+      description: Borough the garage is in.
+      source_ref: ops.garage.borough
+    - name: bay_capacity
+      description: Number of vehicle bays.
+      source_ref: ops.garage.bay_capacity
+    - name: opened_date
+      description: Date the garage opened.
+      source_ref: ops.garage.opened_date
+    - name: _dlt_load_id
+      description: Identifier of the dlt load package that wrote this row. Joins to `_dlt_loads.load_id`.
+    - name: _dlt_id
+      description: Synthetic row identifier assigned by dlt at load time. Unique within the bronze table;
+        not a natural primary key.
+  vehicle:
+    description: Vehicles the operator runs.
+    columns:
+    - name: vehicle_id
+      description: Identifier of the vehicle.
+      source_ref: ops.vehicle.vehicle_id
+    - name: medallion_number
+      description: Medallion number of the vehicle. Simulated.
+      source_ref: ops.vehicle.medallion_number
+    - name: vin
+      description: Vehicle identification number. Simulated.
+      source_ref: ops.vehicle.vin
+    - name: make
+      description: Manufacturer of the vehicle.
+      source_ref: ops.vehicle.make
+    - name: model
+      description: Model of the vehicle.
+      source_ref: ops.vehicle.model
+    - name: model_year
+      description: Model year of the vehicle.
+      source_ref: ops.vehicle.model_year
+    - name: fuel_type
+      description: 'Fuel type: gasoline, hybrid or electric.'
+      source_ref: ops.vehicle.fuel_type
+    - name: wheelchair_accessible
+      description: True when the vehicle is wheelchair accessible.
+      source_ref: ops.vehicle.wheelchair_accessible
+    - name: garage_id
+      description: Identifier of the garage.
+      source_ref: ops.vehicle.garage_id
+    - name: in_service_date
+      description: Date the vehicle entered service.
+      source_ref: ops.vehicle.in_service_date
+    - name: retired_date
+      description: Date the vehicle was retired, when it has been.
+      source_ref: ops.vehicle.retired_date
+    - name: _dlt_load_id
+      description: Identifier of the dlt load package that wrote this row. Joins to `_dlt_loads.load_id`.
+    - name: _dlt_id
+      description: Synthetic row identifier assigned by dlt at load time. Unique within the bronze table;
+        not a natural primary key.
+  driver:
+    description: Drivers the operator engages.
+    columns:
+    - name: driver_id
+      description: Identifier of the driver.
+      source_ref: ops.driver.driver_id
+    - name: hack_licence_no
+      description: Hack licence number of the driver. Simulated.
+      source_ref: ops.driver.hack_licence_no
+    - name: driver_ref
+      description: Operator reference for the driver.
+      source_ref: ops.driver.driver_ref
+    - name: engagement_type
+      description: 'How the driver is engaged: owner_operator, lease_daily or lease_weekly.'
+      source_ref: ops.driver.engagement_type
+    - name: home_garage_id
+      description: Garage the driver is based at.
+      source_ref: ops.driver.home_garage_id
+    - name: hire_date
+      description: Date the driver was hired.
+      source_ref: ops.driver.hire_date
+    - name: termination_date
+      description: Date the driver left, when they have.
+      source_ref: ops.driver.termination_date
+    - name: is_wav_certified
+      description: True when the driver is certified for wheelchair-accessible vehicles.
+      source_ref: ops.driver.is_wav_certified
+    - name: driver_status
+      description: 'Status of the driver: active or terminated.'
+      source_ref: ops.driver.driver_status
+    - name: _dlt_load_id
+      description: Identifier of the dlt load package that wrote this row. Joins to `_dlt_loads.load_id`.
+    - name: _dlt_id
+      description: Synthetic row identifier assigned by dlt at load time. Unique within the bronze table;
+        not a natural primary key.
+  lease_agreement:
+    description: Lease terms per driver.
+    columns:
+    - name: lease_id
+      description: Identifier of the lease agreement.
+      source_ref: ops.lease_agreement.lease_id
+    - name: driver_id
+      description: Identifier of the driver.
+      source_ref: ops.lease_agreement.driver_id
+    - name: primary_vehicle_id
+      description: The vehicle the driver normally leases.
+      source_ref: ops.lease_agreement.primary_vehicle_id
+    - name: lease_type
+      description: 'Lease type: owner_operator, lease_daily or lease_weekly.'
+      source_ref: ops.lease_agreement.lease_type
+    - name: lease_rate
+      description: Fixed lease rate; zero for owner-operators.
+      source_ref: ops.lease_agreement.lease_rate
+    - name: revenue_share_pct
+      description: Share of revenue paid to the operator, as a fraction; zero for lease drivers.
+      source_ref: ops.lease_agreement.revenue_share_pct
+    - name: lease_start_date
+      description: Date the lease starts.
+      source_ref: ops.lease_agreement.lease_start_date
+    - name: lease_end_date
+      description: Date the lease ends, when it has.
+      source_ref: ops.lease_agreement.lease_end_date
+    - name: _dlt_load_id
+      description: Identifier of the dlt load package that wrote this row. Joins to `_dlt_loads.load_id`.
+    - name: _dlt_id
+      description: Synthetic row identifier assigned by dlt at load time. Unique within the bronze table;
+        not a natural primary key.
+  shift:
+    description: A driver's working period on one vehicle, derived from trips.
+    columns:
+    - name: shift_id
+      description: Identifier of the shift.
+      source_ref: ops.shift.shift_id
+    - name: vehicle_id
+      description: Identifier of the vehicle.
+      source_ref: ops.shift.vehicle_id
+    - name: driver_id
+      description: Identifier of the driver.
+      source_ref: ops.shift.driver_id
+    - name: shift_start_ts
+      description: When the driver signed on.
+      source_ref: ops.shift.shift_start_ts
+    - name: shift_end_ts
+      description: When the driver signed off. Null when the tablet never emitted a logout.
+      source_ref: ops.shift.shift_end_ts
+    - name: derived_end_ts
+      description: When the shift ended according to its last trip, whether or not a logout was recorded.
+      source_ref: ops.shift.derived_end_ts
+    - name: reported_trip_count
+      description: Number of trips the platform reports for the shift.
+      source_ref: ops.shift.reported_trip_count
+    - name: odometer_start
+      description: Odometer reading at sign-on.
+      source_ref: ops.shift.odometer_start
+    - name: odometer_end
+      description: Odometer reading at sign-off. Occasionally missing.
+      source_ref: ops.shift.odometer_end
+    - name: telematics_source
+      description: 'Device the shift reported from: tablet or driver_app.'
+      source_ref: ops.shift.telematics_source
+    - name: _dlt_load_id
+      description: Identifier of the dlt load package that wrote this row. Joins to `_dlt_loads.load_id`.
+    - name: _dlt_id
+      description: Synthetic row identifier assigned by dlt at load time. Unique within the bronze table;
+        not a natural primary key.
+  trip_assignment:
+    description: Trips the operator attributes to a shift. Identifies the trip by its natural columns.
+    columns:
+    - name: assignment_id
+      description: Identifier of the trip assignment.
+      source_ref: ops.trip_assignment.assignment_id
+    - name: service_type
+      description: 'Fleet of the trip. Always yellow: the operator runs yellow medallions.'
+      source_ref: ops.trip_assignment.service_type
+    - name: vendor_id
+      description: TLC vendor code of the trip.
+      source_ref: ops.trip_assignment.vendor_id
+    - name: pickup_datetime
+      description: Pickup time of the trip.
+      source_ref: ops.trip_assignment.pickup_datetime
+    - name: dropoff_datetime
+      description: Dropoff time of the trip.
+      source_ref: ops.trip_assignment.dropoff_datetime
+    - name: pickup_location_id
+      description: TLC pickup zone of the trip.
+      source_ref: ops.trip_assignment.pickup_location_id
+    - name: dropoff_location_id
+      description: TLC dropoff zone of the trip.
+      source_ref: ops.trip_assignment.dropoff_location_id
+    - name: trip_distance
+      description: Trip distance in miles.
+      source_ref: ops.trip_assignment.trip_distance
+    - name: total_amount
+      description: Total charged to the passenger.
+      source_ref: ops.trip_assignment.total_amount
+    - name: shift_id
+      description: Identifier of the shift.
+      source_ref: ops.trip_assignment.shift_id
+    - name: driver_id
+      description: Identifier of the driver.
+      source_ref: ops.trip_assignment.driver_id
+    - name: vehicle_id
+      description: Identifier of the vehicle.
+      source_ref: ops.trip_assignment.vehicle_id
+    - name: assigned_ts
+      description: When the trip was assigned to the shift.
+      source_ref: ops.trip_assignment.assigned_ts
+    - name: assignment_method
+      description: 'How the trip was assigned: auto or manual.'
+      source_ref: ops.trip_assignment.assignment_method
+    - name: _dlt_load_id
+      description: Identifier of the dlt load package that wrote this row. Joins to `_dlt_loads.load_id`.
+    - name: _dlt_id
+      description: Synthetic row identifier assigned by dlt at load time. Unique within the bronze table;
+        not a natural primary key.
+  driver_status_event:
+    description: Stream of driver status events.
+    columns:
+    - name: event_id
+      description: Identifier of the status event.
+      source_ref: ops.driver_status_event.event_id
+    - name: shift_id
+      description: Identifier of the shift.
+      source_ref: ops.driver_status_event.shift_id
+    - name: driver_id
+      description: Identifier of the driver.
+      source_ref: ops.driver_status_event.driver_id
+    - name: vehicle_id
+      description: Identifier of the vehicle.
+      source_ref: ops.driver_status_event.vehicle_id
+    - name: event_ts
+      description: When the event happened.
+      source_ref: ops.driver_status_event.event_ts
+    - name: status_code
+      description: 'Driver status: LOGIN, AVAILABLE, DISPATCHED, ON_TRIP, BREAK or LOGOUT.'
+      source_ref: ops.driver_status_event.status_code
+    - name: zone_id
+      description: TLC zone the driver was in, when known.
+      source_ref: ops.driver_status_event.zone_id
+    - name: received_ts
+      description: When the platform received the event. Can invert the order against event_ts for a small
+        share of events.
+      source_ref: ops.driver_status_event.received_ts
+    - name: source_system
+      description: 'Device the event came from: tablet or driver_app.'
+      source_ref: ops.driver_status_event.source_system
+    - name: _dlt_load_id
+      description: Identifier of the dlt load package that wrote this row. Joins to `_dlt_loads.load_id`.
+    - name: _dlt_id
+      description: Synthetic row identifier assigned by dlt at load time. Unique within the bronze table;
+        not a natural primary key.
+  maintenance_event:
+    description: Vehicle maintenance events.
+    columns:
+    - name: maintenance_id
+      description: Identifier of the maintenance event.
+      source_ref: ops.maintenance_event.maintenance_id
+    - name: vehicle_id
+      description: Identifier of the vehicle.
+      source_ref: ops.maintenance_event.vehicle_id
+    - name: started_date
+      description: Date the vehicle went into maintenance.
+      source_ref: ops.maintenance_event.started_date
+    - name: down_days
+      description: Days the vehicle was unavailable.
+      source_ref: ops.maintenance_event.down_days
+    - name: maintenance_type
+      description: Kind of maintenance.
+      source_ref: ops.maintenance_event.maintenance_type
+    - name: cost_usd
+      description: Cost of the maintenance in US dollars.
+      source_ref: ops.maintenance_event.cost_usd
+    - name: _dlt_load_id
+      description: Identifier of the dlt load package that wrote this row. Joins to `_dlt_loads.load_id`.
+    - name: _dlt_id
+      description: Synthetic row identifier assigned by dlt at load time. Unique within the bronze table;
+        not a natural primary key.

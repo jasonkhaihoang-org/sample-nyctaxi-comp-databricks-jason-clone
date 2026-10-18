@@ -1,0 +1,104 @@
+version: 2
+
+unit_tests:
+  # --- int_status_intervals: ordering, terminal closure, negative floor -------
+  - name: status_intervals_order_ties_by_event_id
+    description: Two events with the same event_ts are ordered by event_id, so the earlier id closes against the later one.
+    model: int_status_intervals
+    given:
+      - input: ref('stg_ops__status_events')
+        rows:
+          - {event_id: EV-2, shift_id: SH-1, driver_id: 1, vehicle_id: 1, status_code: AVAILABLE, zone_id: null, event_ts: '2024-01-10 10:00:00', skew_seconds: 0}
+          - {event_id: EV-1, shift_id: SH-1, driver_id: 1, vehicle_id: 1, status_code: LOGIN, zone_id: null, event_ts: '2024-01-10 10:00:00', skew_seconds: 0}
+          - {event_id: EV-3, shift_id: SH-1, driver_id: 1, vehicle_id: 1, status_code: ON_TRIP, zone_id: 7, event_ts: '2024-01-10 10:10:00', skew_seconds: 0}
+      - input: ref('stg_ops__shifts')
+        rows:
+          - {shift_id: SH-1, effective_end_ts: '2024-01-10 10:30:00'}
+    expect:
+      rows:
+        - {interval_id: EV-1, interval_seconds: 0, is_terminal_interval: false}
+        - {interval_id: EV-2, interval_seconds: 600, is_terminal_interval: false}
+        - {interval_id: EV-3, interval_seconds: 1200, is_terminal_interval: true}
+
+  - name: status_intervals_close_the_terminal_event_at_the_shift_end
+    description: The last event of a shift has no successor, so it closes against the shift's effective end rather than staying open.
+    model: int_status_intervals
+    given:
+      - input: ref('stg_ops__status_events')
+        rows:
+          - {event_id: EV-1, shift_id: SH-1, driver_id: 1, vehicle_id: 1, status_code: ON_TRIP, zone_id: 7, event_ts: '2024-01-10 10:00:00', skew_seconds: 0}
+      - input: ref('stg_ops__shifts')
+        rows:
+          - {shift_id: SH-1, effective_end_ts: '2024-01-10 10:45:00'}
+    expect:
+      rows:
+        - {interval_id: EV-1, interval_end_ts: '2024-01-10 10:45:00', interval_seconds: 2700, is_terminal_interval: true, is_negative_interval: false}
+
+  - name: status_intervals_floor_a_negative_duration_and_flag_it
+    description: A terminal event after the shift's effective end gives a negative duration; it is floored at zero and flagged, not rejected.
+    model: int_status_intervals
+    given:
+      - input: ref('stg_ops__status_events')
+        rows:
+          - {event_id: EV-1, shift_id: SH-1, driver_id: 1, vehicle_id: 1, status_code: AVAILABLE, zone_id: null, event_ts: '2024-01-10 10:00:00', skew_seconds: 0}
+      - input: ref('stg_ops__shifts')
+        rows:
+          - {shift_id: SH-1, effective_end_ts: '2024-01-10 09:59:00'}
+    expect:
+      rows:
+        - {interval_id: EV-1, interval_seconds: 0, is_negative_interval: true}
+
+  # --- int_trips_enriched: the three airport-fee states ----------------------
+  - name: trips_enriched_keeps_the_three_airport_fee_states
+    description: Yellow with a fee is present, yellow without one is missing (including no extras row at all), green is not applicable.
+    model: int_trips_enriched
+    given:
+      - input: ref('int_trips_conformed')
+        rows:
+          - {trip_key: k1, service_type: yellow}
+          - {trip_key: k2, service_type: yellow}
+          - {trip_key: k3, service_type: green}
+          - {trip_key: k4, service_type: yellow}
+      - input: ref('stg_tlc__yellow_trip_extras')
+        rows:
+          - {trip_key: k1, airport_fee: 1.75}
+          - {trip_key: k2, airport_fee: null}
+      - input: ref('stg_tlc__green_trip_extras')
+        rows:
+          - {trip_key: k3, ehail_fee: null, trip_type: 1}
+    expect:
+      rows:
+        - {trip_key: k1, airport_fee_status: present}
+        - {trip_key: k2, airport_fee_status: missing}
+        - {trip_key: k3, airport_fee_status: not_applicable}
+        - {trip_key: k4, airport_fee_status: missing}
+
+  # --- int_trips_conformed: dedup and the key ---------------------------------
+  - name: trips_conformed_keeps_one_row_per_distinct_trip
+    description: Two bronze rows with identical natural columns give one trip.
+    model: int_trips_conformed
+    given:
+      - input: ref('stg_tlc__yellow_tripdata')
+        rows:
+          - {vendor_id: 1, pickup_datetime: '2024-01-10 10:00:00', dropoff_datetime: '2024-01-10 10:20:00', pickup_location_id: 100, dropoff_location_id: 200, trip_distance: 2.5, total_amount: 20.0, _dlt_load_id: L1}
+          - {vendor_id: 1, pickup_datetime: '2024-01-10 10:00:00', dropoff_datetime: '2024-01-10 10:20:00', pickup_location_id: 100, dropoff_location_id: 200, trip_distance: 2.5, total_amount: 20.0, _dlt_load_id: L2}
+      - input: ref('stg_tlc__green_tripdata')
+        rows: []
+    expect:
+      rows:
+        - {service_type: yellow, trip_seconds: 1200}
+
+  - name: trips_conformed_distinguishes_fleets_with_the_same_natural_columns
+    description: A yellow and a green trip that share every other column are two trips, because service type is part of the key.
+    model: int_trips_conformed
+    given:
+      - input: ref('stg_tlc__yellow_tripdata')
+        rows:
+          - {vendor_id: 1, pickup_datetime: '2024-01-10 10:00:00', dropoff_datetime: '2024-01-10 10:20:00', pickup_location_id: 100, dropoff_location_id: 200, trip_distance: 2.5, total_amount: 20.0, _dlt_load_id: L1}
+      - input: ref('stg_tlc__green_tripdata')
+        rows:
+          - {vendor_id: 1, pickup_datetime: '2024-01-10 10:00:00', dropoff_datetime: '2024-01-10 10:20:00', pickup_location_id: 100, dropoff_location_id: 200, trip_distance: 2.5, total_amount: 20.0, _dlt_load_id: L1}
+    expect:
+      rows:
+        - {service_type: yellow, trip_key: 5b7f4eadad9b855627f228222a657f5f}
+        - {service_type: green, trip_key: 5eeab1b23109fc6f024928c01a5fbff3}
