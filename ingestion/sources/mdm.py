@@ -23,6 +23,8 @@ import dlt
 import duckdb
 import pyarrow as pa
 
+from .duckdb_arrow import arrow_table
+
 # The weather window matches the loaded TLC months (2024-01 to 2024-03).
 SQL = {
     "zone_master": """
@@ -231,7 +233,7 @@ def mdm_source(zone_lookup: Callable[[], Iterable[dict]]):
         def table():
             con = _connection(zones)
             try:
-                yield con.execute(SQL[name]).to_arrow_table()
+                yield arrow_table(con.execute(SQL[name]))
             finally:
                 con.close()
 

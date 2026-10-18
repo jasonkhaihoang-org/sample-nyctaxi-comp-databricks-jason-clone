@@ -31,6 +31,8 @@ import dlt
 import duckdb
 import pyarrow as pa
 
+from .duckdb_arrow import arrow_table
+
 N_VEHICLES = 420
 N_DRIVERS = 760
 N_GARAGES = 6
@@ -369,7 +371,7 @@ def generate(trips: Iterable[pa.Table]) -> dict[str, pa.Table]:
             con.execute(statement.format(N_VEHICLES=N_VEHICLES, N_DRIVERS=N_DRIVERS, N_GARAGES=N_GARAGES))
             if "TEMP TABLE fleet_trips" in statement:
                 drop_overlaps(con)
-        return {name: con.execute(sql).to_arrow_table() for name, sql in EXPORT.items()}
+        return {name: arrow_table(con.execute(sql)) for name, sql in EXPORT.items()}
     finally:
         con.close()
 
