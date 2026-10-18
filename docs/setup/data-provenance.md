@@ -9,9 +9,14 @@ aggregate-pyramid structure that TLC's trip records do not carry.
 findings from this warehouse are genuine; others are artefacts of a generator,
 and the two are not distinguishable from the tables alone.
 
-Everything is reproducible: the dlt pipelines in `ingestion/` download and load
-the real data (`tlc`) and regenerate the invented systems deterministically
-(`ops`, `mdm`). `python3 orchestration/run_ingest.py` runs them.
+Everything is reproducible: the dlt pipeline notebooks in `ingestion/` download
+and load the real data (`tlc`) and regenerate the invented systems
+deterministically (`ops`, `mdm`) into the Domain Lakehouse. The
+`nyc_taxi_refresh` Data Pipeline in `orchestration/` runs them.
+
+Row counts below are for the full three-month load. A Domain seeded from
+January alone (`seeding-the-domain.md`) holds about a third of the trips and of
+everything generated from them.
 
 ---
 

@@ -4,7 +4,9 @@ kinds: [ingestion, transformation]
 
 # Requirement: Load every raw source with dlt and build silver in dbt
 
-The full requirement and its decisions are in `docs/setup/requirements.md` (R-10, R-12, with the decisions table). This document keeps the four requirements that govern the pipelines and the silver move.
+The full requirement and its decisions are in the DuckDB repo's `docs/setup/requirements.md` (R-10, R-12, with the decisions table), in [`accelerate-data/sample-nyctaxi-comp`](https://github.com/accelerate-data/sample-nyctaxi-comp/blob/main/docs/setup/requirements.md). This document keeps the four requirements that govern the pipelines and the silver move.
+
+This intent was built on the DuckDB Domain this repo was ported from. On the Fabric Lakehouse the pipelines are `ingestion/<name>_pipeline.Notebook/` and the `nyc_taxi_refresh` Data Pipeline runs them; the requirements and decisions are unchanged.
 
 ## Ask
 
@@ -21,9 +23,9 @@ Make the repo look like a real data product: raw sources loaded by dlt pipelines
 
 | Decision | Value | Source |
 | --- | --- | --- |
-| Sampling | None; volume is limited by the three-month window | `docs/setup/requirements.md` |
+| Sampling | None; volume is limited by the three-month window | DuckDB repo `docs/setup/requirements.md` |
 | Simulated sources | Generated inside their pipelines | `docs/adr/0008-simulated-sources-are-generated-inside-their-pipelines.md` |
-| Reference data | Needed to load raw: a dlt resource. Used in staging: a dbt seed | `docs/setup/requirements.md` |
+| Reference data | Needed to load raw: a dlt resource. Used in staging: a dbt seed | DuckDB repo `docs/setup/requirements.md` |
 
 ## Out of scope
 

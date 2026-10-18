@@ -1,14 +1,15 @@
-# Sample NYC Taxi Analytics Domain
+# Sample NYC Taxi Analytics Domain — Fabric Lakehouse
 
-A DuckDB lakehouse for NYC taxi analytics, loaded by dlt and modelled in dbt. It
+A Fabric Lakehouse for NYC taxi analytics, loaded by dlt and modelled in dbt. It
 combines genuine NYC TLC trip records with two deterministically generated
 source systems: a fleet operator's dispatch and telematics platform, and a
 master-data platform.
 
 The project exercises joins, sessionization, Type 2 dimensions, quality rules,
 aggregate design and a semantic layer, without pretending that generated
-driver, vehicle, garage or weather data is real. A copy of this domain is also
-published at <https://github.com/vibedata-showcase/nyc-taxi-duckdb>.
+driver, vehicle, garage or weather data is real. It is the Fabric Lakehouse
+version of [`accelerate-data/sample-nyctaxi-comp`](https://github.com/accelerate-data/sample-nyctaxi-comp),
+the DuckDB model-answer repo, and carries the same data product.
 
 It is built as a model answer for a data product worked on by Vibedata agents:
 conventions live in `AGENTS.md` and `.agents/skills/`, locations in
@@ -24,50 +25,50 @@ pipeline in `docs/design/`.
 | `mdm_raw` | Zone, vendor, payment, rate, regime, borough, POI, calendar and weather masters | Mixed: some labels and rates are hand-transcribed; enriched attributes and weather are generated. |
 | dbt models | Staging, intermediate, dimensions, facts, marts and aggregates | Derived transformations and business rules. |
 
-The TLC trip window is January to March 2024. Read
-[`docs/setup/data-provenance.md`](docs/setup/data-provenance.md) before treating a result as
-a real-world claim. Trip-level TLC facts are genuine; Harbour Point identities
-and operational outcomes are not.
+Every layer is a schema in the Domain Lakehouse. The TLC trip window is January
+to March 2024. Read [`docs/setup/data-provenance.md`](docs/setup/data-provenance.md)
+before treating a result as a real-world claim. Trip-level TLC facts are
+genuine; Harbour Point identities and operational outcomes are not.
 
 ## Architecture
 
 ```text
-TLC site ──► ingestion/tlc_pipeline.py ──► bronze ──────────────┐
-                    │                                           │
-                    ├─► ingestion/ops_pipeline.py ──► ops_raw ──┤
-                    └─► ingestion/mdm_pipeline.py ──► mdm_raw ──┤
-                                                                ▼
-                       dbt: staging → intermediate → marts (core, agg, finance, ops)
-                                                                │
-                                                                ▼
-                                       semantic model (MetricFlow) and dbt docs
+TLC site ──► ingestion/tlc_pipeline.Notebook ──► bronze ───────────────┐
+                    │                                                  │
+                    ├─► ingestion/ops_pipeline.Notebook ──► ops_raw ───┤
+                    └─► ingestion/mdm_pipeline.Notebook ──► mdm_raw ───┤
+                                                                       ▼
+                    dbt (fabricspark): staging → intermediate → marts (core, agg, finance, ops)
+                                                                       │
+                                                                       ▼
+                                              semantic model (MetricFlow) and dbt docs
 ```
 
-`orchestration/run_all.py` runs ingestion, then `dbt build`. `domain.duckdb`,
-downloaded data and dbt artifacts are ignored by Git; a full rebuild is
-reproducible from the code and the public TLC files.
+The `nyc_taxi_refresh` Data Pipeline in `orchestration/` runs the three
+pipeline notebooks, then the `nyc_taxi_build_dbt` notebook, which runs
+`dbt build`. The pipelines write Delta tables through dlt's `filesystem`
+destination. dbt reads and writes the same Lakehouse over Livy.
 
 ## Repository layout
 
-- `ingestion/`: one dlt pipeline per source, their source code, resource docs and `.dlt/config.toml`.
-- `orchestration/`: `run_ingest.py`, `run_transform.py` and `run_all.py`.
+- `ingestion/`: one dlt pipeline notebook per source (`<name>_pipeline.Notebook/`), their source code under `sources/`, resource docs and `.dlt/config.toml`.
+- `orchestration/`: the Data Pipeline and the dbt job notebook it runs.
 - `transformation/`: the dbt project (staging, intermediate, marts, seeds, macros, tests).
-- `tests/`: pytest tests for ingestion, orchestration and the two maps.
-- `tools/dq.py`: local profiling and join-evidence utility.
+- `tests/`: pytest tests for ingestion and the maps.
 - `repo-map.json` and `test-map.json`: where things are, and which tests protect them.
 - `AGENTS.md` and `.agents/skills/`: how to work in this repo.
 - `CONTEXT.md`: the vocabulary of the data product.
 - `docs/adr/` and `docs/design/`: decisions, and design records per model and pipeline.
-- `docs/setup/`: repo maintenance: how this repo was built and the skill changes it implies.
-- `docs/setup/data-provenance.md`: real versus generated data, tier by tier.
+- `docs/setup/`: repo maintenance: the port's requirements and plan, the skill changes it implies, data provenance and Domain seeding.
 - `docs/proposal/pending-requests.md`: requests from the driver ops team for the Queens office launch.
 - `docs/requirement/`: requirements for past work.
 - `.github/` and `.workflow/`: Domain CI.
 
 ## Prerequisites
 
-- Python 3.9 or newer
-- Internet access for the TLC downloads
+- A Fabric workspace for the Domain with a schema-enabled Lakehouse, on a capacity with Livy sessions available.
+- `az login` as an identity that can run notebooks and Livy sessions in that workspace.
+- Python 3.12 for the offline tests:
 
 ```bash
 python3 -m venv .venv
@@ -76,52 +77,25 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements-dev.txt
 ```
 
-## Full rebuild
+There is no local warehouse file. Data lives only in Fabric.
 
-To build the file you upload as the Studio Domain database, see
-`docs/setup/seeding-the-domain.md`.
+## Seeding a Domain
 
-
-From the repository root:
-
-```bash
-# Load every source into domain.duckdb, then build and test all dbt models.
-python3 orchestration/run_all.py
-```
-
-This replaces the local database's loaded tables. To run the stages separately:
-
-```bash
-python3 orchestration/run_ingest.py      # dlt pipelines: tlc, ops, mdm
-python3 orchestration/run_transform.py   # dbt build
-```
-
-`run_ingest.py` sets the three environment variables the pipelines need
-(`VD_DOMAIN_DATA_PLATFORM`, `VD_DOMAIN_SECRET_STORE_KIND`,
-`VD_EPHM_DUCKDB_LOCAL_PATH`). A pipeline run directly needs them set.
-
-### dbt directly
-
-```bash
-cd transformation
-export VD_EPHM_DUCKDB_LOCAL_PATH="$PWD/../domain.duckdb"
-dbt deps                    # once: installs the packages in packages.yml
-dbt build
-dbt docs generate
-dbt docs serve --port 8085
-```
-
-`fct_trip` is incremental: after a change to upstream logic, run
-`dbt build --full-refresh`.
+To build a Domain that Studio Intents can work against, see
+`docs/setup/seeding-the-domain.md`. A Domain is released once (data loaded,
+every model built, production manifest published), and each Intent's sandbox
+defers to it: an Intent builds only the models it changes and reads everything
+else from the Domain.
 
 ## dbt targets and model layers
 
-`transformation/profiles.yml` has one target, `dev`, whose path comes from
-`VD_EPHM_DUCKDB_LOCAL_PATH`, the variable a Studio sandbox also sets. Sources name
-a schema and never a database, so the project builds in any copy of the file.
-The project is organised as:
+In a Studio Intent the runtime renders the profile and its one target,
+`ephemeral_dev`, which writes the Intent's Ephemeral Lakehouse.
+`transformation/profiles.yml` holds the `prod` target with the Domain's fixed
+coordinates, used by the release and by the dbt job notebook. The project is
+organised as:
 
-- **staging**: views, one per source table, renamed and typed.
+- **staging**: one model per source table, renamed and typed.
 - **intermediate**: conformed trip, status, occupancy, fare and quality logic.
 - **core marts**: dimensions, bridges and facts, plus the semantic model.
 - **aggregates**: driver, vehicle, zone, OD, weather and occupancy summaries.
@@ -136,23 +110,15 @@ bronze is loaded.
 ## Tests and validation
 
 ```bash
-python3 -m pytest tests -q                              # Python tests
-cd transformation && dbt test --exclude test_type:unit  # data tests
-cd transformation && dbt test --select test_type:unit   # unit tests
+python3 -m pytest tests -q    # offline: ingestion sources, the maps, ADR links
+ruff check .
 ```
 
-`test-map.json` says which command protects which layer.
-
-```bash
-python3 tools/dq.py profile domain.duckdb intermediate.int_trips_conformed --top 10
-python3 tools/dq.py sql domain.duckdb \
-  "select service_type, count(*) from intermediate.int_trips_conformed group by 1"
-```
+dbt data and unit tests run against a Lakehouse, inside an Intent or after a
+release; `test-map.json` says which command protects which layer.
 
 ## Important limitations
 
-- Do not commit `domain.duckdb`, Parquet files, CSV downloads,
-  `transformation/target/` or `transformation/logs/`; `.gitignore` covers them.
 - `ops_raw` driver, vehicle, garage, lease, maintenance and weather records are
   synthetic and are not real NYC operations.
 - Generated zone coordinates, population, area, demand tiers and version
