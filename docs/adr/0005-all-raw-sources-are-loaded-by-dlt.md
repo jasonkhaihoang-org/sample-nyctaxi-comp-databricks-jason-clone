@@ -1,6 +1,7 @@
 ---
-status: decided
+status: rejected
 date: 2026-10-14
+rejected-note: Superseded by docs/adr/0017-raw-sources-are-loaded-by-dlt-pipeline-notebooks-into-the-lakehouse.md
 ---
 
 # Every raw source is loaded by a dlt pipeline that fetches from the source

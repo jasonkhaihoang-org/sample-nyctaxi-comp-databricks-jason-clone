@@ -12,7 +12,7 @@ One row per row of `bronze.green_tripdata`.
 
 ## Decisions
 
-- `D-01` Rename and type only, one-to-one with the bronze table. Every bronze column is carried, including the green-only e-hail fee and trip type. Source: docs/requirement/2026-10-14-load-every-raw-source-with-dlt-and-build-silver-in-dbt.md R-01, [ADR 0005](../../../adr/0005-all-raw-sources-are-loaded-by-dlt.md).
+- `D-01` Rename and type only, one-to-one with the bronze table. Every bronze column is carried, including the green-only e-hail fee and trip type. Source: docs/requirement/2026-10-14-load-every-raw-source-with-dlt-and-build-silver-in-dbt.md R-01, [ADR 0017](../../../adr/0017-raw-sources-are-loaded-by-dlt-pipeline-notebooks-into-the-lakehouse.md).
 - `D-02` Bring the UTC-tagged timestamps back to plain timestamps with `timezone('UTC', ...)` ([ADR 0006](../../../adr/0006-silver-is-built-in-dbt.md)). Source: docs/requirement/2026-10-14-load-every-raw-source-with-dlt-and-build-silver-in-dbt.md R-02, [ADR 0006](../../../adr/0006-silver-is-built-in-dbt.md).
 
 ## Rejected

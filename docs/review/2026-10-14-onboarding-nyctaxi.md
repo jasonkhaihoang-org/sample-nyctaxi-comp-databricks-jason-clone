@@ -24,3 +24,10 @@ The dbt project in `transformation/`, the three dlt pipelines in `ingestion/`, t
 | R-7 | gap | High-volume for-hire (HVFHV) trips are outside the conformed trip grain, so trip counts and revenue cover yellow and green only. | `int_trips_conformed.sql` unions yellow and green only | Decide whether and how HVFHV joins the conformed grain. | proposal → P-0001 |
 | R-8 | gap | `transformation/profiles.yml` has `domain` and `slice` targets and no `dev`; sandbox runs depend on the runtime profile. | `transformation/profiles.yml` | Document the sandbox command for agents; keep the repo profile for local and CI use. | deferred |
 | R-9 | gap | `transformation/.user.yml` is tracked although `.gitignore` lists it. | `git ls-files transformation/.user.yml`; `.gitignore:23` | `git rm --cached transformation/.user.yml`. | open |
+
+## Notes after the Fabric Lakehouse port (2026-10-18)
+
+The findings above were made on the DuckDB Domain this repo was ported from. On the Fabric Lakehouse:
+
+- R-4: the run scripts are gone; the `nyc_taxi_build_dbt` notebook runs `dbt deps` before `dbt build` when the project has a `packages.yml`.
+- R-5: `.github/workflows/repo-checks.yml` runs the pytest suite; on Fabric it installs `dbt-fabricspark`, which the map tests' `dbt ls` needs.
