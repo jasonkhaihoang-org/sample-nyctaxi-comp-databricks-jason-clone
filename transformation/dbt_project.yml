@@ -1,7 +1,7 @@
 name: 'nyc_taxi_analytics'
 version: '2.1.0'
 config-version: 2
-profile: "{{ env_var('DBT_PROFILE_NAME', 'nyc_taxi_analytics') }}"
+profile: "{{ env_var('DBT_PROFILE_NAME', 'dbt_fab_spark') }}"
 
 model-paths: ["models"]
 seed-paths: ["seeds"]

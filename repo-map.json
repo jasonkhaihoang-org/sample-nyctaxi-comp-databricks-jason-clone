@@ -25,7 +25,7 @@
         "transformation/profiles.yml",
         "transformation/packages.yml"
       ],
-      "notes": "Project profile comes from DBT_PROFILE_NAME, default nyc_taxi_analytics. In an Intent the runtime renders it with one target, ephemeral_dev; profiles.yml holds the Domain's prod target for the job notebook and the release."
+      "notes": "Project profile comes from DBT_PROFILE_NAME, default dbt_fab_spark, the name the CI bundle's profiles use. In an Intent the runtime renders it with one target, ephemeral_dev; profiles.yml holds the Domain's prod target for the job notebook and the release."
     },
     {
       "name": "dlt",

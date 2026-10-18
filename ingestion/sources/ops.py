@@ -31,7 +31,7 @@ import dlt
 import duckdb
 import pyarrow as pa
 
-from .duckdb_arrow import arrow_table
+from ._duckdb_arrow import arrow_table
 
 N_VEHICLES = 420
 N_DRIVERS = 760

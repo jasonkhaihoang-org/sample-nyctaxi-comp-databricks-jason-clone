@@ -15,6 +15,7 @@ import json
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Callable
@@ -23,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[2]
 API = "https://api.fabric.microsoft.com/v1"
 PIPELINE = "nyc_taxi_refresh"
 TERMINAL = {"Completed", "Failed", "Cancelled", "Deduped"}
-# A full Q1 seed took about half an hour; anything far past that is stuck, not slow.
+# A full Q1 seed took about 20 minutes; anything far past that is stuck, not slow.
 DEADLINE_S = 3 * 3600
 
 
@@ -59,15 +60,26 @@ def _token() -> str:
 def _request(method: str, url: str) -> tuple[dict, dict]:
     req = urllib.request.Request(url, method=method, headers={"Authorization": f"Bearer {_token()}"},
                                  data=b"" if method == "POST" else None)
-    with urllib.request.urlopen(req) as resp:
-        body = resp.read()
-        return (json.loads(body) if body else {}), dict(resp.headers)
+    try:
+        with urllib.request.urlopen(req) as resp:
+            body = resp.read()
+            return (json.loads(body) if body else {}), dict(resp.headers)
+    except urllib.error.HTTPError as exc:
+        # Fabric's error code and message are in the body, not the status line.
+        raise SystemExit(f"{method} {url} failed with {exc.code}: {exc.read().decode(errors='replace')}") from exc
+
+
+def _header(headers: dict, name: str) -> str:
+    found = [value for key, value in headers.items() if key.lower() == name.lower()]
+    if not found:
+        raise SystemExit(f"the response carried no {name} header: {sorted(headers)}")
+    return found[0]
 
 
 def _domain() -> dict:
     import yaml
 
-    return yaml.safe_load((ROOT / "transformation/profiles.yml").read_text())["nyc_taxi_analytics"]["outputs"]["prod"]
+    return yaml.safe_load((ROOT / "transformation/profiles.yml").read_text())["dbt_fab_spark"]["outputs"]["prod"]
 
 
 def main() -> int:
@@ -84,7 +96,7 @@ def main() -> int:
     if args.run:
         items, _ = _request("GET", f"{API}/workspaces/{workspace}/items")
         _, headers = _request("POST", job_url(workspace, item_id(items["value"], PIPELINE)))
-        location = headers["Location"]
+        location = _header(headers, "Location")
         print(f"started {PIPELINE}: {location}", flush=True)
         job = wait(location, get=lambda url: _request("GET", url)[0])
         print(json.dumps(job, indent=2))

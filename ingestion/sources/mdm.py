@@ -23,7 +23,7 @@ import dlt
 import duckdb
 import pyarrow as pa
 
-from .duckdb_arrow import arrow_table
+from ._duckdb_arrow import arrow_table
 
 # The weather window matches the loaded TLC months (2024-01 to 2024-03).
 SQL = {

@@ -2,7 +2,9 @@
 # `prod` holds the Domain's literal coordinates: a Fabric notebook has none of the agent's
 # environment, so an env_var() here cannot resolve. An Intent runs with its own profile,
 # which Studio writes outside the repository; git never carries it.
-nyc_taxi_analytics:
+# Named as the CI bundle's .github/profiles names its profile: CI runs dbt with that
+# profiles directory and no --profile, so the default here must match it.
+dbt_fab_spark:
   target: prod
   outputs:
     prod:

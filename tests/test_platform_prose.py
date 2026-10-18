@@ -70,7 +70,7 @@ def test_no_committed_guid():
 
 
 def _guid_hits(name: str, text: str) -> list[str]:
-    if name.startswith(".github/") or name in DOMAIN_COORDINATE_FILES:
+    if name in DOMAIN_COORDINATE_FILES:
         return []
     return [f"{name}: {m}" for line in text.splitlines() if not PORTABLE_ID_LINE.search(line) for m in GUID.findall(line)]
 
@@ -88,7 +88,7 @@ def test_dbt_project_is_fabricspark():
     import yaml
 
     project = ROOT / "transformation"
-    profile = yaml.safe_load((project / "profiles.yml").read_text())["nyc_taxi_analytics"]
+    profile = yaml.safe_load((project / "profiles.yml").read_text())["dbt_fab_spark"]
     assert profile["target"] == "prod"
     assert profile["outputs"]["prod"]["type"] == "fabricspark"
     assert (project / "macros" / "source_defer.sql").exists()
@@ -96,3 +96,13 @@ def test_dbt_project_is_fabricspark():
     # The Lakehouse SQL analytics endpoint cannot read a Spark view.
     sql = [(project / "dbt_project.yml").read_text()] + [p.read_text() for p in (project / "models").rglob("*.sql")]
     assert not [s for s in sql if re.search(r"materialized\s*[:=]\s*['\"]?view", s)]
+
+
+def test_ci_profiles_define_the_project_profile():
+    """CI runs dbt with --profiles-dir .github/profiles and no --profile, so the names must agree."""
+    import yaml
+
+    project = (ROOT / "transformation" / "dbt_project.yml").read_text()
+    fallback = re.search(r"env_var\('DBT_PROFILE_NAME', '([^']+)'\)", project).group(1)
+    assert fallback in yaml.safe_load((ROOT / ".github/profiles/profiles.yml").read_text())
+    assert fallback in yaml.safe_load((ROOT / "transformation/profiles.yml").read_text())

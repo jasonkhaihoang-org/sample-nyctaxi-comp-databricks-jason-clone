@@ -85,7 +85,7 @@ DBT_PROJECT = ROOT / "transformation"
 # The repo's own profile, named explicitly: in the Studio sandbox DBT_PROFILES_DIR and
 # DBT_PROFILE_NAME point at the runtime profile, which plain `dbt ls` would otherwise use.
 DBT = [sys.executable, "-m", "dbt.cli.main"]
-DBT_PROFILE = ["--profiles-dir", str(DBT_PROJECT), "--profile", "nyc_taxi_analytics"]
+DBT_PROFILE = ["--profiles-dir", str(DBT_PROJECT), "--profile", "dbt_fab_spark"]
 # Listing and parsing never open a Spark session, so the prod target needs no credential here.
 DBT_ENV = dict(os.environ)
 

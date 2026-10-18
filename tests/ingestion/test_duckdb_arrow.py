@@ -1,5 +1,5 @@
 import pyarrow as pa
-from sources.duckdb_arrow import arrow_table
+from sources._duckdb_arrow import arrow_table
 
 
 class _Result:

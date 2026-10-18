@@ -31,10 +31,10 @@ From the repository root, with `requirements-dev.txt` installed and `az login` d
 python3 docs/setup/seed_domain.py --release --run
 ```
 
-`--release` alone redeploys without running. `--run` alone runs what is already released. The run replaces every bronze table (`replace`) and rebuilds every model except `fct_trip`, which is incremental: it adds only trips picked up after the latest one it holds. Repeating a seed with the same window is therefore safe. Seeding a Domain whose `fct_trip` was built from a different window is not: the run fails `assert_fct_trip_matches_conformed_rowcount`, because TLC files carry trips dated before that watermark. Rebuild it once before the run, over Livy. The committed `prod` target signs in as a Fabric notebook, so from a workstation use a profile outside the repository that copies `prod` with `authentication: CLI`:
+`--release` alone redeploys without running. `--run` alone runs what is already released. The run replaces every bronze table (`replace`) and rebuilds every model except `fct_trip`, which is incremental: it adds only trips picked up after the latest one it holds. Repeating a seed with the same window is therefore safe. Seeding a Domain whose `fct_trip` was built from a different window is not: the run fails `assert_fct_trip_matches_conformed_rowcount`, because TLC files carry trips dated before that watermark. Let that run load, and when its dbt step fails on that test, rebuild `fct_trip` and everything after it from the newly loaded window, over Livy. Rebuilding before the run would only reset the watermark to the old window. The committed `prod` target signs in as a Fabric notebook, so from a workstation use a profile outside the repository: a copy of `transformation/profiles.yml` whose `prod` target has `authentication: CLI`, keeping the profile name `dbt_fab_spark`.
 
 ```bash
-cd transformation && dbt build --full-refresh --select fct_trip+ --target prod --profiles-dir <that profile's directory>
+cd transformation && dbt deps && dbt build --full-refresh --select fct_trip+ --target prod --profiles-dir <that profile's directory>
 ```
 
 
@@ -46,10 +46,10 @@ Measured on 2026-10-19 on an FTL64 trial capacity:
 
 | Step | Time |
 | --- | --- |
-| Release (`deploy_orchestration.py`): 9 ingestion files, 97 transformation files, 5 items | about 4 min |
+| Release (`deploy_orchestration.py`): the ingestion and transformation code (about 10 and 97 files), 5 items | about 4 min |
 | `nyc_taxi_refresh`, full Q1: `tlc` 2.7 min, then `ops` 2.4 and `mdm` 2.1 in parallel, then `nyc_taxi_build_dbt` 13.2 | about 19 min |
 
-A trial capacity is not billed; the run's capacity-unit use was not measured. Each notebook starts in 2 to 3 minutes on a cold capacity, which is most of the load steps' time.
+A trial capacity is not billed, and the run's capacity-unit use was not read from the Capacity Metrics app. An upper bound is the whole capacity for the whole run: 64 CU for about 23 minutes (release and run), about 25 CU-hours. The real figure is lower, since the notebooks and the Livy session use a fraction of an F64. Each notebook starts in 2 to 3 minutes on a cold capacity, which is most of the load steps' time.
 
 ## Check the seed
 

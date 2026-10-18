@@ -14,9 +14,8 @@ and load the real data (`tlc`) and regenerate the invented systems
 deterministically (`ops`, `mdm`) into the Domain Lakehouse. The
 `nyc_taxi_refresh` Data Pipeline in `orchestration/` runs them.
 
-Row counts below are for the full three-month load. A Domain seeded from
-January alone (`seeding-the-domain.md`) holds about a third of the trips and of
-everything generated from them.
+Row counts below are for the full three-month load, which is what the Domain is
+seeded with (`seeding-the-domain.md`).
 
 ---
 
