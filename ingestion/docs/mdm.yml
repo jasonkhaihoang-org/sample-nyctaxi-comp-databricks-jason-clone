@@ -1,0 +1,283 @@
+# Resource docs for the mdm pipeline: every emitted field, including _dlt_* columns.
+connection: mdm
+dataset: mdm_raw
+resources:
+  zone_master:
+    description: Versioned master of TLC zones, enriched with geography and demand tier.
+    columns:
+    - name: location_id
+      description: TLC taxi zone identifier. Natural key of the zone.
+      source_ref: mdm.zone_master.location_id
+    - name: borough_name
+      description: Borough the zone belongs to.
+      source_ref: mdm.zone_master.borough_name
+    - name: zone_label
+      description: Name of the zone.
+      source_ref: mdm.zone_master.zone_label
+    - name: tlc_service_zone
+      description: TLC service zone grouping the zone belongs to.
+      source_ref: mdm.zone_master.tlc_service_zone
+    - name: centroid_lat
+      description: Latitude of the zone centroid. Simulated, stable per zone.
+      source_ref: mdm.zone_master.centroid_lat
+    - name: centroid_lon
+      description: Longitude of the zone centroid. Simulated, stable per zone.
+      source_ref: mdm.zone_master.centroid_lon
+    - name: area_sq_mi
+      description: Area of the zone in square miles. Simulated.
+      source_ref: mdm.zone_master.area_sq_mi
+    - name: resident_population
+      description: Resident population of the zone. Simulated.
+      source_ref: mdm.zone_master.resident_population
+    - name: is_airport_zone
+      description: True for the three airport zones.
+      source_ref: mdm.zone_master.is_airport_zone
+    - name: is_congestion_zone
+      description: True when the zone is inside the congestion-relief area. Simulated.
+      source_ref: mdm.zone_master.is_congestion_zone
+    - name: zone_class
+      description: 'Business class of the zone: airport, core, boro or unresolved.'
+      source_ref: mdm.zone_master.zone_class
+    - name: demand_tier
+      description: 'Demand tier assigned to the zone: very_high, high, moderate or low. Simulated.'
+      source_ref: mdm.zone_master.demand_tier
+    - name: valid_from_date
+      description: First date on which this version of the record applies (inclusive).
+      source_ref: mdm.zone_master.valid_from_date
+    - name: valid_to_date
+      description: Date on which this version stops applying (exclusive).
+      source_ref: mdm.zone_master.valid_to_date
+    - name: source_version
+      description: Version number of the record at the source; 1 is the first version.
+      source_ref: mdm.zone_master.source_version
+    - name: _dlt_load_id
+      description: Identifier of the dlt load package that wrote this row. Joins to `_dlt_loads.load_id`.
+    - name: _dlt_id
+      description: Synthetic row identifier assigned by dlt at load time. Unique within the bronze table;
+        not a natural primary key.
+  vendor_master:
+    description: Versioned master of technology vendors.
+    columns:
+    - name: vendor_id
+      description: TLC vendor code. Natural key of the vendor.
+      source_ref: mdm.vendor_master.vendor_id
+    - name: vendor_legal_name
+      description: Legal name of the vendor in this version.
+      source_ref: mdm.vendor_master.vendor_legal_name
+    - name: vendor_short_code
+      description: Short code for the vendor in this version.
+      source_ref: mdm.vendor_master.vendor_short_code
+    - name: contract_tier
+      description: 'Contract tier of the vendor in this version: gold, silver or bronze.'
+      source_ref: mdm.vendor_master.contract_tier
+    - name: valid_from_date
+      description: First date on which this version of the record applies (inclusive).
+      source_ref: mdm.vendor_master.valid_from_date
+    - name: valid_to_date
+      description: Date on which this version stops applying (exclusive).
+      source_ref: mdm.vendor_master.valid_to_date
+    - name: source_version
+      description: Version number of the record at the source; 1 is the first version.
+      source_ref: mdm.vendor_master.source_version
+    - name: is_approved
+      description: Whether the vendor is approved for use in this version.
+      source_ref: mdm.vendor_master.is_approved
+    - name: _dlt_load_id
+      description: Identifier of the dlt load package that wrote this row. Joins to `_dlt_loads.load_id`.
+    - name: _dlt_id
+      description: Synthetic row identifier assigned by dlt at load time. Unique within the bronze table;
+        not a natural primary key.
+  payment_method_master:
+    description: Master of payment methods and how each settles.
+    columns:
+    - name: payment_type_code
+      description: TLC payment type code.
+      source_ref: mdm.payment_method_master.payment_type_code
+    - name: payment_method_name
+      description: Name of the payment method.
+      source_ref: mdm.payment_method_master.payment_method_name
+    - name: settlement_class
+      description: 'How the payment settles: electronic, cash, waived, contested, voided or unknown.'
+      source_ref: mdm.payment_method_master.settlement_class
+    - name: tip_is_captured
+      description: True when the meter records a tip for this payment method.
+      source_ref: mdm.payment_method_master.tip_is_captured
+    - name: settlement_days
+      description: Days between the trip and settlement of the payment.
+      source_ref: mdm.payment_method_master.settlement_days
+    - name: processor_fee_pct
+      description: Processor fee as a fraction of the payment.
+      source_ref: mdm.payment_method_master.processor_fee_pct
+    - name: counts_as_revenue
+      description: True when trips paid this way count as revenue.
+      source_ref: mdm.payment_method_master.counts_as_revenue
+    - name: _dlt_load_id
+      description: Identifier of the dlt load package that wrote this row. Joins to `_dlt_loads.load_id`.
+    - name: _dlt_id
+      description: Synthetic row identifier assigned by dlt at load time. Unique within the bronze table;
+        not a natural primary key.
+  rate_plan_master:
+    description: Master of rate plans.
+    columns:
+    - name: rate_code
+      description: TLC rate code. Natural key of the rate plan.
+      source_ref: mdm.rate_plan_master.rate_code
+    - name: rate_plan_name
+      description: Name of the rate plan.
+      source_ref: mdm.rate_plan_master.rate_plan_name
+    - name: is_flat_fare
+      description: True when the plan charges a flat fare.
+      source_ref: mdm.rate_plan_master.is_flat_fare
+    - name: flat_fare_amount
+      description: Flat fare amount, when the plan has one.
+      source_ref: mdm.rate_plan_master.flat_fare_amount
+    - name: is_airport_plan
+      description: True when the plan is specific to an airport.
+      source_ref: mdm.rate_plan_master.is_airport_plan
+    - name: is_metered_baseline
+      description: True when the plan is a metered baseline.
+      source_ref: mdm.rate_plan_master.is_metered_baseline
+    - name: pricing_model
+      description: 'How the plan prices a trip: meter, meter_plus, flat, negotiated or unknown.'
+      source_ref: mdm.rate_plan_master.pricing_model
+    - name: _dlt_load_id
+      description: Identifier of the dlt load package that wrote this row. Joins to `_dlt_loads.load_id`.
+    - name: _dlt_id
+      description: Synthetic row identifier assigned by dlt at load time. Unique within the bronze table;
+        not a natural primary key.
+  fare_regime_master:
+    description: Effective-dated surcharge rates by fare component.
+    columns:
+    - name: regime_code
+      description: Code of the surcharge regime.
+      source_ref: mdm.fare_regime_master.regime_code
+    - name: fare_component
+      description: The fare component the regime sets a rate for.
+      source_ref: mdm.fare_regime_master.fare_component
+    - name: rate_amount
+      description: Rate amount charged for the component under this regime.
+      source_ref: mdm.fare_regime_master.rate_amount
+    - name: applies_to_fleet
+      description: 'Fleet the regime applies to: yellow, green or all.'
+      source_ref: mdm.fare_regime_master.applies_to_fleet
+    - name: valid_from_date
+      description: First date on which this version of the record applies (inclusive).
+      source_ref: mdm.fare_regime_master.valid_from_date
+    - name: valid_to_date
+      description: Date on which this version stops applying (exclusive).
+      source_ref: mdm.fare_regime_master.valid_to_date
+    - name: _dlt_load_id
+      description: Identifier of the dlt load package that wrote this row. Joins to `_dlt_loads.load_id`.
+    - name: _dlt_id
+      description: Synthetic row identifier assigned by dlt at load time. Unique within the bronze table;
+        not a natural primary key.
+  borough_master:
+    description: Master of boroughs.
+    columns:
+    - name: borough_name
+      description: Name of the borough. Natural key.
+      source_ref: mdm.borough_master.borough_name
+    - name: borough_code
+      description: Short code of the borough.
+      source_ref: mdm.borough_master.borough_code
+    - name: reporting_region
+      description: Reporting region the borough is grouped into.
+      source_ref: mdm.borough_master.reporting_region
+    - name: resident_population
+      description: Resident population of the borough.
+      source_ref: mdm.borough_master.resident_population
+    - name: area_sq_mi
+      description: Area of the borough in square miles.
+      source_ref: mdm.borough_master.area_sq_mi
+    - name: is_nyc
+      description: True when the borough is inside New York City.
+      source_ref: mdm.borough_master.is_nyc
+    - name: is_core_market
+      description: True when the borough is the core market.
+      source_ref: mdm.borough_master.is_core_market
+    - name: _dlt_load_id
+      description: Identifier of the dlt load package that wrote this row. Joins to `_dlt_loads.load_id`.
+    - name: _dlt_id
+      description: Synthetic row identifier assigned by dlt at load time. Unique within the bronze table;
+        not a natural primary key.
+  zone_poi:
+    description: 'Points of interest per zone: a many-to-many between zones and categories.'
+    columns:
+    - name: poi_id
+      description: Identifier of the point of interest.
+      source_ref: mdm.zone_poi.poi_id
+    - name: location_id
+      description: TLC taxi zone identifier. Natural key of the zone.
+      source_ref: mdm.zone_poi.location_id
+    - name: poi_category
+      description: Code of the point-of-interest category.
+      source_ref: mdm.zone_poi.poi_category
+    - name: poi_category_name
+      description: Name of the point-of-interest category.
+      source_ref: mdm.zone_poi.poi_category_name
+    - name: demand_weight
+      description: Relative weight of the category for demand.
+      source_ref: mdm.zone_poi.demand_weight
+    - name: poi_name
+      description: Name of the point of interest.
+      source_ref: mdm.zone_poi.poi_name
+    - name: _dlt_load_id
+      description: Identifier of the dlt load package that wrote this row. Joins to `_dlt_loads.load_id`.
+    - name: _dlt_id
+      description: Synthetic row identifier assigned by dlt at load time. Unique within the bronze table;
+        not a natural primary key.
+  calendar_master:
+    description: Calendar with holidays, weekends and school terms.
+    columns:
+    - name: calendar_date
+      description: The calendar date.
+      source_ref: mdm.calendar_master.calendar_date
+    - name: holiday_name
+      description: Name of the holiday or city event, when the date is one.
+      source_ref: mdm.calendar_master.holiday_name
+    - name: holiday_class
+      description: 'Class of the holiday: federal or city_event.'
+      source_ref: mdm.calendar_master.holiday_class
+    - name: is_holiday
+      description: True when the date is a holiday or city event.
+      source_ref: mdm.calendar_master.is_holiday
+    - name: is_weekend
+      description: True when the date falls on a Saturday or Sunday.
+      source_ref: mdm.calendar_master.is_weekend
+    - name: is_school_term
+      description: True when New York City public schools are in term.
+      source_ref: mdm.calendar_master.is_school_term
+    - name: _dlt_load_id
+      description: Identifier of the dlt load package that wrote this row. Joins to `_dlt_loads.load_id`.
+    - name: _dlt_id
+      description: Synthetic row identifier assigned by dlt at load time. Unique within the bronze table;
+        not a natural primary key.
+  weather_daily:
+    description: Daily weather observation per borough. Simulated.
+    columns:
+    - name: observation_id
+      description: Identifier of the weather observation.
+      source_ref: mdm.weather_daily.observation_id
+    - name: obs_date
+      description: Date of the observation.
+      source_ref: mdm.weather_daily.obs_date
+    - name: borough_name
+      description: Borough the observation is for.
+      source_ref: mdm.weather_daily.borough_name
+    - name: temp_avg_f
+      description: Average temperature in degrees Fahrenheit. Simulated.
+      source_ref: mdm.weather_daily.temp_avg_f
+    - name: precip_inches
+      description: Precipitation in inches. Simulated.
+      source_ref: mdm.weather_daily.precip_inches
+    - name: snow_inches
+      description: Snowfall in inches. Simulated.
+      source_ref: mdm.weather_daily.snow_inches
+    - name: wind_mph
+      description: Wind speed in miles per hour. Simulated.
+      source_ref: mdm.weather_daily.wind_mph
+    - name: _dlt_load_id
+      description: Identifier of the dlt load package that wrote this row. Joins to `_dlt_loads.load_id`.
+    - name: _dlt_id
+      description: Synthetic row identifier assigned by dlt at load time. Unique within the bronze table;
+        not a natural primary key.

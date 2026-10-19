@@ -1,72 +1,115 @@
-# NYC Taxi Analytics — Domain Context
+# NYC Taxi Analytics — Context
 
-> **Before trusting any number here, read [docs/data-provenance.md](docs/data-provenance.md).**
-> This warehouse mixes real TLC open data with two invented source systems.
-> Every dollar is real; every person is not.
+The vocabulary of the NYC taxi analytics data product: real TLC trip records, plus a simulated fleet operator and a simulated master-data platform.
 
-Analytics warehouse for TLC trip-record data. Owned by the Data Platform team;
-consumed by Finance Reporting, Commercial, Fleet Operations, and Data Platform.
+**This file is the language layer, nothing else.** Layers and locations are in `repo-map.json`; columns and lineage are in the catalog; decisions are in `docs/adr/`.
 
-## Layers
+## Language
 
-| Layer | Contents | Owner |
-| --- | --- | --- |
-| `bronze` | Landed TLC Parquet, verbatim. Source column names and types are preserved; only `_load_id`, `_source_file`, and `_loaded_at` are added. | ingestion |
-| `silver` | Conformed TLC data. Yellow and Green are unioned to one trip grain with shared names. | platform |
-| `ops_raw` | Generated fleet operations: garages, vehicles, drivers, leases, shifts, assignments, status events, and maintenance. | operations source builder |
-| `mdm_raw` | Generated and maintained master data: zones, vendors, payment methods, rate plans, calendar, POIs, and weather. | master-data source builder |
-| `staging` | dbt views that shape the four source layers for downstream use. | platform |
-| `intermediate` | dbt tables for trip enrichment, fare components, data-quality flags, status intervals, and shift calculations. | platform |
-| `core`, `agg`, `finance`, `ops` | dbt dimensions, facts, aggregates, and consumer-facing marts. Business rules are applied at the model that needs them. | platform |
+**Trip**:
+One completed taxi journey, as the TLC records it. A trip is identified by its natural columns: service type, vendor, pickup and dropoff time, pickup and dropoff zone, distance and total.
 
-`bronze`, `silver`, `ops_raw`, and `mdm_raw` are dbt sources produced outside
-dbt. dbt manages the `staging`, `intermediate`, `core`, `agg`, `finance`, and
-`ops` model layers.
+**Service type**:
+Which fleet carried the trip: yellow (medallion taxis) or green (boro taxis). Green may not pick up in the Manhattan core or at the airports except by pre-arrangement, so airport volume is overwhelmingly yellow.
+_Not_: vendor, because a vendor is the technology provider that supplies the meter and serves both fleets.
 
-## Ubiquitous language
+**Zone**:
+A TLC taxi zone: the area a trip starts or ends in. Zones belong to a borough.
 
-- **Trip** — one completed taxi journey. Grain of `silver.trips`, keyed by
-  `trip_key`.
-- **Fleet / service type** — `yellow` (medallion) or `green` (boro taxi).
-  Green may not pick up passengers in the Manhattan core or at the airports
-  except by pre-arrangement, so airport volume is overwhelmingly yellow.
-- **Zone** — one of 265 TLC `LocationID` values. The current loaded data has a
-  non-null, lookup-resolved pickup and dropoff zone for every trip.
-- **Billable trip** — `total_amount > 0` within the reporting window. Finance
-  revenue marts and selected aggregates opt into this definition. `core.fct_trip`
-  retains all trips and exposes `is_billable`, so data-quality and operational
-  models can analyse refunds, voids, and meter errors.
-- **Reporting window** — 2024-01-01 to 2024-07-01, set by `report_start` /
-  `report_end` vars. Not a sampling control; changing it changes the numbers
-  Finance sees.
+**Zone version**:
+TLC re-designates zones, so a zone can have more than one version. The current version is the one in force now; a trip uses the version in force on its pickup date.
 
-## Known data characteristics
+**Unresolved zone**:
+A zone the TLC lists but cannot place in a borough. It is a real zone, so it joins like any other, and it pollutes a borough rollup unless the consumer filters it.
 
-- `payment_type` 3 (No charge) and 4 (Dispute) rows carry a fare but usually a
-  zero tip. Any tip-rate metric that does not exclude them reads low.
-- `total_amount` goes negative on refunds. `trip_distance` is 0 on a
-  meaningful number of trips (meter started and stopped at the same place).
-- Zone ids 264 (`Unknown`) and 265 (`N/A`) are real rows in the lookup, so
-  they join cleanly and silently pollute any borough rollup. `dim_zone`
-  carries `is_unknown_borough` for this reason; not every mart uses it.
-- Tips are only recorded for card payments. Cash tips are not captured at all,
-  so tip totals are structurally understated and cash trips are not "zero tip",
-  they are unmeasured.
+**Technology vendor**:
+The provider that supplies a taxi's meter and sends its trip records. Vendors are renamed and acquired, so a vendor has a history.
 
-## Consumers
+**Fare component**:
+One part of a trip's total: the fare itself, tip, tolls, taxes and surcharges.
 
-- Finance Reporting — the Monday revenue pack, backed by
-  `finance.mart_daily_zone_revenue` and `finance.mart_revenue_component_bridge`.
-- Commercial — the concession-negotiation pack, backed by
-  `finance.mart_monthly_service_summary`.
-- Fleet Operations — the garage operations review, backed by
-  `ops.mart_driver_scorecard`, `ops.mart_vehicle_utilisation`, and
-  `agg.agg_garage_monthly`.
-- Data Platform — the data-quality review, backed by
-  `ops.mart_trip_quality_scorecard`.
+**Fare residual**:
+What is left of a trip's total after every modelled fare component. A non-zero residual means the total is not the sum of its parts.
 
-The aggregate models also support ad-hoc analysis; they are not all bound to a
-declared exposure.
+**Billable trip**:
+A trip whose total is positive. Revenue and flow reporting counts only billable trips inside the reporting window; quality reporting counts all trips and shows how many are billable.
+_Not_: revenue trip, because whether a billable trip counts as revenue depends on how it was paid.
 
-No semantic layer. No orchestration in this repo; the loader and `dbt build`
-are scheduled externally, nightly at 03:00 ET.
+**Refund**:
+A trip with a negative total.
+
+**Zero-distance trip**:
+A trip whose meter started and stopped in the same place.
+
+**Trip quality verdict**:
+A named condition a trip can meet, such as being a refund, being implausibly fast or touching an unresolved zone. Trips are flagged with their verdicts and never removed.
+
+**Reporting window**:
+The period the business reports on. Trips picked up inside it are in scope for revenue and flow reporting.
+_Not_: a sampling window, because changing it changes the numbers, not the volume loaded.
+
+**Payment method**:
+How a passenger paid, such as by card or in cash. It decides whether a tip is recorded and whether a trip counts as revenue.
+
+**No-charge and dispute payments**:
+Payment methods under which a trip can carry a positive total yet is not revenue. They are not excluded from billable trips; each metric decides whether to count them.
+
+**Measurable tip rate**:
+The tip as a share of the fare, for payment methods that record tips only. For the others it is null.
+_Not_: blended tip rate, because it falls in proportion to how much traffic pays another way and reads as a finding about a zone.
+
+**Unmeasured tip**:
+A tip the payment method does not record. It is not a zero tip.
+
+**Rate plan**:
+How a trip is priced: metered, flat fare or negotiated.
+
+**Fare regime**:
+A set of surcharge rates with the dates they apply between.
+
+**Daypart**:
+A named band of the day, defined by the business.
+
+**Trip band**:
+A range of distance, duration or fare used to profile trips.
+
+**Origin-destination flow**:
+The trips between one pickup zone and one dropoff zone.
+
+**Medallion**:
+The licence to operate a taxi, and by extension the vehicle it covers.
+_Not_: the bronze, silver and gold layering, which is a platform term defined elsewhere.
+
+**Fleet attribution**:
+A trip matched to one of the operator's vehicles and drivers. Most trips are not attributed, because the operator runs only part of the city's fleet.
+
+**Garage**:
+A depot where the operator keeps its vehicles.
+
+**Shift**:
+A driver's working period on one vehicle, from sign-on to sign-off. When no sign-off is recorded the shift is unclosed and ends at the operator's derived end, shortly after its last trip.
+
+**Lease type**:
+How a driver pays for a vehicle: owner-operators share revenue, lease drivers pay a fixed rate.
+
+**Status interval**:
+The time between one driver status event and the next.
+
+**Occupancy**:
+The share of a driver's online time spent carrying a fare. It is collected from driver status events, separately from revenue.
+_Not_: asset utilisation, because occupancy is measured against sign-on time and utilisation against the whole day.
+
+**Locatable idle time**:
+Time a driver spends waiting, with a place attached. It shows where a driver waited, where a trip shows where a driver earned.
+
+**Online hour**:
+An hour a driver is signed on. Driver performance is ranked on revenue per online hour.
+
+**Asset utilisation**:
+The share of the 24-hour day a vehicle is in use. A vehicle idle in the depot is an asset question; a driver idle on the road is a labour question.
+
+**Maintenance downtime**:
+Days a vehicle is out of service. They are removed from its availability, so a vehicle in the shop does not look idle.
+
+**Week**:
+A calendar week, starting on Monday.

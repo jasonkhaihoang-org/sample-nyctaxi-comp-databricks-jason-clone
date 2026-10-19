@@ -1,0 +1,302 @@
+{
+  "generated_at": "2026-10-14T07:04:48Z",
+  "repo_root": "sample-nyctaxi-comp-fabric",
+  "primary_languages": [
+    "SQL",
+    "Python",
+    "YAML",
+    "Markdown"
+  ],
+  "package_managers": [
+    {
+      "name": "pip",
+      "manifest": "ingestion/requirements.txt"
+    },
+    {
+      "name": "pip",
+      "manifest": "requirements-dev.txt"
+    }
+  ],
+  "build_systems": [
+    {
+      "name": "dbt (fabricspark)",
+      "config_files": [
+        "transformation/dbt_project.yml",
+        "transformation/profiles.yml",
+        "transformation/packages.yml"
+      ],
+      "notes": "Project profile comes from DBT_PROFILE_NAME, default dbt_fab_spark, the name the CI bundle's profiles use. In an Intent the runtime renders it with one target, ephemeral_dev; profiles.yml holds the Domain's prod target for the job notebook and the release."
+    },
+    {
+      "name": "dlt",
+      "config_files": [
+        "ingestion/.dlt/config.toml"
+      ],
+      "notes": "One pipeline notebook per source, ingestion/<name>_pipeline.Notebook/. Pipelines import vibedata.dlt.fabric and write Delta through the filesystem destination; the runtime wrapper supplies the destination in an Intent."
+    }
+  ],
+  "test_frameworks": [
+    {
+      "name": "dbt tests",
+      "scope": "Generic tests in _*.yml, singular tests in transformation/tests/, unit tests in models/intermediate/_unit_tests.yml.",
+      "config_files": [
+        "test-map.json"
+      ]
+    },
+    {
+      "name": "pytest",
+      "scope": "Offline unit tests for ingestion, orchestration, and the two maps.",
+      "config_files": [
+        "test-map.json"
+      ]
+    }
+  ],
+  "applications": [
+    {
+      "name": "nyc-taxi-fabric-demo",
+      "type": "Fabric Lakehouse (dlt + dbt)",
+      "description": "NYC taxi analytics over real TLC trip records for 2024-01 to 2024-03, plus two simulated source systems (fleet operations and master data). Every layer is a schema in the Domain Lakehouse."
+    }
+  ],
+  "entrypoints": {
+    "dbt_project": "transformation/dbt_project.yml",
+    "tlc_pipeline": "ingestion/tlc_pipeline.Notebook/notebook-content.py",
+    "ops_pipeline": "ingestion/ops_pipeline.Notebook/notebook-content.py",
+    "mdm_pipeline": "ingestion/mdm_pipeline.Notebook/notebook-content.py",
+    "nyc_taxi_refresh": "orchestration/nyc_taxi_refresh.DataPipeline/pipeline-content.json",
+    "nyc_taxi_build_dbt": "orchestration/nyc_taxi_build_dbt.Notebook/notebook-content.py"
+  },
+  "layers": {
+    "bronze": {
+      "schema": "bronze",
+      "built_by": "dlt",
+      "path": "ingestion/",
+      "notes": "TLC trips and zone lookup, verbatim."
+    },
+    "ops_raw": {
+      "schema": "ops_raw",
+      "built_by": "dlt",
+      "path": "ingestion/",
+      "notes": "Simulated fleet-operations source."
+    },
+    "mdm_raw": {
+      "schema": "mdm_raw",
+      "built_by": "dlt",
+      "path": "ingestion/",
+      "notes": "Simulated master-data source."
+    },
+    "staging": {
+      "schema": "staging",
+      "built_by": "dbt",
+      "path": "transformation/models/staging/",
+      "notes": "Flat: one folder, stg_<source>__<entity> files."
+    },
+    "intermediate": {
+      "schema": "intermediate",
+      "built_by": "dbt",
+      "path": "transformation/models/intermediate/"
+    },
+    "core": {
+      "schema": "core",
+      "built_by": "dbt",
+      "path": "transformation/models/marts/core/"
+    },
+    "agg": {
+      "schema": "agg",
+      "built_by": "dbt",
+      "path": "transformation/models/marts/agg/"
+    },
+    "finance": {
+      "schema": "finance",
+      "built_by": "dbt",
+      "path": "transformation/models/marts/finance/"
+    },
+    "ops": {
+      "schema": "ops",
+      "built_by": "dbt",
+      "path": "transformation/models/marts/ops/"
+    }
+  },
+  "sources": {
+    "tlc": {
+      "kind": "dlt",
+      "dataset": "bronze",
+      "pipeline": "ingestion/tlc_pipeline.Notebook/",
+      "docs": "ingestion/docs/tlc.yml",
+      "description": "NYC TLC yellow and green trips and the zone lookup, fetched from the public TLC site.",
+      "module": "ingestion/sources/tlc.py",
+      "config_section": "sources.tlc",
+      "tests": "tests/ingestion/test_tlc.py",
+      "design_record": "docs/design/pipelines/tlc.md"
+    },
+    "ops": {
+      "kind": "dlt",
+      "dataset": "ops_raw",
+      "pipeline": "ingestion/ops_pipeline.Notebook/",
+      "docs": "ingestion/docs/ops.yml",
+      "description": "Fleet operator's platform, generated from the yellow trips.",
+      "module": "ingestion/sources/ops.py",
+      "config_section": "sources.ops",
+      "tests": "tests/ingestion/test_ops.py",
+      "design_record": "docs/design/pipelines/ops.md"
+    },
+    "mdm": {
+      "kind": "dlt",
+      "dataset": "mdm_raw",
+      "pipeline": "ingestion/mdm_pipeline.Notebook/",
+      "docs": "ingestion/docs/mdm.yml",
+      "description": "Master-data platform: zones, vendors, payment methods, rate plans, regimes, boroughs, points of interest, calendar, weather.",
+      "module": "ingestion/sources/mdm.py",
+      "config_section": "sources.mdm",
+      "tests": "tests/ingestion/test_mdm.py",
+      "design_record": "docs/design/pipelines/mdm.md"
+    }
+  },
+  "artifact_paths": {
+    "design_record_model": "docs/design/models/{layer}/{model}.md",
+    "design_record_pipeline": "docs/design/pipelines/{pipeline}.md",
+    "design_record_area": "docs/design/{area}/{subject}.md",
+    "context": "CONTEXT.md",
+    "adr": "docs/adr/{nnnn}-{slug}.md",
+    "dbt_project": "transformation/",
+    "dbt_sources": "transformation/models/staging/_sources.yml",
+    "singular_tests": "transformation/tests/",
+    "ingestion_root": "ingestion/",
+    "pipeline": "ingestion/{name}_pipeline.Notebook/",
+    "resource_docs": "ingestion/docs/{connection}.yml",
+    "orchestration": "orchestration/",
+    "test_map": "test-map.json",
+    "source_module": "ingestion/sources/{name}.py",
+    "source_tests": "tests/ingestion/test_{name}.py",
+    "source_config": "ingestion/.dlt/config.toml",
+    "review": "docs/review/{date}-{type}-{slug}.md",
+    "proposal": "docs/proposal/{nnnn}-{slug}.md",
+    "requirement": "docs/requirement/{intent}.md",
+    "plan": "docs/plans/{intent}.md",
+    "verification": "docs/verify/{intent}.md",
+    "case_record": "docs/cases/{intent}.md"
+  },
+  "modules": {
+    "ingestion": {
+      "path": "ingestion/",
+      "description": "dlt pipelines (one per source), their source code under sources/, resource docs under docs/, and .dlt/config.toml."
+    },
+    "orchestration": {
+      "path": "orchestration/",
+      "description": "The nyc_taxi_refresh Data Pipeline (tlc, then ops and mdm, then dbt) and the nyc_taxi_build_dbt job notebook it runs. Authored by the plugin's generating-orchestration; no schedule is committed."
+    },
+    "staging": {
+      "path": "transformation/models/staging/",
+      "description": "Tables: one per source table, renamed and typed. Also holds _sources.yml."
+    },
+    "intermediate": {
+      "path": "transformation/models/intermediate/",
+      "description": "Business logic and joins: conformed trips, enrichment, fare components, quality flags, status intervals, shift occupancy and economics. Unit tests in _unit_tests.yml."
+    },
+    "core": {
+      "path": "transformation/models/marts/core/",
+      "description": "Facts and conformed dimensions, plus the semantic model (_semantic.yml)."
+    },
+    "agg": {
+      "path": "transformation/models/marts/agg/",
+      "description": "Aggregates built from the facts."
+    },
+    "finance": {
+      "path": "transformation/models/marts/finance/",
+      "description": "Revenue marts. Apply the billable rule (ADR 0003): filter on `fct_trip.is_billable`, inside the report window."
+    },
+    "ops": {
+      "path": "transformation/models/marts/ops/",
+      "description": "Fleet-operations marts: driver scorecard, vehicle utilisation, trip quality scorecard."
+    },
+    "seeds": {
+      "path": "transformation/seeds/",
+      "description": "Analyst-owned banding tables."
+    },
+    "macros": {
+      "path": "transformation/macros/",
+      "description": "trip_natural_key (the only definition of trip_key), report window, schema naming, finance helpers, and source_defer.sql, which resolves source() in the Ephemeral Lakehouse and, under --defer, in the Domain's."
+    },
+    "tests": {
+      "path": "transformation/tests/",
+      "description": "Singular dbt tests."
+    },
+    "python_tests": {
+      "path": "tests/",
+      "description": "pytest tests for ingestion, orchestration wiring and the maps."
+    },
+    "decisions": {
+      "path": "docs/adr/",
+      "description": "ADRs, including the standing business answers."
+    },
+    "designs": {
+      "path": "docs/design/",
+      "description": "Design records per model and pipeline."
+    },
+    "requirements": {
+      "path": "docs/requirement/",
+      "description": "Requirements, one file per intent at artifact_paths.requirement; plans and verifications go to artifact_paths.plan and artifact_paths.verification when first written."
+    },
+    "conventions": {
+      "path": ".agents/skills/",
+      "description": "Operator conventions as skills (OpenHands lists each one): naming, style, testing, dlt, and what goes in context, ADRs and design records."
+    },
+    "setup": {
+      "path": "docs/setup/",
+      "description": "Repo maintenance documents (requirements, work plan, conventions inventory, skill changes, data provenance). Not for ingestion or transformation tasks; not maintained by build agents."
+    },
+    "reviews": {
+      "path": "docs/review/",
+      "description": "Review outputs (onboarding, security, performance and others) whose findings are triaged: intent, proposal, declined or deferred."
+    },
+    "proposals": {
+      "path": "docs/proposal/",
+      "description": "Optional proposals for major functional or design items that need discussion before they become intents."
+    }
+  },
+  "key_directories": {
+    "ingestion/": "dlt pipelines and sources",
+    "orchestration/": "Data Pipeline and dbt job notebook",
+    "transformation/": "dbt project",
+    "tests/": "pytest tests",
+    "docs/adr/": "ADRs",
+    "docs/design/": "design records",
+    "docs/requirement/": "requirements",
+    ".agents/skills/": "convention and procedure skills",
+    ".github/": "Domain CI workflows and scripts",
+    "docs/setup/": "Repo maintenance: the port's requirements and plan, the data-provenance notes, the skill changes it implies and how to seed the Domain Lakehouse. Not for ingestion or transformation tasks; do not read it for them, and do not maintain it.",
+    "docs/review/": "Review findings for triage. Not read during build tasks.",
+    "docs/proposal/": "Proposals that become intents. Read one only when the intent links to it."
+  },
+  "commands": {
+    "dbt_deps": "cd transformation && dbt deps",
+    "dbt_build": "cd transformation && dbt build",
+    "dbt_data_tests": "cd transformation && dbt test --exclude test_type:unit",
+    "dbt_unit_tests": "cd transformation && dbt test --select test_type:unit",
+    "dbt_parse": "cd transformation && dbt parse",
+    "dbt_docs": "cd transformation && dbt docs generate",
+    "python_tests": "python3 -m pytest tests -q",
+    "python_lint": "ruff check .",
+    "adr_lint": "python3 .github/scripts/adr_lint.py"
+  },
+  "key_references": {
+    "agents": "AGENTS.md",
+    "vocabulary": "CONTEXT.md",
+    "conventions": ".agents/skills/",
+    "test_map": "test-map.json",
+    "schema": "repo-map.schema.json"
+  },
+  "notes_for_agents": {
+    "startup": "Read this file first. AGENTS.md says how to work; the skills in .agents/skills/ hold the conventions.",
+    "reporting_window": "report_start and report_end are dbt vars in dbt_project.yml and define the business reporting window. They are not a sampling control.",
+    "synthetic_data": "ops_raw and mdm_raw are simulated. TLC trips are real.",
+    "trip_key": "Produced only by the trip_natural_key macro. The operator source carries natural columns, not the key.",
+    "warehouse": "The Domain Lakehouse holds every layer. Only a release writes it; an Intent writes its own Ephemeral Lakehouse and defers unselected models and sources to the Domain (--defer --state /cache/prod-target).",
+    "dlt_environment": "Pipelines import vibedata.dlt.fabric and write Delta through the filesystem destination. In an Intent, run a pipeline notebook through the plugin's runtime wrapper (fabric_lakehouse/pipeline-notebook.md), which supplies the destination and credential; never set them by hand.",
+    "new_source": "A new source mirrors an existing entry in `sources`: create every artifact it lists (module, config section, pipeline notebook, resource docs, tests, design record). Mirror `tlc` for a downloaded file source. Then add its notebook as an activity in the nyc_taxi_refresh Data Pipeline and register it in test-map.json.",
+    "setup_docs": "docs/setup/ is repo maintenance. Do not read or maintain it for ingestion or transformation work.",
+    "reviews_and_proposals": "docs/review/ holds review findings for triage; do not read it for build tasks. Read a docs/proposal/ file only when the intent's requirement links to it.",
+    "dbt_sources": "dbt sources name a schema and never a database: macros/source_defer.sql resolves a source in the Ephemeral Lakehouse and, under --defer, in the Domain's. dbt runs in the sandbox use the ephemeral_dev target.",
+    "artifact_paths": "Every artifact location is declared here: requirement, plan, verification and case_record per intent, design records per model or pipeline (layered: design_record_model) or area. The plugin names an intent's artifacts; this map places them."
+  }
+}

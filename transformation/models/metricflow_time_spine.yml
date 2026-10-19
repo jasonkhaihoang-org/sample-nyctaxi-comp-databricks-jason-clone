@@ -1,0 +1,10 @@
+version: 2
+
+models:
+  - name: metricflow_time_spine
+    description: Daily time spine the dbt Semantic Layer (MetricFlow) requires to resolve time-based metric aggregation. Infrastructure model, not a business artifact; no product code reads it.
+    time_spine:
+      standard_granularity_column: date_day
+    columns:
+      - name: date_day
+        granularity: day

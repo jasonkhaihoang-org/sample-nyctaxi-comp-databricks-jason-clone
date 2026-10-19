@@ -1,0 +1,139 @@
+version: 2
+
+models:
+  - name: stg_tlc__yellow_tripdata
+    description: >
+      Yellow taxi trip records, one row per bronze row: renamed and typed.
+      Timestamps are brought back to plain UTC timestamps.
+    columns:
+      - name: pickup_datetime
+        tests: [not_null]
+
+  - name: stg_tlc__green_tripdata
+    description: >
+      Green taxi trip records, one row per bronze row: renamed and typed. Carries
+      `ehail_fee` and `trip_type`, which yellow does not.
+    columns:
+      - name: pickup_datetime
+        tests: [not_null]
+
+  - name: stg_tlc__yellow_trip_extras
+    description: >
+      Yellow-only columns the conform step drops (ADR 0006), keyed back to the
+      trip. Deduplicated to one row per natural key so the rejoin cannot
+      multiply the fact.
+    columns:
+      - name: trip_key
+        tests: [unique, not_null]
+      - name: airport_fee
+        description: >
+          Airport access fee as published. Dirty by nature: 1.75 current, zero on
+          trips that incur none, negative on reversals, null where the vendor did
+          not populate it.
+
+  - name: stg_tlc__green_trip_extras
+    description: Green-only columns, same reconstruction and dedup rule as yellow.
+    columns:
+      - name: trip_key
+        tests: [unique, not_null]
+
+  - name: stg_mdm__zones
+    description: Zone master, kept versioned. Collapsing to current is the dimension's job.
+  - name: stg_mdm__vendors
+    description: Vendor master, kept versioned.
+  - name: stg_mdm__payment_methods
+    description: "One row per payment method, as the master-data platform delivers it."
+    columns:
+      - name: payment_type
+        tests: [unique, not_null]
+  - name: stg_mdm__rate_plans
+    description: "One row per rate plan, as the master-data platform delivers it."
+    columns:
+      - name: rate_code_id
+        tests: [unique, not_null]
+  - name: stg_mdm__fare_regimes
+    description: "One row per fare regime: a surcharge rate with the dates it applies between."
+  - name: stg_mdm__boroughs
+    description: "One row per borough."
+    columns:
+      - name: borough_name
+        tests: [unique, not_null]
+  - name: stg_mdm__zone_poi
+    description: Many-to-many zone to point-of-interest.
+    columns:
+      - name: poi_id
+        tests: [unique, not_null]
+  - name: stg_mdm__calendar
+    description: "One row per calendar date, with holiday, weekend and school-term flags."
+    columns:
+      - name: calendar_date
+        tests: [unique, not_null]
+  - name: stg_mdm__weather
+    description: "One row per borough and day: the simulated weather observation."
+    columns:
+      - name: observation_id
+        tests: [unique, not_null]
+
+  - name: stg_ops__garages
+    description: "One row per garage."
+    columns:
+      - name: garage_id
+        tests: [unique, not_null]
+  - name: stg_ops__vehicles
+    description: "One row per vehicle, with an in-service flag."
+    columns:
+      - name: vehicle_id
+        tests: [unique, not_null]
+      - name: garage_id
+        tests:
+          - relationships: {arguments: {to: ref('stg_ops__garages'), field: garage_id}}
+  - name: stg_ops__drivers
+    description: "One row per driver."
+    columns:
+      - name: driver_id
+        tests: [unique, not_null]
+  - name: stg_ops__leases
+    description: "One row per lease agreement."
+    columns:
+      - name: lease_id
+        tests: [unique, not_null]
+  - name: stg_ops__shifts
+    description: >
+      Shift sign-ons with an effective end resolved once. ~1.5% of shifts never
+      emitted LOGOUT; `is_unclosed_shift` marks where the derived end was
+      substituted so nobody has to guess.
+    columns:
+      - name: shift_id
+        tests: [unique, not_null]
+      - name: shift_start_ts
+        tests: [not_null]
+      - name: effective_end_ts
+        tests: [not_null]
+  - name: stg_ops__trip_assignments
+    description: "One row per trip assignment, with the warehouse's trip key derived from the operator's natural columns."
+    columns:
+      - name: assignment_id
+        tests: [unique, not_null]
+      - name: trip_key
+        tests: [not_null]
+      - name: shift_id
+        tests:
+          - relationships: {arguments: {to: ref('stg_ops__shifts'), field: shift_id}}
+  - name: stg_ops__status_events
+    description: >
+      The occupancy stream. `skew_seconds` exposes the gap between assigned
+      and received time; sessionizing on the wrong one produces negative
+      intervals.
+    columns:
+      - name: event_id
+        tests: [unique, not_null]
+      - name: status_code
+        tests:
+          - accepted_values:
+              arguments:
+                values: [LOGIN, AVAILABLE, DISPATCHED, ON_TRIP, BREAK, LOGOUT]
+  - name: stg_ops__maintenance
+    description: "One row per maintenance event, with its end date."
+    columns:
+      - name: maintenance_id
+        tests: [unique, not_null]

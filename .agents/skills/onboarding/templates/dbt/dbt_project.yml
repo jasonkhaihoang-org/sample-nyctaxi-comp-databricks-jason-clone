@@ -1,0 +1,41 @@
+name: '<project_name>'
+version: '1.0.0'
+config-version: 2
+# The Studio sandbox selects its own profile through DBT_PROFILE_NAME; local runs use this project's.
+profile: "{{ env_var('DBT_PROFILE_NAME', '<project_name>') }}"
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+analysis-paths: ["analyses"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  # The evaluator package audits the project's own structure. It is built only when
+  # the quality workflow asks for it (--vars '{dbt_project_evaluator_enabled: true}').
+  dbt_project_evaluator:
+    +enabled: "{{ var('dbt_project_evaluator_enabled', false) }}"
+  <project_name>:
+    +persist_docs:
+      relation: true
+      columns: true
+    # One block per confirmed layer: folder, materialisation, schema.
+    staging:
+      +materialized: table
+      +schema: staging
+    intermediate:
+      +materialized: table
+      +schema: intermediate
+    marts:
+      +materialized: table
+      # One block per confirmed mart area, the folder name as the schema.
+      core:
+        +schema: core
+
+seeds:
+  dbt_project_evaluator:
+    +enabled: "{{ var('dbt_project_evaluator_enabled', false) }}"
+  <project_name>:
+    +schema: seeds

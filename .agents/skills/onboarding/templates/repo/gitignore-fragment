@@ -1,0 +1,20 @@
+# Added by onboarding
+# Downloaded data: the pipelines fetch it again
+*.parquet
+# Secrets: dlt reads them from the bound secret store
+**/secrets.toml
+.env
+# dbt
+dbt_packages/
+target/
+logs/
+**/.user.yml
+# dlt preview, written on every sample load
+ingestion/last-run-preview.md
+# Python and tools
+__pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.agents_tmp/
+*.log

@@ -1,0 +1,40 @@
+{
+  "generated_at": "<UTC timestamp>",
+  "taxonomy": {
+    "unit": "Offline pytest tests and dbt unit tests.",
+    "data": "dbt generic and singular tests, which run against the built warehouse.",
+    "structural": "Checks that a map or contract matches the repo."
+  },
+  "modules": {
+    "ingestion": {
+      "sources": [
+        "ingestion/"
+      ],
+      "commands": {}
+    },
+    "maps": {
+      "sources": [
+        "repo-map.json",
+        "test-map.json"
+      ],
+      "structural": [
+        "tests/test_maps.py"
+      ],
+      "commands": {
+        "structural": "python3 -m pytest tests/test_maps.py -q"
+      }
+    },
+    "decisions": {
+      "sources": [
+        "docs/adr/",
+        "docs/design/"
+      ],
+      "structural": [
+        "tests/test_adr_links.py"
+      ],
+      "commands": {
+        "structural": "python3 -m pytest tests/test_adr_links.py -q"
+      }
+    }
+  }
+}

@@ -1,0 +1,148 @@
+version: 2
+
+# MetricFlow definitions over the two gold facts. Each measure points at a committed
+# column of its fact; ratios are built from summed numerators and denominators
+# (ADR 0016), never from averaged row-level rates.
+
+semantic_models:
+  - name: trips
+    description: One row per TLC trip, with the billable flag and fleet attribution.
+    model: ref('fct_trip')
+    defaults:
+      agg_time_dimension: pickup_date
+    entities:
+      - name: trip
+        type: primary
+        expr: trip_key
+      - name: shift
+        type: foreign
+        expr: shift_id
+    dimensions:
+      - name: pickup_date
+        type: time
+        type_params:
+          time_granularity: day
+      - name: is_billable
+        type: categorical
+      - name: is_fleet_attributed
+        type: categorical
+      - name: airport_fee_status
+        type: categorical
+      - name: daypart_code
+        type: categorical
+    measures:
+      - name: trip_count
+        description: Trips, billable or not.
+        agg: count
+        expr: trip_key
+      - name: billable_trip_count
+        description: Trips whose total amount is positive.
+        agg: sum
+        expr: case when is_billable then 1 else 0 end
+      - name: billable_revenue
+        description: Total amount charged on billable trips. Excludes cash tips.
+        agg: sum
+        expr: case when is_billable then total_amount else 0 end
+      - name: fare_residual_total
+        description: Trip total minus every modelled fare component, summed.
+        agg: sum
+        expr: fare_residual
+
+  - name: shifts
+    description: One row per driver sign-on, with its time budget and revenue.
+    model: ref('fct_shift')
+    defaults:
+      agg_time_dimension: shift_date
+    entities:
+      - name: shift
+        type: primary
+        expr: shift_id
+      - name: driver
+        type: foreign
+        expr: driver_key
+      - name: vehicle
+        type: foreign
+        expr: vehicle_key
+    dimensions:
+      - name: shift_date
+        type: time
+        type_params:
+          time_granularity: day
+      - name: engagement_type
+        type: categorical
+      - name: lease_type
+        type: categorical
+    measures:
+      - name: shift_count
+        description: Driver sign-ons.
+        agg: count
+        expr: shift_id
+      - name: online_hours
+        description: Hours a driver was signed on.
+        agg: sum
+        expr: online_seconds / 3600e0
+      - name: on_trip_hours
+        description: Hours a driver was carrying a fare.
+        agg: sum
+        expr: on_trip_seconds / 3600e0
+      - name: gross_revenue
+        description: Revenue earned on the shift's trips.
+        agg: sum
+        expr: gross_revenue
+
+metrics:
+  - name: trip_count
+    label: Trips
+    type: simple
+    type_params:
+      measure: trip_count
+  - name: billable_trip_count
+    label: Billable trips
+    type: simple
+    type_params:
+      measure: billable_trip_count
+  - name: billable_revenue
+    label: Billable revenue
+    type: simple
+    type_params:
+      measure: billable_revenue
+  - name: fare_residual_total
+    label: Fare residual
+    type: simple
+    type_params:
+      measure: fare_residual_total
+  - name: shift_count
+    label: Shifts
+    type: simple
+    type_params:
+      measure: shift_count
+  - name: online_hours
+    label: Online hours
+    type: simple
+    type_params:
+      measure: online_hours
+  # Helper metrics: MetricFlow ratio metrics take metrics, not measures, as their parts.
+  - name: on_trip_hours
+    label: On-trip hours
+    type: simple
+    type_params:
+      measure: on_trip_hours
+  - name: gross_revenue
+    label: Gross revenue
+    type: simple
+    type_params:
+      measure: gross_revenue
+  - name: occupancy_rate
+    label: Occupancy rate
+    description: Share of online time spent carrying a fare, from summed hours.
+    type: ratio
+    type_params:
+      numerator: on_trip_hours
+      denominator: online_hours
+  - name: revenue_per_online_hour
+    label: Revenue per online hour
+    description: Gross revenue per online hour, from summed revenue and summed hours. The driver ranking basis.
+    type: ratio
+    type_params:
+      numerator: gross_revenue
+      denominator: online_hours

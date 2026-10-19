@@ -1,0 +1,151 @@
+{
+  "generated_at": "2026-10-14T07:04:48Z",
+  "taxonomy": {
+    "unit": "Offline pytest tests and dbt unit tests. No warehouse needed for pytest; dbt unit tests use fixtures.",
+    "data": "dbt generic and singular tests, which run against the built warehouse.",
+    "structural": "Checks that a map or contract matches the repo."
+  },
+  "modules": {
+    "ingestion": {
+      "sources": [
+        "ingestion/"
+      ],
+      "unit": [
+        "tests/ingestion/"
+      ],
+      "commands": {
+        "unit": "python3 -m pytest tests/ingestion -q"
+      }
+    },
+    "orchestration": {
+      "sources": [
+        "orchestration/"
+      ],
+      "structural": [
+        "tests/test_maps.py"
+      ],
+      "commands": {
+        "structural": "python3 -m pytest tests/test_maps.py -q -k orchestration"
+      }
+    },
+    "staging": {
+      "sources": [
+        "transformation/models/staging/"
+      ],
+      "data": [],
+      "selectors": {
+        "data": "path:models/staging"
+      },
+      "commands": {
+        "data": "cd transformation && dbt test --select path:models/staging --exclude test_type:unit"
+      }
+    },
+    "intermediate": {
+      "sources": [
+        "transformation/models/intermediate/"
+      ],
+      "unit": [
+        "transformation/models/intermediate/_unit_tests.yml"
+      ],
+      "data": [
+        "transformation/tests/assert_no_negative_status_intervals.sql",
+        "transformation/tests/assert_airport_fee_only_on_yellow.sql",
+        "transformation/tests/assert_enrichment_rejoin_matches_every_trip.sql"
+      ],
+      "selectors": {
+        "data": "path:models/intermediate",
+        "unit": "path:models/intermediate"
+      },
+      "commands": {
+        "unit": "cd transformation && dbt test --select path:models/intermediate,test_type:unit",
+        "data": "cd transformation && dbt test --select path:models/intermediate --exclude test_type:unit"
+      }
+    },
+    "core": {
+      "sources": [
+        "transformation/models/marts/core/"
+      ],
+      "data": [
+        "transformation/tests/assert_fct_trip_matches_conformed_rowcount.sql",
+        "transformation/tests/assert_scd2_zone_intervals_do_not_overlap.sql",
+        "transformation/tests/assert_shift_time_budget_reconciles.sql"
+      ],
+      "selectors": {
+        "data": "path:models/marts/core"
+      },
+      "commands": {
+        "data": "cd transformation && dbt test --select path:models/marts/core --exclude test_type:unit"
+      }
+    },
+    "agg": {
+      "sources": [
+        "transformation/models/marts/agg/"
+      ],
+      "data": [
+        "transformation/tests/assert_daypart_cube_one_row_per_grain.sql"
+      ],
+      "selectors": {
+        "data": "path:models/marts/agg"
+      },
+      "commands": {
+        "data": "cd transformation && dbt test --select path:models/marts/agg --exclude test_type:unit"
+      }
+    },
+    "finance": {
+      "sources": [
+        "transformation/models/marts/finance/"
+      ],
+      "selectors": {
+        "data": "path:models/marts/finance"
+      },
+      "commands": {
+        "data": "cd transformation && dbt test --select path:models/marts/finance --exclude test_type:unit"
+      }
+    },
+    "ops": {
+      "sources": [
+        "transformation/models/marts/ops/"
+      ],
+      "selectors": {
+        "data": "path:models/marts/ops"
+      },
+      "commands": {
+        "data": "cd transformation && dbt test --select path:models/marts/ops --exclude test_type:unit"
+      }
+    },
+    "semantic": {
+      "sources": [
+        "transformation/models/marts/core/_semantic.yml",
+        "transformation/models/metricflow_time_spine.sql"
+      ],
+      "commands": {
+        "structural": "cd transformation && dbt parse && dbt ls --resource-type metric"
+      }
+    },
+    "maps": {
+      "sources": [
+        "repo-map.json",
+        "test-map.json",
+        "repo-map.schema.json"
+      ],
+      "unit": [
+        "tests/test_maps.py"
+      ],
+      "commands": {
+        "structural": "python3 -m pytest tests/test_maps.py -q"
+      }
+    },
+    "decisions": {
+      "sources": [
+        "docs/adr/",
+        "docs/design/"
+      ],
+      "unit": [
+        "tests/test_adr_links.py"
+      ],
+      "commands": {
+        "structural": "python3 -m pytest tests/test_adr_links.py -q"
+      }
+    }
+  }
+}

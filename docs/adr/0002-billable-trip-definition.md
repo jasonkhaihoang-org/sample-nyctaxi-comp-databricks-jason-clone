@@ -1,6 +1,10 @@
-# ADR 0002 — The billable trip definition
+---
+status: rejected
+date: 2024-01
+rejected-note: Superseded by docs/adr/0003-billable-trip-definition-and-where-it-applies.md
+---
 
-**Status:** Accepted (2024-01)
+# ADR 0002 — The billable trip definition
 
 ## Context
 

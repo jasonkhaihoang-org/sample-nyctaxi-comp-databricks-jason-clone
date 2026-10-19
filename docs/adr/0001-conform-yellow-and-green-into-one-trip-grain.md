@@ -1,6 +1,10 @@
-# ADR 0001 — Conform yellow and green into one trip grain
+---
+status: rejected
+date: 2023-11
+rejected-note: Superseded by docs/adr/0006-silver-is-built-in-dbt.md
+---
 
-**Status:** Accepted (2023-11)
+# ADR 0001 — Conform yellow and green into one trip grain
 
 ## Context
 
