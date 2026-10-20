@@ -264,7 +264,7 @@
     "docs/requirement/": "requirements",
     ".agents/skills/": "convention and procedure skills",
     ".github/": "Domain CI workflows and scripts",
-    "docs/setup/": "Repo maintenance: the port's requirements and plan, the data-provenance notes, the skill changes it implies and how to seed the Domain Lakehouse. Not for ingestion or transformation tasks; do not read it for them, and do not maintain it.",
+    "docs/setup/": "Repo maintenance: the port's requirements and plan, the data-provenance notes, the skill changes it implies, how it keeps up with the DuckDB repo and how to seed the Domain Lakehouse. Not for ingestion or transformation tasks; do not read it for them, and do not maintain it.",
     "docs/review/": "Review findings for triage. Not read during build tasks.",
     "docs/proposal/": "Proposals that become intents. Read one only when the intent links to it."
   },

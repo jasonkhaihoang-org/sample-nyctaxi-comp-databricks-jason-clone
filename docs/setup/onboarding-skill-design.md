@@ -6,7 +6,7 @@ Repo maintenance. Build agents do not read this document.
 
 A customer brings a repo that already uses dbt and dlt. Onboarding turns it into a Vibedata domain repo, the way this repo was set up: the conventions in the code are captured as rules, `repo-map.json` and domain skills, the context documents are written, and everything the onboarding finds that should change is filed in a review for triage. Converting raw scripts to dlt and generating synthetic data are out of scope.
 
-The drafts live in this repo under `.agents/skills/` so they can be dry run against representative customer repos (the two skill folders are copied into each). They assume the plugin changes in [`skill-changes.md`](skill-changes.md) have shipped, including the extended brownfield `init`. They point at plugin skills; they do not restate them.
+The drafts live in this repo under `.agents/skills/` so they can be dry run against representative customer repos (the two skill folders are copied into each). They assume the plugin changes in [`skill-changes.md`](skill-changes.md) have shipped. Onboarding replaces the plugin's retired `init` (VD-6902). They point at plugin skills; they do not restate them.
 
 ## Decisions
 
@@ -42,7 +42,7 @@ Description: "Use this skill only when asked to onboard this repository into a V
 | --- | --- |
 | Requirement | Scope: which dbt projects and dlt pipelines, which areas. The deliverable is the context and the review, not code changes. |
 | Design | Discover: dbt project, dlt pipelines, profiles, CI, existing documents; a build on the sandbox `dev` target. Inventory every convention with evidence and a proposed destination. Grill (O-04). Mine domain-skill candidates (O-09). |
-| Build | The extended `init` writes `repo-map.json`, `test-map.json`, the map tests, the `AGENTS.md` index and `.agents/skills/`. Write confirmed domain skills under `.agents/skills/`, `CONTEXT.md`, ADRs for the decisions already in the code, and design records (O-08). Adopt existing documents (O-10). Declare `docs/review/` and `docs/proposal/`. Install the CI bundle. Call `reviewing` with type `onboarding`. |
+| Build | Onboarding writes `repo-map.json`, `test-map.json`, the map tests, the `AGENTS.md` index and `.agents/skills/`. Write confirmed domain skills under `.agents/skills/`, `CONTEXT.md`, ADRs for the decisions already in the code, and design records (O-08). Adopt existing documents (O-10). Declare `docs/review/` and `docs/proposal/`. Install the CI bundle. Call `reviewing` with type `onboarding`. |
 | Verify | O-11. |
 | Ship | One PR. The description lists where each existing convention went and recommends the trial (O-12). |
 
