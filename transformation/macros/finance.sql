@@ -31,7 +31,11 @@
     )
 {%- endmacro %}
 
+{#-
+  Both arguments are bracketed: callers pass expressions such as
+  `sum(seconds) / 3600e0` or `a - b`, which would otherwise bind to the division.
+-#}
 {% macro safe_divide(numerator, denominator) -%}
     case when coalesce({{ denominator }}, 0) = 0 then null
-         else {{ numerator }} / {{ denominator }} end
+         else ({{ numerator }}) / ({{ denominator }}) end
 {%- endmacro %}

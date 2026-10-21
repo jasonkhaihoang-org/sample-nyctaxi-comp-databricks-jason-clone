@@ -82,7 +82,8 @@
         "transformation/models/marts/agg/"
       ],
       "data": [
-        "transformation/tests/assert_daypart_cube_one_row_per_grain.sql"
+        "transformation/tests/assert_daypart_cube_one_row_per_grain.sql",
+        "transformation/tests/assert_compound_rates_equal_their_ratio.sql"
       ],
       "selectors": {
         "data": "path:models/marts/agg"
