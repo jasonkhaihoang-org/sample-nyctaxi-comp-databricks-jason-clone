@@ -10,11 +10,43 @@ Releasing the Domain is not a sandbox step: a release writes the Domain Lakehous
 
 That data stays in this Intent: the Domain is still empty for later Intents. Say so in the PR description.
 
+## Existing Domain views
+
+When the Domain holds data, check its existing views before the base commands. No Intent can repair a Domain view, so a broken one stays broken for every later Intent until a release fixes it. Include views outside the dbt project and views without tests. The check is read-only: never create, replace or drop a view, and never write the Domain.
+
+A Lakehouse holds two kinds of view, and each tool sees only one:
+
+- **Spark views**, which dbt's `view` materialisation and notebooks create. An Intent's build reads them through `--defer`, so a broken one fails each Intent that selects a model reading it. In a schema-enabled Lakehouse, Spark stores each one's references expanded to `` `workspace`.`lakehouse`.`schema`.table ``, so the Intent's same-named Ephemeral Lakehouse never captures them. Renaming the Domain's workspace breaks every one, as does dropping an object or column a view reads. `lakehouse_query` cannot see them; reach them with `dbt show` through the runtime wrapper.
+- **SQL analytics endpoint views** (T-SQL). The build never reads them, but agents and users do, through `lakehouse_query`, the only tool that sees them.
+
+The check needs a schema-enabled Domain Lakehouse. Its released manifest's relation names are then four-part, which `macros/source_defer.sql` also requires. In a Lakehouse without schemas, `SHOW VIEWS` from another Lakehouse's session returns nothing even when views exist, so record the Spark half as unchecked, never as no views, and file it as a `platform` finding.
+
+1. Take the Domain's workspace and Lakehouse names from the four-part relation names in `/cache/prod-target/manifest.json`. List its schemas with `lakehouse_query` (`target=domain`): `SELECT name FROM sys.schemas`, without `sys`, `INFORMATION_SCHEMA`, `guest`, `queryinsights` and the `db_` roles. Add any schema the manifest names that the list lacks.
+2. `dbt show` needs the `profile:` line from [Changes the build needs](#changes-the-build-needs) and, when `packages.yml` exists, `dbt deps` through the wrapper; make that edit and run that first. List each schema's Spark views from the dbt project directory, quoted exactly as below (the wrapper re-parses its argument, so the backticks stay escaped):
+
+   ```bash
+   cd <dbt project> && <plugin>/scripts/vd-intent-context-run.sh 'dbt show --inline "SHOW VIEWS IN \`<workspace>\`.\`<lakehouse>\`.\`<schema>\`" --limit -1 --target ephemeral_dev'
+   ```
+
+   Keep `--limit -1`: without it dbt appends a `limit`, which `SHOW` rejects.
+3. Bind each Spark view without reading rows:
+
+   ```bash
+   cd <dbt project> && <plugin>/scripts/vd-intent-context-run.sh 'dbt show --inline "select * from \`<workspace>\`.\`<lakehouse>\`.\`<schema>\`.\`<view>\` where 1 = 0" --target ephemeral_dev'
+   ```
+
+   Leave the `limit` to dbt; a second one is a syntax error. Each `dbt show` starts its own Spark session, so bind up to 50 views in one statement, `select 1 from <view a> where 1 = 0 union all select 1 from <view b> where 1 = 0 ...` (`select 1`, because views with different columns cannot be unioned as `select *`), and bind one by one only the views of a batch that fails.
+4. List the endpoint views with `lakehouse_query` (`target=domain`): `sys.views` joined to `sys.schemas`, without the system schemas above. Bind each with `SELECT TOP 0 * FROM [<schema>].[<view>]`. The endpoint lags the Lakehouse by minutes, so a table dropped just before the check can still bind.
+5. Record, for each kind, the views checked, failed and unchecked, and each failing view with the object or column it cannot find, in this Intent's verification record. A timeout, an unavailable tool or a truncated list makes the check incomplete, never a pass.
+6. In the `onboarding` review, file each failure as a `bug` finding, naming the view and the missing object or column, not raw SQL. Say that no Intent repairs the Domain: the fix is a release that rebuilds or drops the view. When the Domain holds Spark views, also file one `platform` finding: renaming its workspace breaks all of them.
+
+A Domain with no views of either kind makes the check not applicable; record that.
+
 ## Base commands
 
 Put these in `repo-map.json` `commands`, using the repo's own paths: `dbt_deps`, `dbt_parse`, `dbt_build`, `python_tests`, `python_lint`, plus the run scripts if the repo has them, and one entry per CI check script an agent should run rather than read (for example `adr_lint` for `.github/scripts/adr_lint.py`).
 
-In the design phase, before the inventory, run each once in the sandbox: dbt through the runtime wrapper with `--target ephemeral_dev` and `--defer --state /cache/prod-target` (as the `workarounds` skill says), after `dbt deps` when `packages.yml` exists. Record every result. A failure you cannot fix with a change from the two lists below is a review finding, `platform` or `bug`.
+In the design phase, after the Domain view check (which runs `dbt deps` first) and before the inventory, run each once in the sandbox: dbt through the runtime wrapper with `--target ephemeral_dev` and `--defer --state /cache/prod-target` (as the `workarounds` skill says), after `dbt deps` when `packages.yml` exists. Record every result. A failure you cannot fix with a change from the two lists below is a review finding, `platform` or `bug`.
 
 ## Changes the build needs
 
