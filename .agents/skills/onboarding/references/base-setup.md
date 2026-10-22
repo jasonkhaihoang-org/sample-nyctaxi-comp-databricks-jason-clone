@@ -16,7 +16,7 @@ When the Domain holds data, check its existing views before the base commands. N
 
 A Lakehouse holds two kinds of view, and each tool sees only one:
 
-- **Spark views**, which dbt's `view` materialisation and notebooks create. An Intent's build reads them through `--defer`, so a broken one fails each Intent that selects a model reading it. In a schema-enabled Lakehouse, Spark stores each one's references expanded to `` `workspace`.`lakehouse`.`schema`.table ``, so the Intent's same-named Ephemeral Lakehouse never captures them. Renaming the Domain's workspace breaks every one, as does dropping an object or column a view reads. `lakehouse_query` cannot see them; reach them with `dbt show` through the runtime wrapper.
+- **Spark views**, which dbt's `view` materialisation and notebooks create. An Intent's build reads them through `--defer`, so a broken one fails each Intent that selects a model reading it. In a schema-enabled Lakehouse, Spark stores each one's references expanded to `` `workspace`.`lakehouse`.`schema`.table ``, so the Intent's same-named Ephemeral Lakehouse never captures them. Renaming the Domain's workspace breaks every one, as does dropping an object or column a view reads. `lakehouse_query` cannot see them; reach them with `dbt show` in the sandbox.
 - **SQL analytics endpoint views** (T-SQL). The build never reads them, but agents and users do, through `lakehouse_query`, the only tool that sees them.
 
 The check needs a schema-enabled Domain Lakehouse. Its released manifest's relation names are then four-part, which `macros/source_defer.sql` also requires. In a Lakehouse without schemas, `SHOW VIEWS` from another Lakehouse's session returns nothing even when views exist, so record the Spark half as unchecked, never as no views, and file it as a `platform` finding.
@@ -25,14 +25,14 @@ The check needs a schema-enabled Domain Lakehouse. Its released manifest's relat
 2. `dbt show` needs the `profile:` line from [Changes the build needs](#changes-the-build-needs) and, when `packages.yml` exists, `dbt deps` through the wrapper; make that edit and run that first. List each schema's Spark views from the dbt project directory, quoted exactly as below (the wrapper re-parses its argument, so the backticks stay escaped):
 
    ```bash
-   cd <dbt project> && <plugin>/scripts/vd-intent-context-run.sh 'dbt show --inline "SHOW VIEWS IN \`<workspace>\`.\`<lakehouse>\`.\`<schema>\`" --limit -1 --target ephemeral_dev'
+   cd <dbt project> && dbt show --inline "SHOW VIEWS IN \`<workspace>\`.\`<lakehouse>\`.\`<schema>\`" --limit -1 --target ephemeral_dev
    ```
 
    Keep `--limit -1`: without it dbt appends a `limit`, which `SHOW` rejects.
 3. Bind each Spark view without reading rows:
 
    ```bash
-   cd <dbt project> && <plugin>/scripts/vd-intent-context-run.sh 'dbt show --inline "select * from \`<workspace>\`.\`<lakehouse>\`.\`<schema>\`.\`<view>\` where 1 = 0" --target ephemeral_dev'
+   cd <dbt project> && dbt show --inline "select * from \`<workspace>\`.\`<lakehouse>\`.\`<schema>\`.\`<view>\` where 1 = 0" --target ephemeral_dev
    ```
 
    Leave the `limit` to dbt; a second one is a syntax error. Each `dbt show` starts its own Spark session, so bind up to 50 views in one statement, `select 1 from <view a> where 1 = 0 union all select 1 from <view b> where 1 = 0 ...` (`select 1`, because views with different columns cannot be unioned as `select *`), and bind one by one only the views of a batch that fails.
@@ -46,7 +46,7 @@ A Domain with no views of either kind makes the check not applicable; record tha
 
 Put these in `repo-map.json` `commands`, using the repo's own paths: `dbt_deps`, `dbt_parse`, `dbt_build`, `python_tests`, `python_lint`, plus the run scripts if the repo has them, and one entry per CI check script an agent should run rather than read (for example `adr_lint` for `.github/scripts/adr_lint.py`).
 
-In the design phase, after the Domain view check (which runs `dbt deps` first) and before the inventory, run each once in the sandbox: dbt through the runtime wrapper with `--target ephemeral_dev` and `--defer --state /cache/prod-target` (as the `workarounds` skill says), after `dbt deps` when `packages.yml` exists. Record every result. A failure you cannot fix with a change from the two lists below is a review finding, `platform` or `bug`.
+In the design phase, after the Domain view check (which runs `dbt deps` first) and before the inventory, run each once in the sandbox: plain `dbt` with `--target ephemeral_dev` and `--defer --state /cache/prod-target` (as the `workarounds` skill says), after `dbt deps` when `packages.yml` exists. Record every result. A failure you cannot fix with a change from the two lists below is a review finding, `platform` or `bug`.
 
 ## Changes the build needs
 
@@ -54,7 +54,7 @@ The only edits to existing files. List each in the PR description.
 
 | File | Change | Why |
 | --- | --- | --- |
-| `dbt_project.yml` | `profile: "{{ env_var('DBT_PROFILE_NAME', '<current name>') }}"` | The sandbox wrapper selects its profile through `DBT_PROFILE_NAME`; a fixed name means no dbt command runs in the sandbox. Local and CI runs keep the current name. |
+| `dbt_project.yml` | `profile: "{{ env_var('DBT_PROFILE_NAME', '<current name>') }}"` | The sandbox selects its profile through `DBT_PROFILE_NAME`; a fixed name means no dbt command runs in the sandbox. Local and CI runs keep the current name. |
 | `_sources.yml` (every sources file) | Remove each source's `database:` and any var that feeds it or its `schema:`; give the schema as a literal. Remove the then-unused vars from `dbt_project.yml`. | In an Intent, `macros/source_defer.sql` resolves a source in the Ephemeral Lakehouse and, under `--defer`, in the Domain's; a source that names a database is pinned to one Lakehouse. Schemas are the same in both. |
 | `profiles.yml` (the repo's own, read by the Domain's dbt job notebooks and its release) | A `prod` target holding the Domain's literal coordinates, as in [templates/dbt/profiles.yml](../templates/dbt/profiles.yml); never an `env_var()`. If `prod` already uses one or a placeholder, ask the user to fix it rather than rewriting it. | A Fabric notebook has none of the agent's environment, so an `env_var()` cannot resolve there; Studio ignores this file in an Intent. |
 | `dbt_project.yml` | Under `models:` and `seeds:`, `dbt_project_evaluator: +enabled: "{{ var('dbt_project_evaluator_enabled', false) }}"` | Keeps the evaluator out of normal builds; the CI quality workflow and `verifying` switch it on. Only with the `packages.yml` entry below. |

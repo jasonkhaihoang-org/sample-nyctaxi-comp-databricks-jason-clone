@@ -6,7 +6,7 @@ What should change in the `vibedata-data-engineering` plugin, found while portin
 
 | Skill | Reference | Suggested change | Status |
 | --- | --- | --- | --- |
-| `fabric_lakehouse` dbt | `_shared/platforms/fabric_lakehouse/dbt.md` § Sandbox run | Name the full sandbox command: the runtime wrapper `scripts/vd-intent-context-run.sh`, `--target ephemeral_dev` and `--defer --state /cache/prod-target`. Until then `.agents/skills/workarounds` states it. | open |
+| `fabric_lakehouse` dbt | `_shared/platforms/fabric_lakehouse/dbt.md` § Sandbox run | Name the full sandbox command: plain `dbt` (the image's `dbt` loads the Intent's coordinates itself, so no wrapper), `--target ephemeral_dev` and `--defer --state /cache/prod-target`. Until then `.agents/skills/workarounds` states it. | open |
 | `fabric_lakehouse` dialect | `_shared/platforms/fabric_lakehouse/dialect.md` | State how staging converts a dlt-landed UTC timestamp to the wall-clock value on Spark, as the DuckDB guidance gives `timezone('UTC', col)`. The onboarding templates ask the first staging model to prove it instead. | open |
 | `generating-dlt-pipeline`, `fabric_lakehouse` dlt | `skills/generating-dlt-pipeline/SKILL.md`; `_shared/platforms/fabric_lakehouse/dlt.md` | State that `DLT_INGEST_LIMIT` bounds pages, not rows (carried over from the DuckDB repo's row for `duckdb_local/dlt.md`). | open |
 | `onboarding` (repo draft) | `.agents/skills/onboarding/` | The draft is written for one platform at a time: this repo's copy is Fabric Lakehouse, the DuckDB repo's is DuckDB-local. Before it moves into the plugin, the platform-specific rows (profile, macros, orchestration, materialisation, SQL dialect) need a per-platform reference, as the plugin's `_shared/platforms/` does. | open |
