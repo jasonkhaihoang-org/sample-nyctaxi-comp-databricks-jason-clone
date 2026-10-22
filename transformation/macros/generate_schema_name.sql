@@ -2,8 +2,14 @@
     resolves `generate_schema_name_for_env` to dbt's built-in, so only this override keeps
     a node's schema identical across targets, for defer: https://github.com/dbt-labs/dbt/issues/16330 -#}
 {% macro generate_schema_name(custom_schema_name, node) -%}
-    {%- set schemas_enabled = adapter.is_lakehouse_schemas_enabled() or adapter.is_local_mode()
-        or (target.schema is defined and target.lakehouse is defined and target.schema != target.lakehouse) -%}
+    {#- The lakehouse checks exist only on dbt-fabricspark; the offline dbt-project-evaluator
+        run (.github/workflows/dbt-project-quality.yml) compiles this on DuckDB, which has schemas. -#}
+    {%- if target.type == 'fabricspark' -%}
+        {%- set schemas_enabled = adapter.is_lakehouse_schemas_enabled() or adapter.is_local_mode()
+            or (target.schema is defined and target.lakehouse is defined and target.schema != target.lakehouse) -%}
+    {%- else -%}
+        {%- set schemas_enabled = true -%}
+    {%- endif -%}
     {%- if not schemas_enabled -%}
         {{ target.lakehouse }}
     {%- elif custom_schema_name is none -%}
