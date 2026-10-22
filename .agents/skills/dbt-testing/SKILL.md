@@ -7,7 +7,7 @@ description: "Use when writing, changing or running dbt tests, unit tests or Pyt
 
 ## Generic tests (C1)
 
-- Every primary key has `unique` and `not_null`.
+- Every primary key has `unique` and `not_null`. A grain of several columns has `not_null` on each of them and a singular test that it is unique (`assert_<model>_one_row_per_<grain>`).
 - Every foreign key to a conformed dimension has `relationships`.
 - A column with a closed set of values has `accepted_values`.
 
@@ -17,7 +17,7 @@ Declare source freshness where a source is loaded on a schedule. A source loaded
 
 ## Singular tests (C4)
 
-Live in `transformation/tests/`, named `assert_<what_must_hold>.sql`, and return the rows that violate the assertion.
+Live in `transformation/tests/`, named `assert_<what_must_hold>.sql`, and return the rows that violate the assertion. List each one in `test-map.json` under the `data` tests of the layer whose model it protects; a test the map does not list is not run by that layer's command.
 
 ## Rejoin tests (C10)
 
