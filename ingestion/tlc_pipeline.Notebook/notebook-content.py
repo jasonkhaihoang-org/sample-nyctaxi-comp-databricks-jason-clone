@@ -57,6 +57,7 @@ if os.path.isdir(LAKEHOUSE_FILES):
 # MAGIC snowflake-connector-python==4.8.0
 # MAGIC vibedata-dbt-fabric-notebook==0.2.1
 # MAGIC vibedata-dlt-core==0.8.0
+# MAGIC vibedata-dlt-fabric-core==0.6.0
 # MAGIC vibedata-dlt-fabric-notebook==0.10.0
 # MAGIC vibedata-dlt-fabric-studio==0.18.1
 # MAGIC vibedata-dlt-fabric-warehouse-studio==0.5.0

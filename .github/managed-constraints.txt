@@ -39,6 +39,7 @@ snowflake-connector-python==4.8.0
 # Our units.
 vibedata-dbt-fabric-notebook==0.2.1
 vibedata-dlt-core==0.8.0
+vibedata-dlt-fabric-core==0.6.0
 vibedata-dlt-fabric-notebook==0.10.0
 vibedata-dlt-fabric-studio==0.18.1
 vibedata-dlt-fabric-warehouse-studio==0.5.0
