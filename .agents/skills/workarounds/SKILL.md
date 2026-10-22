@@ -15,13 +15,13 @@ Remove when: the `planning`, `executing-the-plan` and `verifying` skills write t
 
 ## Run dbt in the sandbox
 
-The runtime provides the profile (`DBT_PROFILES_DIR`, `DBT_PROFILE_NAME`) and its one target, `ephemeral_dev`, which writes the Intent's Ephemeral Lakehouse. Do not open the repo's `transformation/profiles.yml` (its `prod` target is the Domain's, read by the job notebook and the release) or `~/.dbt/profiles.yml`, for any reason. Run dbt through the runtime wrapper from `transformation/`, deferring to the released Domain:
+The runtime provides the profile (`DBT_PROFILES_DIR`, `DBT_PROFILE_NAME`) and its one target, `ephemeral_dev`, which writes the Intent's Ephemeral Lakehouse, and the image's `dbt` loads the Intent's coordinates on every call. Do not open the repo's `transformation/profiles.yml` (its `prod` target is the Domain's, read by the job notebook and the release) or `~/.dbt/profiles.yml`, for any reason. Run plain `dbt` from `transformation/`, deferring to the released Domain:
 
 ```bash
-cd transformation && <plugin>/scripts/vd-intent-context-run.sh "dbt <command> --target ephemeral_dev --defer --state /cache/prod-target"
+cd transformation && dbt <command> --target ephemeral_dev --defer --state /cache/prod-target
 ```
 
-Every command except `parse`, `ls`, `deps`, `clean` and `init` opens a Spark session, which takes minutes on a cold capacity: launch it as the plugin's `fabric_lakehouse/dbt.md` says and wait for it. Run `dbt deps` the same way first if `dbt_packages/` is missing. The dbt commands in `repo-map.json` `commands` and `test-map.json` give the arguments only: run each through this wrapper, never bare, because a bare `dbt` reads the repo's profile, whose default target is the Domain's `prod`.
+Every command except `parse`, `ls`, `deps`, `clean` and `init` opens a Spark session, which takes minutes on a cold capacity: launch it as the plugin's `fabric_lakehouse/dbt.md` says and wait for it. Run `dbt deps` the same way first if `dbt_packages/` is missing. The dbt commands in `repo-map.json` `commands` and `test-map.json` give the arguments only: add `--target ephemeral_dev --defer --state /cache/prod-target` to each.
 
 Remove when: the platform `fabric_lakehouse/dbt.md` states this command (`skill-changes.md`).
 
