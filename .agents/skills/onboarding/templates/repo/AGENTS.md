@@ -83,7 +83,7 @@ python3 -m pytest tests -q                # Python tests, offline
 ruff check .                              # Python lint
 ```
 
-dbt and dlt run in the Intent's sandbox against its Ephemeral Lakehouse, through the plugin's runtime wrapper: the `workarounds` skill has the dbt command, and the plugin's `fabric_lakehouse/pipeline-notebook.md` has the pipeline-notebook run. Unselected models and sources resolve against the released Domain (`--defer --state /cache/prod-target`).
+dbt runs in the Intent's sandbox against its Ephemeral Lakehouse as the `workarounds` skill gives it, as plain `dbt`; dlt runs there through the plugin's runtime wrapper, as the plugin's `fabric_lakehouse/pipeline-notebook.md` gives the pipeline-notebook run. Unselected models and sources resolve against the released Domain (`--defer --state /cache/prod-target`).
 
 The command for each layer's tests is in `test-map.json`. Lint Python with `ruff check` (the `python_lint` command in `repo-map.json`), which reads `ruff.toml`; do not use the `check_python` tool, which applies rules this repo does not use.
 

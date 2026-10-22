@@ -22,7 +22,7 @@ A Lakehouse holds two kinds of view, and each tool sees only one:
 The check needs a schema-enabled Domain Lakehouse. Its released manifest's relation names are then four-part, which `macros/source_defer.sql` also requires. In a Lakehouse without schemas, `SHOW VIEWS` from another Lakehouse's session returns nothing even when views exist, so record the Spark half as unchecked, never as no views, and file it as a `platform` finding.
 
 1. Take the Domain's workspace and Lakehouse names from the four-part relation names in `/cache/prod-target/manifest.json`. List its schemas with `lakehouse_query` (`target=domain`): `SELECT name FROM sys.schemas`, without `sys`, `INFORMATION_SCHEMA`, `guest`, `queryinsights` and the `db_` roles. Add any schema the manifest names that the list lacks.
-2. `dbt show` needs the `profile:` line from [Changes the build needs](#changes-the-build-needs) and, when `packages.yml` exists, `dbt deps` through the wrapper; make that edit and run that first. List each schema's Spark views from the dbt project directory, quoted exactly as below (the wrapper re-parses its argument, so the backticks stay escaped):
+2. `dbt show` needs the `profile:` line from [Changes the build needs](#changes-the-build-needs) and, when `packages.yml` exists, `dbt deps`; make that edit and run that first. List each schema's Spark views from the dbt project directory, quoted exactly as below (inside double quotes the shell would run an unescaped backtick, so each stays escaped):
 
    ```bash
    cd <dbt project> && dbt show --inline "SHOW VIEWS IN \`<workspace>\`.\`<lakehouse>\`.\`<schema>\`" --limit -1 --target ephemeral_dev

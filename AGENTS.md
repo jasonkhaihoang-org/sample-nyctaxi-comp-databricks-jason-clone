@@ -50,7 +50,7 @@ python3 -m pytest tests -q                # Python tests, offline
 ruff check .                              # Python lint
 ```
 
-dbt and dlt run in the Intent's sandbox against its Ephemeral Lakehouse: the [`workarounds`](.agents/skills/workarounds/SKILL.md) skill has the dbt command, and the plugin's `fabric_lakehouse/pipeline-notebook.md` has the pipeline-notebook run. Unselected models and sources resolve against the released Domain (`--defer --state /cache/prod-target`). In production the `nyc_taxi_refresh` Data Pipeline in `orchestration/` runs the three pipeline notebooks and then the `nyc_taxi_build_dbt` notebook.
+dbt runs in the Intent's sandbox against its Ephemeral Lakehouse as the [`workarounds`](.agents/skills/workarounds/SKILL.md) skill gives it, as plain `dbt`; dlt runs there through the plugin's runtime wrapper, as the plugin's `fabric_lakehouse/pipeline-notebook.md` gives the pipeline-notebook run. Unselected models and sources resolve against the released Domain (`--defer --state /cache/prod-target`). In production the `nyc_taxi_refresh` Data Pipeline in `orchestration/` runs the three pipeline notebooks and then the `nyc_taxi_build_dbt` notebook.
 
 The Python tests need `requirements-dev.txt` installed in the same interpreter (`pip install -r requirements-dev.txt`): the map tests call dbt through `python3 -m dbt.cli.main`, and fail with `No module named 'dbt'` otherwise.
 
