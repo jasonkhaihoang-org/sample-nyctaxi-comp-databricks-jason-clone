@@ -61,5 +61,5 @@ Profile a remote source file once per intent: row count, columns and types, null
 
 Another table from a source that is already loaded (for example another TLC trip file) is a resource on that source, not a new source:
 
-- Add it to the source module's resources, and a `resources.<name>` block to the source's resource docs (`ingestion/docs/<source>.yml`). Each column there has exactly one of `source_ref` or `source_fields`; `tests/ingestion/test_docs.py` checks it.
+- Add it to the source module's resources, and a `resources.<name>` block to the source's resource docs (`ingestion/docs/<source>.yml`). Each source column there has exactly one of `source_ref` or `source_fields`, and each `_dlt_` control column has only its fixed description; `tests/ingestion/test_docs.py` checks both.
 - Extend the source's tests, its pipeline design record, `_sources.yml` and a new `stg_` model.
