@@ -48,6 +48,7 @@ if os.path.isdir(LAKEHOUSE_FILES):
 # MAGIC dbt-redshift==1.11.1
 # MAGIC dbt-bigquery==1.12.1
 # MAGIC dlt==1.30.0
+# MAGIC pyarrow==25.0.1
 # MAGIC sqlfluff==4.4.0
 # MAGIC sqlfluff-templater-dbt==4.4.0
 # MAGIC dbt-databricks==1.12.6
@@ -56,11 +57,10 @@ if os.path.isdir(LAKEHOUSE_FILES):
 # MAGIC dbt-snowflake==1.12.1
 # MAGIC snowflake-connector-python==4.8.0
 # MAGIC vibedata-dbt-fabric-notebook==0.2.1
-# MAGIC vibedata-dlt-core==0.8.0
-# MAGIC vibedata-dlt-fabric-core==0.6.0
-# MAGIC vibedata-dlt-fabric-notebook==0.10.0
-# MAGIC vibedata-dlt-fabric-studio==0.18.1
-# MAGIC vibedata-dlt-fabric-warehouse-studio==0.5.0
+# MAGIC vibedata-dlt-core==0.9.0
+# MAGIC vibedata-dlt-fabric-notebook==0.11.0
+# MAGIC vibedata-dlt-fabric-studio==0.19.0
+# MAGIC vibedata-dlt-fabric-warehouse-studio==0.6.0
 # MAGIC vibedata-dlt-duckdb-core==0.3.0
 # MAGIC vibedata-dlt-duckdb-studio==0.12.0
 # MAGIC vibedata-motherduck-flight==0.1.0
@@ -97,6 +97,7 @@ setup_environment()
 import os
 
 import dlt
+from vibedata.dlt.core import dataset
 from vibedata.dlt.fabric import finalize
 
 from sources.ops import ops_source
@@ -113,7 +114,7 @@ CONTRACT = {"columns": "freeze", "tables": "evolve", "data_type": "freeze"}
 pipeline = dlt.pipeline(
     pipeline_name=PIPELINE_NAME,
     destination="filesystem",
-    dataset_name="ops_raw",
+    dataset_name=dataset("ops_raw"),
 )
 
 # The operator's records are derived from the yellow trips of the window the tlc pipeline

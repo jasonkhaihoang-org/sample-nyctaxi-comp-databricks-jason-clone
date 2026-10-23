@@ -35,5 +35,7 @@ vault_url = "https://ukvdtestkv1.vault.azure.net/"
 workspace_id = "b9e3c113-ca4b-4b05-9c98-6b71c3e5805f"
 lakehouse_id = "2e80c60f-fa7e-4215-81a2-b66ceba7da3a"
 bucket_url = "abfss://b9e3c113-ca4b-4b05-9c98-6b71c3e5805f@onelake.dfs.fabric.microsoft.com/2e80c60f-fa7e-4215-81a2-b66ceba7da3a/Tables"
+
+[destination.filesystem.credentials]
 azure_storage_account_name = "onelake"
 azure_account_host = "onelake.blob.fabric.microsoft.com"
