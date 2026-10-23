@@ -17,7 +17,7 @@ ask: no
 reason: How agents read this repo; the same for every domain.
 -->
 
-Before a task, read `repo-map.json` and invoke the convention skill for the task. To add a source, invoke [`dlt`](.agents/skills/dlt/SKILL.md); for a model, [`dbt-models`](.agents/skills/dbt-models/SKILL.md). Read other documents only when the task needs them: not `README.md` or `CONTRIBUTING.md` for a pipeline or model change. Read `repo-map.json` whole, once, at the start of a task: its `modules`, `artifact_paths` and `sources` are the index of the repo, so do not list directories (`find`, `ls -R`) or read it again in parts.
+Before a task, read `repo-map.json` and invoke the convention skill for the task. To add a source, invoke [`dlt`](.agents/skills/dlt/SKILL.md); for a model, [`dbt-models`](.agents/skills/dbt-models/SKILL.md) and, for its tests, [`dbt-testing`](.agents/skills/dbt-testing/SKILL.md). Read other documents only when the task needs them: not `README.md` or `CONTRIBUTING.md` for a pipeline or model change. Read `repo-map.json` whole, once, at the start of a task: its `modules`, `artifact_paths` and `sources` are the index of the repo, so do not list directories (`find`, `ls -R`) or read it again in parts.
 
 Do not read the installed source code of dbt, dlt or any other library to work out how it behaves. The repo's own models, pipelines and tests show how this repo uses them; for anything else, rely on the library's documented behaviour.
 
