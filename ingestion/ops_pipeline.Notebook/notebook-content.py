@@ -56,17 +56,16 @@ if os.path.isdir(LAKEHOUSE_FILES):
 # MAGIC dbt-snowflake==1.12.1
 # MAGIC snowflake-connector-python==4.8.0
 # MAGIC vibedata-dbt-fabric-notebook==0.2.1
-# MAGIC vibedata-dlt-core==0.8.0
-# MAGIC vibedata-dlt-fabric-core==0.6.0
-# MAGIC vibedata-dlt-fabric-notebook==0.10.0
-# MAGIC vibedata-dlt-fabric-studio==0.18.1
-# MAGIC vibedata-dlt-fabric-warehouse-studio==0.5.0
+# MAGIC vibedata-dlt-core==0.10.0
+# MAGIC vibedata-dlt-fabric-notebook==0.11.0
+# MAGIC vibedata-dlt-fabric-studio==0.19.1
+# MAGIC vibedata-dlt-fabric-warehouse-studio==0.7.0
 # MAGIC vibedata-dlt-duckdb-core==0.3.0
-# MAGIC vibedata-dlt-duckdb-studio==0.12.0
+# MAGIC vibedata-dlt-duckdb-studio==0.13.0
 # MAGIC vibedata-motherduck-flight==0.1.0
-# MAGIC vibedata-dlt-studio-secrets==0.3.0
-# MAGIC vibedata-studio-azure-cred-broker==0.1.4
-# MAGIC vibedata-dlt-redshift-studio>=0.2.0
+# MAGIC vibedata-dlt-studio-secrets==0.5.0
+# MAGIC vibedata-studio-azure-cred-broker==0.2.0
+# MAGIC vibedata-dlt-redshift-studio>=0.3.0
 # MAGIC duckdb>=1.5.5
 # MAGIC EOF
 # MAGIC pip install -q -c /tmp/managed-constraints.txt vibedata-dlt-fabric-notebook vibedata-dlt-core
@@ -97,6 +96,7 @@ setup_environment()
 import os
 
 import dlt
+from vibedata.dlt.core import dataset
 from vibedata.dlt.fabric import finalize
 
 from sources.ops import ops_source
@@ -113,7 +113,7 @@ CONTRACT = {"columns": "freeze", "tables": "evolve", "data_type": "freeze"}
 pipeline = dlt.pipeline(
     pipeline_name=PIPELINE_NAME,
     destination="filesystem",
-    dataset_name="ops_raw",
+    dataset_name=dataset("ops_raw"),
 )
 
 # The operator's records are derived from the yellow trips of the window the tlc pipeline
