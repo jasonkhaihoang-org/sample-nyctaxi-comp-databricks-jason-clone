@@ -54,7 +54,7 @@ Profile a remote source file once per intent: row count, columns and types, null
 ## Adding a source
 
 - A new source mirrors an existing entry in `repo-map.json` `sources`: create every artifact it lists (module, config section, pipeline, resource docs, tests, design record). Mirror `tlc` for a downloaded file source.
-- Mirror `tlc.py` for a large file: it yields one pyarrow table per monthly Parquet file, which is proven on three months of TLC data.
+- Mirror `tlc.py` for a monthly file that fits in memory: it yields one pyarrow table per monthly Parquet file, which is proven on three months of yellow and green trips. A file too large to hold whole (tens of millions of rows a month) is streamed to a temporary file and read one Parquet row group at a time, so memory holds one row group, never the file.
 - Sources are custom modules under `ingestion/sources/`, registered as `[sources.<name>]` with `connector = "custom"` and `connector_source = "local"`. The connector catalog is not used.
 - The pipeline is a Databricks notebook, `ingestion/<name>_pipeline.ipynb`, from the plugin's `databricks/templates/dlt-pipeline.ipynb` (`databricks/dlt.md` § Authoring), never a `<name>_pipeline.py` script. Its destination is `databricks_files_api()`, exactly as the template builds it; the notebook names no host, catalog, warehouse, schema or secret.
 - Then add a notebook task for it to `orchestration/nyc_taxi_refresh.job.yml`, ahead of the dbt task (the plugin's `databricks/orchestration.md` § Authoring), run `validate-job.py` until it exits 0, and add the source to `repo-map.json` and `test-map.json`.
