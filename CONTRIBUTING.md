@@ -3,7 +3,7 @@
 ## Set up
 
 Follow the prerequisites in [`README.md`](README.md). Data lives only in the
-Domain Lakehouse; to stand up a Domain of your own, follow
+Domain's Databricks catalog; to stand up a Domain of your own, follow
 `docs/setup/seeding-the-domain.md`.
 
 ## Before you push
@@ -14,7 +14,7 @@ ruff check . --extend-exclude .github,ingestion/sources
 sqlfluff lint transformation/models
 ```
 
-The dbt data and unit tests need a Lakehouse: run them in an Intent's sandbox,
+The dbt data and unit tests need Databricks: run them in an Intent's sandbox,
 or against a Domain after a release.
 
 `test-map.json` names the narrow command for each layer, so a change to one model

@@ -1,5 +1,5 @@
-# What the pipelines need. No runtime unit here: the notebook and the Studio sandbox each
-# install their own vibedata.dlt.fabric unit (fabric_lakehouse/pipeline-notebook.md).
+# What the sources need. The pipeline notebook's install cell names dlt, pyarrow and the
+# vibedata runtime units itself, under .github/managed-constraints.txt.
 dlt
 duckdb
 pyarrow

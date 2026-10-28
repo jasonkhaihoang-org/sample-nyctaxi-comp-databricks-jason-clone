@@ -16,7 +16,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from dbt_docs_publish import (
+from vibedata_domain_ci.dbt_docs_publish import (
     MANIFEST_RELEASE_TAG_PREFIX,
     PROVENANCE_ASSET,
     build_manifest_release_commands,
@@ -24,7 +24,7 @@ from dbt_docs_publish import (
     classify_release_state,
     manifest_release_tag,
 )
-from dbt_version_provenance import resolve_installed_versions
+from vibedata_domain_ci.dbt_version_provenance import resolve_installed_versions
 
 
 def _now_iso() -> str:

@@ -3,7 +3,7 @@
   "repo_root": ".",
   "primary_languages": ["python", "sql"],
   "package_managers": [{"name": "pip", "manifest": "ingestion/requirements.txt"}, {"name": "pip", "manifest": "requirements-dev.txt"}],
-  "build_systems": [{"name": "dbt (fabricspark)", "config_files": ["transformation/dbt_project.yml", "transformation/profiles.yml"]}],
+  "build_systems": [{"name": "dbt (databricks)", "config_files": ["transformation/dbt_project.yml", "transformation/profiles.yml"]}],
   "test_frameworks": [
     {"name": "pytest", "scope": "ingestion sources and the maps, offline", "config_files": []},
     {"name": "dbt", "scope": "data and unit tests", "config_files": ["transformation/dbt_project.yml"]}
@@ -30,7 +30,7 @@
     "dbt_sources": "transformation/models/staging/_sources.yml",
     "singular_tests": "transformation/tests/",
     "ingestion_root": "ingestion/",
-    "pipeline": "ingestion/{name}_pipeline.Notebook/",
+    "pipeline": "ingestion/{name}_pipeline.ipynb",
     "resource_docs": "ingestion/docs/{connection}.yml",
     "orchestration": "orchestration/",
     "test_map": "test-map.json",
@@ -46,7 +46,7 @@
   },
   "modules": {
     "ingestion": {"path": "ingestion/", "description": "dlt pipelines (one per source), their modules under sources/, resource docs under docs/, and .dlt/config.toml."},
-    "orchestration": {"path": "orchestration/", "description": "Scripts that run ingestion and the dbt build, in order."},
+    "orchestration": {"path": "orchestration/", "description": "Lakeflow jobs, one orchestration/<job>.job.yml each, included by databricks.yml at the repository root: the pipeline notebooks, then the dbt build."},
     "transformation": {"path": "transformation/", "description": "The dbt project."},
     "python_tests": {"path": "tests/", "description": "pytest tests for ingestion, orchestration and the two maps."},
     "conventions": {"path": ".agents/skills/", "description": "Operator conventions."},
@@ -56,7 +56,7 @@
   },
   "key_directories": {
     "ingestion/": "dlt pipelines and sources",
-    "orchestration/": "Data Pipelines and dbt job notebooks, authored by the plugin's generating-orchestration",
+    "orchestration/": "Lakeflow job files of the Declarative Automation Bundle, authored by the plugin's generating-orchestration",
     "transformation/": "dbt project",
     "tests/": "pytest tests",
     ".agents/skills/": "convention and procedure skills",
@@ -73,15 +73,15 @@
     "dbt_docs": "cd transformation && dbt docs generate",
     "python_tests": "python3 -m pytest tests -q",
     "python_lint": "ruff check .",
-    "adr_lint": "python3 .github/scripts/adr_lint.py"
+    "adr_lint": "PYTHONPATH=.github/scripts python3 .github/scripts/vibedata_domain_ci/adr_lint.py"
   },
   "key_references": {"agents": "AGENTS.md", "vocabulary": "CONTEXT.md", "conventions": ".agents/skills/", "test_map": "test-map.json", "schema": "repo-map.schema.json"},
   "notes_for_agents": {
     "startup": "Read this file first. AGENTS.md says how to work; the skills in .agents/skills/ hold the conventions.",
-    "new_source": "The first source sets the pattern; every later source mirrors an existing entry in `sources` and creates every artifact it lists. Its pipeline is a notebook, ingestion/<name>_pipeline.Notebook/, from the plugin generator; add it as an activity to the Domain's Data Pipeline and register it in test-map.json.",
-    "dlt_environment": "Pipelines import vibedata.dlt.fabric and write Delta through the filesystem destination. In an Intent, run a pipeline notebook through the plugin's runtime wrapper, which supplies the destination and credential; never set them by hand.",
-    "dbt_sources": "dbt sources name a schema and never a database: macros/source_defer.sql resolves a source in the Ephemeral Lakehouse and, under --defer, in the Domain's. dbt runs in the sandbox use the ephemeral_dev target.",
-    "artifact_paths": "Every artifact location is declared here: requirement, plan, verification and case_record per intent, design records per model, dlt pipeline, orchestration item (a Data Pipeline or job notebook) or area. The plugin names an intent's artifacts; this map places them.",
+    "new_source": "The first source sets the pattern; every later source mirrors an existing entry in `sources` and creates every artifact it lists. Its pipeline is a Databricks notebook, ingestion/<name>_pipeline.ipynb, from the plugin's databricks/templates/dlt-pipeline.ipynb; add a notebook task for it to the Domain's Lakeflow job in orchestration/ and register it in test-map.json.",
+    "dlt_environment": "Pipelines are Databricks notebooks that load through databricks_files_api() from vibedata-dlt-databricks-notebook; Databricks compute supplies the host and credential, and secrets come from the Domain's Databricks secret scope. In an Intent, run a pipeline with the plugin's run_notebook.py, which runs it on serverless compute and points it at the Ephemeral catalog through dlt_env; never set the destination or a credential by hand.",
+    "dbt_sources": "dbt sources name the Domain's catalog as their database through env_var('VD_DOMAIN_DATABRICKS_CATALOG', target.database), a literal schema and tables: macros/source_defer.sql reads the Intent's prefixed copy in the Ephemeral catalog when it holds the table, and the Domain's table otherwise. dbt runs in the sandbox use Studio's dbt_databricks profile, target databricks_sandbox, with --defer --state /cache/prod-target.",
+    "artifact_paths": "Every artifact location is declared here: requirement, plan, verification and case_record per intent, design records per model, dlt pipeline, orchestration item (a Lakeflow job) or area. The plugin names an intent's artifacts; this map places them.",
     "reviews_and_proposals": "docs/review/ holds review findings for triage; do not read it for build tasks. Read a docs/proposal/ file only when the intent's requirement links to it."
   }
 }

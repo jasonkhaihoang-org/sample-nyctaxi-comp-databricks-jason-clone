@@ -18,7 +18,7 @@ import os
 import re
 import sys
 
-from dbt_manifest import Manifest
+from vibedata_domain_ci.dbt_manifest import Manifest
 
 
 def load_naming_rules(agents_md_path: str) -> list[str]:

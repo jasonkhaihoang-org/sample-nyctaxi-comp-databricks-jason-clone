@@ -14,18 +14,23 @@
         "tests/ingestion/"
       ],
       "commands": {
-        "unit": "python3 -m pytest tests/ingestion -q"
-      }
+        "unit": "python3 -m pytest tests/ingestion -q",
+        "structural": "python3 -m pytest tests/test_maps.py -q -k \"notebook or ops_pipeline or dlt_config or job_task\""
+      },
+      "structural": [
+        "tests/test_maps.py"
+      ]
     },
     "orchestration": {
       "sources": [
-        "orchestration/"
+        "orchestration/",
+        "databricks.yml"
       ],
       "structural": [
         "tests/test_maps.py"
       ],
       "commands": {
-        "structural": "python3 -m pytest tests/test_maps.py -q -k orchestration"
+        "structural": "python3 -m pytest tests/test_maps.py -q -k \"orchestration or bundle or job_task\""
       }
     },
     "staging": {

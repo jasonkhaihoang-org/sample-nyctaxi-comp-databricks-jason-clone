@@ -7,25 +7,26 @@ sources:
   - name: bronze
     description: >
       Landed TLC trip records and the zone lookup, verbatim. Source column
-      names and types are preserved exactly as published, including the
-      inconsistent casing (`VendorID`, `Airport_fee`), so that a schema
-      change at TLC shows up here as a change rather than as a silent
-      re-interpretation.
+      names and types are kept as published, so that a schema change at TLC
+      shows up here as a change rather than as a silent re-interpretation.
+      Databricks folds the names to lower case (`VendorID` lands as
+      `vendorid`, `Airport_fee` as `airport_fee`).
+    database: "{{ env_var('VD_DOMAIN_DATABRICKS_CATALOG', target.database) }}"
     schema: bronze
     tables:
       - name: yellow_tripdata
         description: >
-          Yellow medallion trips. **The only fleet with `Airport_fee`.** The
+          Yellow medallion trips. **The only fleet with `airport_fee`.** The
           conform step drops it (ADR 0006), because green has no equivalent;
           `int_trips_enriched` rejoins it from here.
         columns:
-          - name: VendorID
+          - name: vendorid
             description: Technology provider that submitted the record.
           - name: tpep_pickup_datetime
             description: Meter engage time. Yellow's prefix is `tpep`, green's is `lpep`.
-          - name: PULocationID
+          - name: pulocationid
             description: TLC pickup zone id.
-          - name: Airport_fee
+          - name: airport_fee
             description: >
               Airport access fee. 1.75 under the current regime, zero on
               trips that incur none, negative on reversals, and null where
@@ -34,7 +35,7 @@ sources:
       - name: green_tripdata
         description: >
           Green (boro) taxi trips. Carries `ehail_fee` and `trip_type`,
-          which yellow does not, and has no `Airport_fee`.
+          which yellow does not, and has no `airport_fee`.
       - name: taxi_zone_lookup
         description: TLC zone reference as published. 265 rows.
 
@@ -49,6 +50,7 @@ sources:
       Regenerated and replaced on every run. The TLC feed describes the journey; this describes who
       drove it, in which medallion, on which shift, and what the driver was
       doing when not carrying a fare.
+    database: "{{ env_var('VD_DOMAIN_DATABRICKS_CATALOG', target.database) }}"
     schema: ops_raw
     tables:
       - name: garage
@@ -111,6 +113,7 @@ sources:
       The master-data platform's landing schema. Takes TLC's code-and-label
       lists and adds the attributes the business actually reasons about --
       settlement terms, flat-fare amounts, zone geography, contract tiers.
+    database: "{{ env_var('VD_DOMAIN_DATABRICKS_CATALOG', target.database) }}"
     schema: mdm_raw
     tables:
       - name: zone_master

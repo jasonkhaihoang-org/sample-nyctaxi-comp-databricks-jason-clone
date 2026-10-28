@@ -1,8 +1,9 @@
 name: '<project_name>'
 version: '1.0.0'
 config-version: 2
-# The Studio sandbox selects its own profile through DBT_PROFILE_NAME; local runs use this project's.
-profile: "{{ env_var('DBT_PROFILE_NAME', '<project_name>') }}"
+# The name Studio exports as DBT_PROFILE_NAME for a Databricks Intent, written literally: the bundle
+# job's dbt task cannot find a profile named through env_var().
+profile: dbt_databricks
 
 model-paths: ["models"]
 seed-paths: ["seeds"]

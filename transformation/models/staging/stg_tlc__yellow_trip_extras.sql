@@ -15,27 +15,27 @@ from (
     select
         {{ trip_natural_key(
             "'yellow'",
-            'y.`VendorID`',
+            'y.`vendorid`',
             "to_utc_timestamp(y.tpep_pickup_datetime, current_timezone())",
             "to_utc_timestamp(y.tpep_dropoff_datetime, current_timezone())",
-            'y.`PULocationID`',
-            'y.`DOLocationID`',
+            'y.`pulocationid`',
+            'y.`dolocationid`',
             'y.trip_distance',
             'y.total_amount'
         ) }} as trip_key,
-        y.`Airport_fee` as airport_fee,
-        y.`PULocationID` as pickup_location_id,
+        y.`airport_fee` as airport_fee,
+        y.`pulocationid` as pickup_location_id,
         to_utc_timestamp(
             y.tpep_pickup_datetime, current_timezone()
         ) as pickup_datetime,
         row_number() over (
             partition by {{ trip_natural_key(
                 "'yellow'",
-                'y.`VendorID`',
+                'y.`vendorid`',
                 "to_utc_timestamp(y.tpep_pickup_datetime, current_timezone())",
                 "to_utc_timestamp(y.tpep_dropoff_datetime, current_timezone())",
-                'y.`PULocationID`',
-                'y.`DOLocationID`',
+                'y.`pulocationid`',
+                'y.`dolocationid`',
                 'y.trip_distance',
                 'y.total_amount'
             ) }}

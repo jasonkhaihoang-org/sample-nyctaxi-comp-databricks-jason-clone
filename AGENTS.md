@@ -1,6 +1,6 @@
-# NYC Taxi Analytics (nyc-taxi-fabric-demo): Agent Conventions
+# NYC Taxi Analytics (nyc-taxi-databricks): Agent Conventions
 
-A Fabric Lakehouse for NYC taxi analytics: real TLC trip records, plus two simulated source systems (fleet operations and master data). Read [`CONTEXT.md`](CONTEXT.md) for the vocabulary.
+A Databricks Domain for NYC taxi analytics: real TLC trip records, plus two simulated source systems (fleet operations and master data). Read [`CONTEXT.md`](CONTEXT.md) for the vocabulary.
 
 Read [`repo-map.json`](repo-map.json) first. It says where everything is: layers, entrypoints, commands and artifact locations. This file says how to work.
 
@@ -32,7 +32,7 @@ Operator conventions are skills in `.agents/skills/`, and the agent's skill list
 | [`dlt`](.agents/skills/dlt/SKILL.md) | Datasets, write disposition, schema contract, bronze carries no logic |
 | [`context`](.agents/skills/context/SKILL.md) | What goes into `CONTEXT.md` |
 | [`adr`](.agents/skills/adr/SKILL.md) | What goes into an ADR, and when |
-| [`workarounds`](.agents/skills/workarounds/SKILL.md) | Temporary rules for platform gaps: single edits of `plan.md` and `verify.md`, large files changed by script, verify from the landed table, the Tier-1 dev dataset, sample loads that land whole pages. Each names what removes it |
+| [`workarounds`](.agents/skills/workarounds/SKILL.md) | Temporary rules for platform gaps: single edits of `plan.md` and `verify.md`, large files changed by script, verify from the landed table, the Tier-1 dev dataset, sample loads that land whole yields. Each names what removes it |
 | [`design-records`](.agents/skills/design-records/SKILL.md) | What goes into a design record |
 | [`git-and-prs`](.agents/skills/git-and-prs/SKILL.md) | Commit and pull request format |
 
@@ -50,17 +50,17 @@ python3 -m pytest tests -q                # Python tests, offline
 ruff check .                              # Python lint
 ```
 
-dbt runs in the Intent's sandbox against its Ephemeral Lakehouse as the plugin's `fabric_lakehouse/dbt.md` gives it, as plain `dbt`; dlt runs there through the plugin's runtime wrapper, as the plugin's `fabric_lakehouse/pipeline-notebook.md` gives the pipeline-notebook run. Unselected models and sources resolve against the released Domain (`--defer --state /cache/prod-target`). In production the `nyc_taxi_refresh` Data Pipeline in `orchestration/` runs the three pipeline notebooks and then the `nyc_taxi_build_dbt` notebook.
+dbt runs in the Intent's sandbox as the plugin's `databricks/dbt.md` gives it, as plain `dbt`: Studio's profile `dbt_databricks`, target `databricks_sandbox`, writes the Intent's schemas in the Domain's shared Ephemeral catalog, each named with the Intent's prefix (`VD_EPHM_SCHEMA_PREFIX`). A `ref()` to a model the Intent did not build resolves to the released Domain under `--defer --state /cache/prod-target`; a `source()` reads the Intent's own load when there is one, and the Domain's table otherwise, through `macros/source_defer.sql`. A pipeline notebook runs on Databricks serverless compute through the plugin's `run_notebook.py`, as the plugin's `databricks/dlt.md` § Sandbox run gives it; a full load is the same command, as § Full load gives it. In production the `nyc_taxi_refresh` Lakeflow job (`orchestration/nyc_taxi_refresh.job.yml`, in the bundle `databricks.yml`) runs the three pipeline notebooks and then the dbt task; check a change to it with the plugin's `validate-job.py`, as `databricks/orchestration.md` gives it.
 
 The Python tests need `requirements-dev.txt` installed in the same interpreter (`pip install -r requirements-dev.txt`): the map tests call dbt through `python3 -m dbt.cli.main`, and fail with `No module named 'dbt'` otherwise.
 
-The command for each layer's tests is in `test-map.json`. Lint Python with `ruff check` (the `python_lint` command in `repo-map.json`), which reads `ruff.toml`; do not use the `check_python` tool, which applies rules this repo does not use. Before a push, run `python_tests`, `python_lint`, `sqlfluff lint transformation/models` and the dbt data and unit tests (`dbt_data_tests`, `dbt_unit_tests` in `repo-map.json`). Run every dbt command as the [`workarounds`](.agents/skills/workarounds/SKILL.md) skill gives it, with `--target ephemeral_dev --defer --state /cache/prod-target`; never point dbt at `transformation/profiles.yml`, whose default target is the Domain's `prod`.
+The command for each layer's tests is in `test-map.json`. Lint Python with `ruff check` (the `python_lint` command in `repo-map.json`), which reads `ruff.toml`; do not use the `check_python` tool, which applies rules this repo does not use. Before a push, run `python_tests`, `python_lint`, `sqlfluff lint transformation/models` and the dbt data and unit tests (`dbt_data_tests`, `dbt_unit_tests` in `repo-map.json`). Run every dbt command with `--target databricks_sandbox`, and with `--defer --state /cache/prod-target` whenever `/cache/prod-target/manifest.json` exists, as the plugin's `databricks/dbt.md` § Defer gives it; the bundle job cannot run in a sandbox, because every layer sets `+schema:` and the plugin's `validate-job.py --sandbox` refuses that (`databricks/orchestration.md` § Sandbox run), so a job change is proven by `validate-job.py` and its release run; never point dbt at `transformation/profiles.yml`, whose default target is the Domain's `prod`.
 
 ## Safety
 
-- The warehouse is the Domain Lakehouse. Only a release writes it; an Intent writes its own Ephemeral Lakehouse. Never commit downloaded data.
-- Commit only the Domain's coordinates (the `prod` target in `transformation/profiles.yml`, `[destination.filesystem]` in `ingestion/.dlt/config.toml`, `.workflow/ci-config.yml`) and the portable `logicalId` of each Fabric item, which activities reference as `notebookId`. Never commit an Ephemeral Lakehouse id or a workspace object id; `tests/test_platform_prose.py` fails on one.
-- Never commit secrets. dlt reads them from the bound secret store.
+- The warehouse is the Domain's production catalog (`VD_DOMAIN_DATABRICKS_CATALOG`). Only a release writes it; an Intent writes its own prefixed schemas in the Ephemeral catalog. Never commit downloaded data.
+- Commit only the Domain's coordinates, and only where the plugin reads them: the production catalog and Primary Schema in the `prod` target of `transformation/profiles.yml`, and `.workflow/ci-config.yml`. Never commit a workspace host, a SQL warehouse id, a token, or an Ephemeral catalog or schema name: `ingestion/.dlt/config.toml` holds no catalog or warehouse (dlt refuses credentials there), and `databricks.yml` and the job file take the Domain's coordinates as bundle variables. `tests/test_platform_prose.py` fails on a committed host, warehouse path, token or GUID.
+- Never commit secrets. dlt reads them from the Domain's Databricks-backed secret scope.
 - Do not edit `transformation/profiles.yml` to make a failure pass.
 
 ## Maintenance rules

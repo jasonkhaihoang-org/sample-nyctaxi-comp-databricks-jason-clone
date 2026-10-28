@@ -1,0 +1,73 @@
+# The refresh: the three pipeline notebooks in parallel (ops and mdm derive their
+# rows in memory, so none reads another's load), then every model, seed, snapshot and test.
+# No schedule is committed: the Domain runs it on demand until one is designed.
+resources:
+  jobs:
+    nyc_taxi_refresh:
+      name: nyc-taxi-databricks_nyc_taxi_refresh
+      max_concurrent_runs: 1
+      tags:
+        project: nyctaxi-databricks
+      tasks:
+        - task_key: dlt_tlc_pipeline
+          environment_key: dlt
+          notebook_task:
+            notebook_path: ../ingestion/tlc_pipeline.ipynb
+            base_parameters:
+              pipeline_name: tlc_pipeline
+              connection_name: tlc
+              ingestion_dir: ${workspace.file_path}/ingestion
+              dlt_ingest_limit: "-1"
+              dev_mode: "false"
+              dlt_env: ${var.dlt_env}
+
+        - task_key: dlt_ops_pipeline
+          environment_key: dlt
+          notebook_task:
+            notebook_path: ../ingestion/ops_pipeline.ipynb
+            base_parameters:
+              pipeline_name: ops_pipeline
+              connection_name: ops
+              ingestion_dir: ${workspace.file_path}/ingestion
+              dlt_ingest_limit: "-1"
+              dev_mode: "false"
+              dlt_env: ${var.dlt_env}
+
+        - task_key: dlt_mdm_pipeline
+          environment_key: dlt
+          notebook_task:
+            notebook_path: ../ingestion/mdm_pipeline.ipynb
+            base_parameters:
+              pipeline_name: mdm_pipeline
+              connection_name: mdm
+              ingestion_dir: ${workspace.file_path}/ingestion
+              dlt_ingest_limit: "-1"
+              dev_mode: "false"
+              dlt_env: ${var.dlt_env}
+
+        - task_key: dbt
+          depends_on:
+            - task_key: dlt_tlc_pipeline
+            - task_key: dlt_ops_pipeline
+            - task_key: dlt_mdm_pipeline
+          environment_key: dbt
+          dbt_task:
+            project_directory: ../transformation
+            warehouse_id: ${var.warehouse_id}
+            catalog: ${var.catalog}
+            schema: ${var.schema}
+            commands:
+              - dbt deps
+              - dbt build
+
+      environments:
+        - environment_key: dlt
+          spec:
+            environment_version: "4"
+        - environment_key: dbt
+          spec:
+            environment_version: "4"
+            dependencies:
+              - -c ${workspace.file_path}/.github/managed-constraints.txt
+              - dbt-core
+              - dbt-databricks

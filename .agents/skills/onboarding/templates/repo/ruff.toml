@@ -4,3 +4,8 @@ extend-exclude = [".github", "ingestion/sources"]
 
 [lint]
 select = ["E4", "E7", "E9", "F"]
+
+# A pipeline notebook keeps the plugin template's cells: each imports in the cell that needs it,
+# after the widget and install cells, and Databricks supplies `dbutils` at run time.
+[lint.per-file-ignores]
+"ingestion/*_pipeline.ipynb" = ["E402", "F821"]

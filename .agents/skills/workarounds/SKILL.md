@@ -33,12 +33,12 @@ Remove when: `verifying` says where independent figures come from for an ingesti
 
 ## Tier-1 tests after a safety run
 
-A `DEV_MODE` safety run (the `generating-dlt-pipeline` skill's) loads into a timestamped dev dataset (`bronze_<timestamp>`), printed by the run. Pass that name to the plugin's `scripts/run_bronze_tier1_tests.py --dataset`, not `bronze`. After the full load, pass `bronze`. A Tier 2 or 3 pytest suite cannot reach the Lakehouse: record its execution as deferred, as the plugin's `fabric_lakehouse/dlt.md` § Bronze tests says.
+A `--dev-mode` safety run (the `generating-dlt-pipeline` skill's) loads into a timestamped dev dataset in the Ephemeral catalog, `<VD_EPHM_SCHEMA_PREFIX>bronze_<timestamp>`; the plugin's bronze preview lists it with every other schema under the Intent's prefix. Pass that full schema name to the plugin's `scripts/run_bronze_tier1_tests.py --dataset`, which adds no prefix of its own; not `bronze`. After the full load, pass `<VD_EPHM_SCHEMA_PREFIX>bronze`. A Tier 2 or 3 pytest suite cannot reach the Ephemeral catalog: record its execution as deferred, as the plugin's `databricks/dlt.md` § Bronze tests says.
 
 Remove when: the Tier-1 runner finds the dev dataset itself (`skill-changes.md`).
 
-## A sample load lands whole pages, not N rows
+## A sample load lands whole yields, not N rows
 
-`DLT_INGEST_LIMIT` bounds pages, not rows, and dlt does not trim the last page. A file source with row groups lands a whole row group: a Parquet sample load can land about a million rows for a limit of 1,000. Do not write "N rows" for a sample load into a Requirement or Plan, and do not read a larger count as a failed limit. Check the landed count against the source's row-group size instead.
+The pipeline notebooks count the `dlt_ingest_limit` widget in rows (`add_limit(..., count_rows=True)`, from the plugin's template), but dlt stops only after the first yield that reaches the limit and does not trim it. `tlc` yields one table per monthly Parquet file, so a TLC sample load with a limit of 1,000 lands the whole first month. Do not write "N rows" for a sample load into a Requirement or Plan, and do not read a larger count as a failed limit. Check the landed count against what one yield of the source holds instead.
 
-Remove when: `fabric_lakehouse/dlt.md` and `generating-dlt-pipeline` state that the limit bounds pages (`skill-changes.md`).
+Remove when: `databricks/dlt.md` and `generating-dlt-pipeline` state that the limit stops after a whole yield (`skill-changes.md`).

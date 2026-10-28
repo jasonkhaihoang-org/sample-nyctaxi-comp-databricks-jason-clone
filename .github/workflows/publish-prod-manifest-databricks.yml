@@ -1,0 +1,65 @@
+# Publishes the prod dbt manifest on push to main.
+# Uses dbt_databricks_compile (offline, the production catalog and schema) — no live Databricks connection required.
+# An Intent defers to it: Studio stages manifest.json into /cache/prod-target on Open.
+name: Publish Prod Manifest (Databricks)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Repo-wide because the resource this protects, dbt-docs-latest, is repo-wide too.
+# cancel-in-progress: false queues an overlapping run instead of cancelling it mid-publish.
+concurrency:
+  group: publish-prod-manifest
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Resolve layout
+        run: |
+          echo "PROJ=$([ -f transformation/dbt_project.yml ] && echo transformation || echo .)" >> "$GITHUB_ENV"
+          echo "CICFG=.workflow/ci-config.yml" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dbt
+        run: pip install -c .github/managed-constraints.txt dbt-core dbt-databricks pyyaml --quiet
+
+      - name: Resolve PROD_DB_NAME and PROD_SCHEMA_NAME from ci-config.yml
+        run: |
+          python3 .github/scripts/ci_config_runner.py prod-db-name --config "$CICFG"
+
+      - name: Parse dbt project
+        run: |
+          dbt deps --project-dir "$PROJ" --quiet
+          dbt parse --project-dir "$PROJ" --profiles-dir .github/profiles --profile dbt_databricks_compile --target compile --quiet
+
+      - name: Generate dbt Docs static site
+        run: |
+          dbt docs generate --project-dir "$PROJ" --profiles-dir .github/profiles --profile dbt_databricks_compile --target compile --static --empty-catalog --no-compile --quiet
+
+      # The compile target is already production, so this one manifest serves both
+      # selection and `--defer --state`. It rides the docs release because release assets
+      # are repository contents the brokered agent GitHub token can read.
+      - name: Publish immutable per-build manifest release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 .github/scripts/publish_manifest_release.py "$PROJ/target" \
+            ${{ github.event.after || github.sha }} manifest.json
+
+      - name: Publish dbt Docs and prod manifest to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 .github/scripts/publish_dbt_docs_release.py "$PROJ/target" \
+            static_index.html manifest.json manifest-source.json

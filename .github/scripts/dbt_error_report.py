@@ -13,9 +13,8 @@ import re
 import subprocess
 import sys
 
-import parse_run_results as prr
-import runner_io
-
+from vibedata_domain_ci import parse_run_results as prr
+from vibedata_domain_ci import runner_io
 # Matches: "Compilation Error in model my_model (path/to/model.sql)"
 # Also handles dbt log-prefixed lines like "16:04:22  Compilation Error in model …"
 _COMPILE_ERROR_RE = re.compile(r"Compilation Error in model (\S+)")

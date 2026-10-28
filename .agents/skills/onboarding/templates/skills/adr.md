@@ -33,7 +33,7 @@ Not an ADR: a choice one model or pipeline makes that is easy to change later, s
 - Number: the next in sequence, four digits.
 - A decision that still holds is left alone.
 - A decision that no longer holds is superseded by a new ADR. The old ADR changes only its frontmatter: `status: rejected` and `rejected-note: Superseded by docs/adr/<new>.md`.
-- Cite ADRs as `ADR NNNN` so the CI citation check finds them.
+- Cite ADRs as `ADR NNNN` so the `adr_lint` citation check finds them.
 - A design record that starts citing an ADR is added to that ADR's `## Affected designs` in the same commit, and a record that stops citing it is removed.
 - When an ADR is superseded, the design records it lists move their citations to the new ADR in the same commit, and the new ADR's `## Affected designs` lists them.
 - Check citations with the `adr_lint` command in `repo-map.json` (numbering and dangling citations) and the two-way links with the repo's link check (`tests/test_adr_links.py` when onboarding added it). Run them; do not read the scripts to work out what they check.

@@ -11,8 +11,8 @@ and the two are not distinguishable from the tables alone.
 
 Everything is reproducible: the dlt pipeline notebooks in `ingestion/` download
 and load the real data (`tlc`) and regenerate the invented systems
-deterministically (`ops`, `mdm`) into the Domain Lakehouse. The
-`nyc_taxi_refresh` Data Pipeline in `orchestration/` runs them.
+deterministically (`ops`, `mdm`) into the Domain catalog. The
+`nyc_taxi_refresh` job in `orchestration/` runs them.
 
 Row counts below are for the full three-month load, which is what the Domain is
 seeded with (`seeding-the-domain.md`).

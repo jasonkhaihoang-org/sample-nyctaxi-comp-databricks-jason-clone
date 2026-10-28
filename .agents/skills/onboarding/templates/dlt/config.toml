@@ -1,9 +1,9 @@
 # Connections are [sources.<name>] sections, one per source, added by the intent that adds it.
-# No secrets here: dlt reads them from the bound secret store.
-# [destination.filesystem] (the Domain Lakehouse's coordinates) is written with the first source,
-# as the plugin's fabric_lakehouse/destination-staging.md says.
+# No secrets here: dlt reads them from the Domain's secret scope.
+# dlt refuses a [destination.databricks.credentials] section here (credentials are secret
+# values): the catalog and SQL warehouse come from the pipeline notebook's dlt_env widget.
 
-# Bronze keeps source column names verbatim.
+# Bronze keeps the source's column names; Databricks folds them to lower case.
 [schema]
 naming = "direct"
 
@@ -11,3 +11,6 @@ naming = "direct"
 [normalize.parquet_normalizer]
 add_dlt_load_id = true
 add_dlt_id = true
+
+[destination.databricks]
+keep_staged_files = false

@@ -1,7 +1,7 @@
 # dbt Quality Workflow
 #
-# Runs dbt-project-evaluator on every PR using DuckDB (offline, no Fabric connection).
-# Runs in parallel with ci.yml — never gates a required branch-protection status,
+# Runs dbt-project-evaluator on every PR using DuckDB (offline, no Databricks connection).
+# Runs beside repo-checks.yml — never gates a required branch-protection status,
 # so it never blocks merge. Posts evaluation results as a PR comment (advisory).
 # ci/dbt-project-evaluate can still report `failure` — e.g. when the evaluator's
 # results database is missing or unreadable — as a visibility signal only.
@@ -23,6 +23,8 @@ permissions:
 env:
   PYTHON_VERSION: "3.11"
   SCRIPTS: .github/scripts
+  # Modules the CI engine owns ship as the vibedata_domain_ci package under .github/scripts.
+  PYTHONPATH: .github/scripts
   # Single source of truth for the evaluator's results path — the
   # dbt-quality profile reads this via env_var(), dbt_quality_comment.py reads
   # it via os.environ. Keep both in sync by changing only this line.
@@ -37,7 +39,6 @@ jobs:
       - name: Resolve layout
         run: |
           echo "PROJ=$([ -f transformation/dbt_project.yml ] && echo transformation || echo .)" >> "$GITHUB_ENV"
-          echo "CICFG=$([ -f .github/ci-config.yml ] && echo .github/ci-config.yml || echo ci-config.yml)" >> "$GITHUB_ENV"
 
       - uses: actions/setup-python@v6
         with:
@@ -49,7 +50,7 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          python3 ${{ env.SCRIPTS }}/emit_status.py \
+          python3 ${{ env.SCRIPTS }}/vibedata_domain_ci/emit_status.py \
             --context "ci/dbt-project-evaluate" \
             --state pending \
             --description "dbt-project-evaluate: running" \
@@ -101,7 +102,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
-        run: python3 .github/scripts/dbt_quality_comment.py
+        run: python3 ${{ env.SCRIPTS }}/vibedata_domain_ci/dbt_quality_comment.py
 
       - name: Emit ci/dbt-project-evaluate final status
         if: always()
@@ -118,7 +119,7 @@ jobs:
             STATE=failure
             DESC="dbt-project-evaluate: failed"
           fi
-          python3 ${{ env.SCRIPTS }}/emit_status.py \
+          python3 ${{ env.SCRIPTS }}/vibedata_domain_ci/emit_status.py \
             --context "ci/dbt-project-evaluate" \
             --state "$STATE" \
             --description "$DESC" \

@@ -6,7 +6,7 @@ kinds: [ingestion, transformation]
 
 The full requirement and its decisions are in the DuckDB repo's `docs/setup/requirements.md` (R-10, R-12, with the decisions table), in [`accelerate-data/sample-nyctaxi-comp`](https://github.com/accelerate-data/sample-nyctaxi-comp/blob/main/docs/setup/requirements.md). This document keeps the four requirements that govern the pipelines and the silver move.
 
-This intent was built on the DuckDB Domain this repo was ported from. On the Fabric Lakehouse the pipelines are `ingestion/<name>_pipeline.Notebook/` and the `nyc_taxi_refresh` Data Pipeline runs them; the requirements and decisions are unchanged.
+This intent was built on the DuckDB Domain this repo was ported from. On Databricks the pipelines are `ingestion/<name>_pipeline.ipynb` notebooks and the `nyc_taxi_refresh` job runs them; the requirements and decisions are unchanged.
 
 ## Ask
 

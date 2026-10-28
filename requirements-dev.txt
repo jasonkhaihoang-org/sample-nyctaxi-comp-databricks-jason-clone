@@ -1,9 +1,8 @@
 # The base commands: python tests, the map tests, lint, and dbt.
 -r ingestion/requirements.txt
-dbt-fabricspark
+dbt-databricks
 jsonschema
 pytest
 pyyaml
 ruff
 sqlfluff
-sqlfluff-templater-dbt

@@ -3,15 +3,15 @@
 -- times the meter recorded, so they are brought back to plain timestamps in UTC
 -- rather than the session's time zone.
 select
-    `VendorID` as vendor_id,
+    `vendorid` as vendor_id,
     to_utc_timestamp(tpep_pickup_datetime, current_timezone()) as pickup_datetime,
     to_utc_timestamp(tpep_dropoff_datetime, current_timezone()) as dropoff_datetime,
     passenger_count,
     trip_distance,
-    `RatecodeID` as rate_code_id,
+    `ratecodeid` as rate_code_id,
     store_and_fwd_flag,
-    `PULocationID` as pickup_location_id,
-    `DOLocationID` as dropoff_location_id,
+    `pulocationid` as pickup_location_id,
+    `dolocationid` as dropoff_location_id,
     payment_type,
     fare_amount,
     extra,
@@ -21,6 +21,6 @@ select
     improvement_surcharge,
     congestion_surcharge,
     total_amount,
-    `Airport_fee` as airport_fee,
+    `airport_fee` as airport_fee,
     _dlt_load_id
 from {{ source('bronze', 'yellow_tripdata') }}

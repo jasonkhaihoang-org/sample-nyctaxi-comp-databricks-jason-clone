@@ -16,7 +16,7 @@ One row per convention the repo follows. Build it from the code and documents be
 - dbt: `dbt_project.yml` (paths, `+schema`, `+materialized`, vars), model folders and names, properties files, `packages.yml`, macros, singular and unit tests, seeds, `profiles.yml` targets.
 - dlt: pipelines, sources, `.dlt/config.toml`, write dispositions, schema contracts, naming, incremental cursors.
 - SQL style: `.sqlfluff`, and what the models actually do where the two differ.
-- Orchestration and CI: run scripts, Makefile, CI jobs.
+- Orchestration and CI: `databricks.yml` and `orchestration/*.job.yml`, run scripts, Makefile, CI jobs.
 - Documents: README, CONTRIBUTING, runbooks, agent instruction files, existing ADRs or design notes, model YAML descriptions.
 
 ## Destination test

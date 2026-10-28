@@ -1,24 +1,17 @@
-# transformation/profiles.yml — the profile every dbt job notebook in the Domain reads.
-# `prod` holds the Domain's literal coordinates: a Fabric notebook has none of the agent's
-# environment, so an env_var() here cannot resolve. An Intent runs with its own profile,
-# which Studio writes outside the repository; git never carries it.
-# Named as the CI bundle's .github/profiles names its profile: CI runs dbt with that
-# profiles directory and no --profile, so the default here must match it.
-dbt_fab_spark:
+# transformation/profiles.yml — the Domain's own profile, for a run outside Studio and the bundle
+# job. It names the production catalog and Primary Schema; the host, warehouse and token come
+# from the environment, so nothing here points at one workspace or carries a credential.
+# An Intent runs with Studio's dbt_databricks profile, written outside the repository, and the
+# bundle job's dbt task with the profile Databricks generates from the job's warehouse,
+# catalog and schema. The CI bundle parses with its own offline profile (.github/profiles).
+dbt_databricks:
   target: prod
   outputs:
     prod:
-      type: fabricspark
-      method: livy
-      authentication: fabric_notebook
-      endpoint: https://api.fabric.microsoft.com/v1
-      workspaceid: "b9e3c113-ca4b-4b05-9c98-6b71c3e5805f"
-      lakehouse: "nyc_taxi_lakehouse"
-      lakehouseid: "2e80c60f-fa7e-4215-81a2-b66ceba7da3a"
-      schema: "dbo"
-      spark_config:
-        name: "nyc-taxi-fabric-demo_dbt"
-      connect_retries: 3
-      retry_all: true
-      session_start_timeout: 900
+      type: databricks
+      host: "{{ env_var('DATABRICKS_HOST', '') }}"
+      http_path: "{{ env_var('DATABRICKS_HTTP_PATH', '') }}"
+      token: "{{ env_var('DATABRICKS_TOKEN', '') }}"
+      catalog: nyctaxi_prod
+      schema: main
       threads: 4

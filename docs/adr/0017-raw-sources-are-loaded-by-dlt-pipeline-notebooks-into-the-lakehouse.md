@@ -1,6 +1,7 @@
 ---
-status: decided
+status: rejected
 date: 2026-10-18
+rejected-note: Superseded by docs/adr/0018-raw-sources-are-loaded-by-dlt-pipeline-notebooks-into-the-databricks-catalog.md
 ---
 
 # Every raw source is loaded into the Lakehouse by a dlt pipeline notebook

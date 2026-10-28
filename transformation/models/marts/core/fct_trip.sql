@@ -26,7 +26,7 @@
 with trips as (
     select * from {{ ref('int_trips_enriched') }}
     {% if is_incremental() %}
-    where pickup_datetime > (select coalesce(max(pickup_datetime), '1900-01-01') from {{ this }})
+        where pickup_datetime > (select coalesce(max(pickup_datetime), '1900-01-01') from {{ this }})
     {% endif %}
 ),
 

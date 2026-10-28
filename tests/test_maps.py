@@ -82,11 +82,11 @@ def test_test_map_paths_exist():
 
 
 DBT_PROJECT = ROOT / "transformation"
-# The repo's own profile, named explicitly: in the Studio sandbox DBT_PROFILES_DIR and
-# DBT_PROFILE_NAME point at the runtime profile, which plain `dbt ls` would otherwise use.
+# The repo's own profiles directory, named explicitly: in the Studio sandbox DBT_PROFILES_DIR points
+# at the runtime profile, which plain `dbt ls` would otherwise use.
 DBT = [sys.executable, "-m", "dbt.cli.main"]
-DBT_PROFILE = ["--profiles-dir", str(DBT_PROJECT), "--profile", "dbt_fab_spark"]
-# Listing and parsing never open a Spark session, so the prod target needs no credential here.
+DBT_PROFILE = ["--profiles-dir", str(DBT_PROJECT), "--profile", "dbt_databricks"]
+# Listing and parsing open no warehouse connection, so the prod target needs no credential here.
 DBT_ENV = dict(os.environ)
 
 
@@ -175,44 +175,121 @@ def test_proposals_and_review_findings_point_at_each_other():
             assert status[-4:] in proposals, (review, finding)
 
 
-def test_dbt_sources_name_a_schema_and_never_a_catalog():
-    """The Studio sandbox is a renamed copy of the domain file, so a source's catalog never resolves there."""
+DOMAIN_CATALOG = "{{ env_var('VD_DOMAIN_DATABRICKS_CATALOG', target.database) }}"
+
+
+def test_dbt_sources_name_the_domain_catalog_and_a_literal_schema():
+    """A sandbox's target catalog is the Ephemeral one, so a source that names no catalog would
+    fall back there, not to the Domain table; in production the target catalog is the Domain's."""
     import yaml
 
     sources = yaml.safe_load((ROOT / REPO_MAP["artifact_paths"]["dbt_sources"]).read_text())["sources"]
-    assert [s["name"] for s in sources if "database" in s] == []
+    assert [s["name"] for s in sources if s.get("database") != DOMAIN_CATALOG] == []
     assert [s["name"] for s in sources if "{{" in str(s.get("schema", ""))] == []
 
 
+def _model_schemas(prefix: str | None) -> dict[str, str]:
+    env = {k: v for k, v in DBT_ENV.items() if k != "VD_EPHM_SCHEMA_PREFIX"}
+    if prefix is not None:
+        env["VD_EPHM_SCHEMA_PREFIX"] = prefix
+    command = [*DBT, "ls", *DBT_PROFILE, "--resource-type", "model", "--output", "json", "--output-keys", "name schema"]
+    out = subprocess.run(command, cwd=DBT_PROJECT, env=env, capture_output=True, text=True, check=True).stdout
+    rows = [json.loads(line) for line in out.splitlines() if line.startswith("{")]
+    return {row["name"]: row["schema"] for row in rows}
+
+
+def test_models_land_in_their_layer_schema_behind_the_intents_prefix(dbt_packages):
+    """generate_schema_name: `<prefix><layer>` in a sandbox, `<layer>` in production."""
+    prefix = "ephm" + "__d__i__"  # built, so the coordinate guard sees no Intent schema here
+    prod, sandbox = _model_schemas(None), _model_schemas(prefix)
+    assert prod["fct_trip"] == "core" and prod["stg_tlc__yellow_tripdata"] == "staging"
+    assert sandbox == {name: f"{prefix}{schema}" for name, schema in prod.items()}
+
+
+def test_a_malformed_prefix_stops_the_build(dbt_packages):
+    with pytest.raises(subprocess.CalledProcessError):
+        _model_schemas("Not_A_Prefix")
+
+
 def test_source_defers_to_the_domain():
-    """dbt's --defer rewrites ref() only; without this override every source fails in a sandbox build."""
+    """dbt's --defer rewrites ref() only; this override reads the Intent's own load, else the Domain's."""
     text = (DBT_PROJECT / "macros" / "source_defer.sql").read_text()
     assert "macro source(" in text
+    assert "VD_EPHM_SCHEMA_PREFIX" in text
 
 
 def test_orchestration_runs_every_pipeline_notebook_then_dbt():
-    """nyc_taxi_refresh lands tlc, then ops and mdm, then builds every model once all three landed."""
-    def logical_id(item: Path) -> str:
-        return json.loads((item / ".platform").read_text())["config"]["logicalId"]
+    """nyc_taxi_refresh lands every source, then builds every model once all of them landed."""
+    import yaml
 
-    pipeline = json.loads((ROOT / "orchestration/nyc_taxi_refresh.DataPipeline/pipeline-content.json").read_text())
-    activities = {a["name"]: a for a in pipeline["properties"]["activities"]}
-    notebooks = {name: a["typeProperties"]["notebookId"] for name, a in activities.items()}
-    loads = {n: logical_id(ROOT / f"ingestion/{n}_pipeline.Notebook") for n in ("tlc", "ops", "mdm")}
-    dbt = logical_id(ROOT / "orchestration/nyc_taxi_build_dbt.Notebook")
-    assert sorted(notebooks.values()) == sorted([*loads.values(), dbt])
-    by_id = {v: k for k, v in notebooks.items()}
+    jobs = yaml.safe_load((ROOT / "orchestration/nyc_taxi_refresh.job.yml").read_text())["resources"]["jobs"]
+    tasks = {task["task_key"]: task for task in jobs["nyc_taxi_refresh"]["tasks"]}
+    notebooks = {k: t["notebook_task"]["notebook_path"] for k, t in tasks.items() if "notebook_task" in t}
+    assert sorted(notebooks.values()) == sorted(f"../ingestion/{n}_pipeline.ipynb" for n in REPO_MAP["sources"])
+    (dbt,) = [t for t in tasks.values() if "dbt_task" in t]
+    assert {d["task_key"] for d in dbt["depends_on"]} == set(notebooks)
+    assert dbt["dbt_task"]["commands"] == ["dbt deps", "dbt build"]
+    assert "schedule" not in jobs["nyc_taxi_refresh"]
 
-    def upstream(notebook_id: str) -> set[str]:
-        return {d["activity"] for d in activities[by_id[notebook_id]]["dependsOn"]}
 
-    assert upstream(loads["tlc"]) == set()
-    assert upstream(loads["ops"]) == upstream(loads["mdm"]) == {by_id[loads["tlc"]]}
-    assert upstream(dbt) == {by_id[loads[n]] for n in ("tlc", "ops", "mdm")}
+@pytest.mark.parametrize("name", sorted(REPO_MAP["sources"]))
+def test_each_job_task_passes_its_notebooks_widgets(name):
+    """A task whose parameters drift from its notebook's widgets loads another source, or none."""
+    import yaml
+
+    jobs = yaml.safe_load((ROOT / "orchestration/nyc_taxi_refresh.job.yml").read_text())["resources"]["jobs"]
+    (task,) = [t for t in jobs["nyc_taxi_refresh"]["tasks"] if t["task_key"] == f"dlt_{name}_pipeline"]
+    parameters = task["notebook_task"]["base_parameters"]
+    widgets = dict(WIDGET.findall(_notebook_code(ROOT / f"ingestion/{name}_pipeline.ipynb")))
+    assert set(parameters) == set(widgets)
+    for key in ("pipeline_name", "connection_name", "dlt_ingest_limit", "dev_mode"):
+        assert parameters[key] == widgets[key], key
+    assert parameters["dlt_env"] == "${var.dlt_env}"
+    assert parameters["ingestion_dir"] == "${workspace.file_path}/ingestion"
+
+
+def test_bundle_has_both_targets_and_no_default_or_host():
+    """A default target would send a bare `databricks bundle deploy` somewhere nobody chose."""
+    import yaml
+
+    bundle = yaml.safe_load((ROOT / "databricks.yml").read_text())
+    assert bundle["bundle"]["name"] == "nyc-taxi-databricks"
+    assert bundle["include"] == ["orchestration/*.job.yml"]
+    assert {name: target["mode"] for name, target in bundle["targets"].items()} == {
+        "sandbox": "development", "prod": "production"}
+    assert [name for name, target in bundle["targets"].items() if target.get("default")] == []
+    assert [name for name, target in bundle["targets"].items() if "host" in (target.get("workspace") or {})] == []
+
+
+@pytest.mark.parametrize("path", ["ingestion/.dlt/config.toml", ".agents/skills/onboarding/templates/dlt/config.toml"])
+def test_dlt_config_holds_no_credentials(path):
+    """dlt refuses credentials in config.toml; the catalog and warehouse come from the notebook's dlt_env."""
+    config = tomllib.loads((ROOT / path).read_text())
+    assert "credentials" not in config.get("destination", {}).get("databricks", {})
+
+
+def _notebook_code(path: Path) -> str:
+    cells = json.loads(path.read_text())["cells"]
+    return "\n".join("".join(c["source"]) for c in cells if c["cell_type"] == "code")
+
+
+WIDGET = re.compile(r'dbutils\.widgets\.text\("([a-z_]+)",\s*"([^"]*)"\)')
+
+
+@pytest.mark.parametrize("name", sorted(REPO_MAP["sources"]))
+def test_pipeline_notebook_names_itself_and_loads_its_dataset(name):
+    """The job passes the widgets' committed values, and dbt reads the dataset repo-map names."""
+    code = _notebook_code(ROOT / f"ingestion/{name}_pipeline.ipynb")
+    widgets = dict(WIDGET.findall(code))
+    assert widgets["pipeline_name"] == f"{name}_pipeline"
+    assert widgets["connection_name"] == name
+    assert widgets["dlt_ingest_limit"] == "-1" and widgets["dev_mode"] == "false" and widgets["dlt_env"] == "{}"
+    assert f'dataset("{REPO_MAP["sources"][name]["dataset"]}")' in code
+    assert "destination=destination" in code and "databricks_files_api()" in code
 
 
 def test_ops_pipeline_reads_the_window_tlc_loads():
     """The ops generator derives from the yellow trips; reading a fixed window instead orphans its shifts."""
-    notebook = (ROOT / "ingestion/ops_pipeline.Notebook/notebook-content.py").read_text()
+    notebook = _notebook_code(ROOT / "ingestion/ops_pipeline.ipynb")
     assert "trips=yellow_trips" in notebook
     assert "trip_tables(" not in notebook

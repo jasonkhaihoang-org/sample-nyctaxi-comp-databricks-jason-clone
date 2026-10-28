@@ -83,7 +83,7 @@ python3 -m pytest tests -q                # Python tests, offline
 ruff check .                              # Python lint
 ```
 
-dbt runs in the Intent's sandbox against its Ephemeral Lakehouse as the `workarounds` skill gives it, as plain `dbt`; dlt runs there through the plugin's runtime wrapper, as the plugin's `fabric_lakehouse/pipeline-notebook.md` gives the pipeline-notebook run. Unselected models and sources resolve against the released Domain (`--defer --state /cache/prod-target`).
+dbt runs in the Intent's sandbox against its schemas in the Domain's Ephemeral catalog as the plugin's `databricks/dbt.md` gives it, as plain `dbt`. A dlt pipeline notebook runs on Databricks serverless compute through the plugin's `run_notebook.py`, as the plugin's `databricks/dlt.md` gives it. Unselected models resolve against the released Domain (`--defer --state /cache/prod-target`); a source reads the Intent's own load when it has one, and the Domain's table otherwise (`macros/source_defer.sql`).
 
 The command for each layer's tests is in `test-map.json`. Lint Python with `ruff check` (the `python_lint` command in `repo-map.json`), which reads `ruff.toml`; do not use the `check_python` tool, which applies rules this repo does not use.
 
@@ -93,9 +93,9 @@ ask: no
 reason: Platform safety; the same for every domain.
 -->
 
-- The warehouse is the Domain Lakehouse. Only a release writes it; an Intent writes its own Ephemeral Lakehouse. Never commit downloaded data.
-- Commit only the Domain's coordinates (the `prod` target in `transformation/profiles.yml`, `[destination.filesystem]` in `ingestion/.dlt/config.toml`, `.workflow/ci-config.yml`) and the portable `logicalId` of each Fabric item, which activities reference as `notebookId`. Never commit an Ephemeral Lakehouse id or a workspace object id.
-- Never commit secrets. dlt reads them from the bound secret store.
+- The warehouse is the Domain's production catalog. Only a release writes it; an Intent writes its own schemas, prefixed `ephm__<domain>__<intent>__`, in the Domain's Ephemeral catalog. Never commit downloaded data.
+- Commit only the Domain's coordinates, where the plugin reads them: the production catalog and Primary Schema in the `prod` target of `transformation/profiles.yml`, and `.workflow/ci-config.yml`. Never commit a workspace host, a SQL warehouse id, an Ephemeral catalog or schema, or a value for a `databricks.yml` variable: `ingestion/.dlt/config.toml` holds no catalog or warehouse, because dlt refuses credentials there.
+- Never commit secrets. dlt reads them from the Domain's Databricks secret scope.
 - Do not edit `transformation/profiles.yml` to make a failure pass.
 
 ## Maintenance rules

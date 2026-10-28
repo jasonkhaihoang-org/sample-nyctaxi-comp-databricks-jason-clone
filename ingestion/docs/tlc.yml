@@ -1,11 +1,12 @@
-# Resource docs for the tlc pipeline: every emitted field, including _dlt_* columns.
+# Resource docs for the tlc pipeline: every emitted field, including _dlt_* columns, by the
+# name it lands under (lower case on Databricks); source_ref keeps the source's spelling.
 connection: tlc
 dataset: bronze
 resources:
   yellow_tripdata:
     description: One row per yellow taxi trip record, as published by the TLC for the loaded months.
     columns:
-    - name: VendorID
+    - name: vendorid
       description: Code for the technology provider that supplied the trip record.
       source_ref: tlc.yellow_tripdata.VendorID
     - name: tpep_pickup_datetime
@@ -20,17 +21,17 @@ resources:
     - name: trip_distance
       description: Trip distance in miles reported by the taximeter.
       source_ref: tlc.yellow_tripdata.trip_distance
-    - name: RatecodeID
+    - name: ratecodeid
       description: Rate code in effect at the end of the trip.
       source_ref: tlc.yellow_tripdata.RatecodeID
     - name: store_and_fwd_flag
       description: 'Whether the record was held in vehicle memory before being sent to the provider: Y
         or N.'
       source_ref: tlc.yellow_tripdata.store_and_fwd_flag
-    - name: PULocationID
+    - name: pulocationid
       description: TLC taxi zone in which the meter was engaged.
       source_ref: tlc.yellow_tripdata.PULocationID
-    - name: DOLocationID
+    - name: dolocationid
       description: TLC taxi zone in which the meter was disengaged.
       source_ref: tlc.yellow_tripdata.DOLocationID
     - name: payment_type
@@ -60,7 +61,7 @@ resources:
     - name: congestion_surcharge
       description: Total collected on the trip for the New York State congestion surcharge.
       source_ref: tlc.yellow_tripdata.congestion_surcharge
-    - name: Airport_fee
+    - name: airport_fee
       description: Fee for pickups at the airports. Present on yellow trips only.
       source_ref: tlc.yellow_tripdata.Airport_fee
     - name: _dlt_load_id
@@ -71,7 +72,7 @@ resources:
   green_tripdata:
     description: One row per green taxi trip record, as published by the TLC for the loaded months.
     columns:
-    - name: VendorID
+    - name: vendorid
       description: Code for the technology provider that supplied the trip record.
       source_ref: tlc.green_tripdata.VendorID
     - name: lpep_pickup_datetime
@@ -84,13 +85,13 @@ resources:
       description: 'Whether the record was held in vehicle memory before being sent to the provider: Y
         or N.'
       source_ref: tlc.green_tripdata.store_and_fwd_flag
-    - name: RatecodeID
+    - name: ratecodeid
       description: Rate code in effect at the end of the trip.
       source_ref: tlc.green_tripdata.RatecodeID
-    - name: PULocationID
+    - name: pulocationid
       description: TLC taxi zone in which the meter was engaged.
       source_ref: tlc.green_tripdata.PULocationID
-    - name: DOLocationID
+    - name: dolocationid
       description: TLC taxi zone in which the meter was disengaged.
       source_ref: tlc.green_tripdata.DOLocationID
     - name: passenger_count
@@ -140,13 +141,13 @@ resources:
   taxi_zone_lookup:
     description: 'The TLC taxi zone lookup: one row per zone.'
     columns:
-    - name: LocationID
+    - name: locationid
       description: TLC taxi zone identifier.
       source_ref: tlc.taxi_zone_lookup.LocationID
-    - name: Borough
+    - name: borough
       description: Borough the zone belongs to.
       source_ref: tlc.taxi_zone_lookup.Borough
-    - name: Zone
+    - name: zone
       description: Name of the zone.
       source_ref: tlc.taxi_zone_lookup.Zone
     - name: service_zone

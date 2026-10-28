@@ -5,7 +5,7 @@ extend-exclude = [".github", "ingestion/sources"]
 [lint]
 select = ["E4", "E7", "E9", "F"]
 
-# A Fabric notebook item imports in the cell that needs it, after the parameters, mount and
-# install cells the plugin template puts first.
+# A pipeline notebook keeps the plugin template's cells: each imports in the cell that needs it,
+# after the widget and install cells, and Databricks supplies `dbutils` at run time.
 [lint.per-file-ignores]
-"**/*.Notebook/notebook-content.py" = ["E402"]
+"ingestion/*_pipeline.ipynb" = ["E402", "F821"]

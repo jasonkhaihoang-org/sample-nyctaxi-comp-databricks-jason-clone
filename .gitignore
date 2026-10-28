@@ -7,7 +7,7 @@ raw/
 *.csv.gz
 
 # ---------------------------------------------------------------
-# Local database files (the data lives in the Domain Lakehouse; nothing local is committed).
+# Local database files (the data lives in the Domain catalog; nothing local is committed).
 # ---------------------------------------------------------------
 *.duckdb
 *.duckdb.wal
@@ -53,3 +53,6 @@ ingestion/last-run-preview.md
 
 # Local plan-execution scratch
 .superpowers/
+
+# Databricks bundle state (databricks bundle validate / deploy)
+.databricks/

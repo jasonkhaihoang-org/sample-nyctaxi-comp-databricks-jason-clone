@@ -10,11 +10,11 @@ from (
     select
         {{ trip_natural_key(
             "'green'",
-            'g.`VendorID`',
+            'g.`vendorid`',
             "to_utc_timestamp(g.lpep_pickup_datetime, current_timezone())",
             "to_utc_timestamp(g.lpep_dropoff_datetime, current_timezone())",
-            'g.`PULocationID`',
-            'g.`DOLocationID`',
+            'g.`pulocationid`',
+            'g.`dolocationid`',
             'g.trip_distance',
             'g.total_amount'
         ) }} as trip_key,
@@ -26,11 +26,11 @@ from (
         row_number() over (
             partition by {{ trip_natural_key(
                 "'green'",
-                'g.`VendorID`',
+                'g.`vendorid`',
                 "to_utc_timestamp(g.lpep_pickup_datetime, current_timezone())",
                 "to_utc_timestamp(g.lpep_dropoff_datetime, current_timezone())",
-                'g.`PULocationID`',
-                'g.`DOLocationID`',
+                'g.`pulocationid`',
+                'g.`dolocationid`',
                 'g.trip_distance',
                 'g.total_amount'
             ) }}

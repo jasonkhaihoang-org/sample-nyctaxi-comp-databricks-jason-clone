@@ -31,3 +31,13 @@ The findings above were made on the DuckDB Domain this repo was ported from. On 
 
 - R-4: the run scripts are gone; the `nyc_taxi_build_dbt` notebook runs `dbt deps` before `dbt build` when the project has a `packages.yml`.
 - R-5: `.github/workflows/repo-checks.yml` runs the pytest suite; on Fabric it installs `dbt-fabricspark`, which the map tests' `dbt ls` needs.
+
+## Notes after the Databricks port (2026-10-28)
+
+This repo was then ported from the Fabric Lakehouse repo to Databricks, per `docs/setup/databricks-best-practices.md`. On Databricks:
+
+- R-3: dlt lands timestamps as `timestamp` in UTC and a source `DATE` as `date` (the `ops` generator's computed dates land as midnight timestamps), and the warehouse session time zone is UTC (P7), so the shift this finding describes does not occur; DBX-D3 retires `utc_date()`'s reason.
+- R-4: the dbt notebook goes; the Lakeflow job's dbt task, from the plugin's `orchestration.job.yml`, runs `dbt deps` before `dbt build` (DBX-D6).
+- R-5: `.github/workflows/repo-checks.yml` stays (DBX-D8) and installs `dbt-databricks` for the map tests' `dbt ls`, once `requirements-dev.txt` moves to it (DBX-D6).
+- R-6: under the `databricks` dialect with the jinja templater every model parses, with one `LT02` hit (P4).
+- R-8: an Intent runs on Studio's `dbt_databricks` profile, target `databricks_sandbox`; the repo's own profile becomes `dbt_databricks` with a `prod` target on the Domain catalog (DBX-D6).

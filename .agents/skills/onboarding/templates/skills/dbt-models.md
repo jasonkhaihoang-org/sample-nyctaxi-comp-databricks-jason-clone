@@ -27,18 +27,18 @@ fills: <raw schemas>, <mart areas>
 ## Time zones (B17)
 <!-- onboarding
 ask: no
-reason: dlt and the session time zone; the same for every Fabric Lakehouse domain.
+reason: the types dlt lands on Databricks; the same for every Databricks domain.
 -->
 
-dlt lands timestamps tagged UTC, and the session time zone is not always UTC. Staging converts every dlt-loaded timestamp to the wall-clock value the source recorded, so later models see that value; prove the conversion on a sample load the first time a staging model makes it, and name the function here. A model that reads bronze without the conversion, or hashes a key from a converted and an unconverted timestamp, matches nothing and stays green.
+dlt lands timestamps as `timestamp` in UTC, and a date as whatever type the source yields: a `DATE` as `date`, a date computed as a timestamp as a timestamp at UTC midnight. Staging carries every dlt-loaded timestamp as the wall-clock value the source recorded, so later models see that value; a sample load shows whether bronze already holds it, and this section names a conversion only if one is needed. Staging casts a `date` column with `cast(... as date)` and turns a midnight timestamp into its calendar day without letting the session's zone move it. A model that hashes a key from a converted and an unconverted timestamp matches nothing and stays green.
 
-## Sources name no database (B18)
+## Sources name the Domain catalog (B18)
 <!-- onboarding
 ask: no
-reason: Defer resolves sources in two Lakehouses; the same for every domain.
+reason: An Intent's target catalog is the Ephemeral one; the same for every Databricks domain.
 -->
 
-A source in `_sources.yml` names its `schema` and tables, never a `database`, and no var feeds either. In a Studio Intent `macros/source_defer.sql` resolves a source in the Intent's Ephemeral Lakehouse and, under `--defer`, falls back to the Domain's; a source that names a database is pinned to one Lakehouse and breaks that fallback.
+A source in `_sources.yml` names a literal `schema`, its tables and, as `database`, `"{{ env_var('VD_DOMAIN_DATABRICKS_CATALOG', target.database) }}"`: in an Intent that is the Domain's catalog, and in a release the `prod` target's. Never write a catalog name into the file, and no var feeds the schema or tables. In a Studio Intent the target catalog is the Domain's Ephemeral catalog, so a source without a `database` reads only that. `macros/source_defer.sql` reads the Intent's prefixed copy of a source (`<VD_EPHM_SCHEMA_PREFIX><schema>`) when the Intent loaded that table, and the Domain table the YAML names otherwise.
 
 ## Naming (B2, B3)
 <!-- onboarding
@@ -71,6 +71,8 @@ alternatives: one YAML file per model.
 
 One YAML file per folder, named `_<folder>.yml`. Unit tests sit in `_unit_tests.yml` beside the models they cover. Generic-test arguments go under `arguments:`.
 
+YAML names a bronze column by its landed name. dlt folds column names to lower case on Databricks: `VendorID` lands as `vendorid`. Spark SQL resolves identifiers case-insensitively, so SQL may keep the source's casing.
+
 ## Columns (B8)
 <!-- onboarding
 ask: yes
@@ -95,8 +97,8 @@ None unless a requirement asks for them. When one does: gold only, all or none o
 <!-- onboarding
 ask: yes
 question: How is each layer materialised?
-recommended: Every layer a table: the Lakehouse's SQL analytics endpoint cannot read a Spark view.
-alternatives: incremental facts from the start.
+recommended: Every layer a table, so one rule covers the project.
+alternatives: views where a layer gains nothing from a table (a view over a Domain source builds and reads in the Ephemeral catalog); incremental facts from the start.
 -->
 
 | Layer | Default |

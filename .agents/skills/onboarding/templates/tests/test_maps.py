@@ -16,11 +16,11 @@ ROOT = Path(__file__).resolve().parents[1]
 REPO_MAP = json.loads((ROOT / "repo-map.json").read_text())
 TEST_MAP = json.loads((ROOT / "test-map.json").read_text())
 DBT_PROJECT = ROOT / REPO_MAP["artifact_paths"]["dbt_project"]
-PROFILE = yaml.safe_load((DBT_PROJECT / "dbt_project.yml").read_text())["name"]
-# Name the repo's own profile: in the Studio sandbox DBT_PROFILES_DIR and DBT_PROFILE_NAME point at the runtime's.
+PROFILE = yaml.safe_load((DBT_PROJECT / "dbt_project.yml").read_text())["profile"]
+# Name the repo's own profiles directory: in the Studio sandbox DBT_PROFILES_DIR points at the runtime's.
 DBT = [sys.executable, "-m", "dbt.cli.main"]
 DBT_PROFILE = ["--profiles-dir", str(DBT_PROJECT), "--profile", PROFILE]
-# Parsing and listing never open a Spark session, so the prod target needs no credential here.
+# Parsing and listing open no warehouse connection, so the prod target needs no credential here.
 DBT_ENV = dict(os.environ)
 
 
@@ -69,15 +69,16 @@ def test_test_map_paths_exist():
     assert missing == []
 
 
-def test_dbt_sources_name_a_schema_and_never_a_catalog():
+def test_dbt_sources_name_the_domain_catalog_and_a_literal_schema():
+    """In an Intent the target catalog is the Ephemeral one, so a source without a database never reads the Domain."""
     path = ROOT / REPO_MAP["artifact_paths"]["dbt_sources"]
     sources = (yaml.safe_load(path.read_text()) or {}).get("sources") or []
-    assert [s["name"] for s in sources if "database" in s] == []
+    assert [s["name"] for s in sources if not s.get("database")] == []
     assert [s["name"] for s in sources if "{{" in str(s.get("schema", ""))] == []
 
 
 def test_source_defers_to_the_domain():
-    """dbt's --defer rewrites ref() only; without this override every source fails in a sandbox build."""
+    """dbt's --defer rewrites ref() only; without this override a source never reads the Intent's own load."""
     text = (DBT_PROJECT / "macros/source_defer.sql").read_text()
     assert "macro source(" in text
 

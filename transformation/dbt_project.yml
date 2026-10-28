@@ -1,7 +1,9 @@
 name: 'nyc_taxi_analytics'
 version: '2.1.0'
 config-version: 2
-profile: "{{ env_var('DBT_PROFILE_NAME', 'dbt_fab_spark') }}"
+# A literal name: the bundle job's dbt task cannot find a profile named through env_var() here.
+# A Studio Intent exports DBT_PROFILE_NAME=dbt_databricks, the same name.
+profile: dbt_databricks
 
 model-paths: ["models"]
 seed-paths: ["seeds"]
@@ -33,7 +35,7 @@ models:
     +persist_docs:
       relation: true
       columns: true
-    # Every layer is a table: the Lakehouse SQL analytics endpoint cannot read a Spark view.
+    # Every layer is a table: one materialisation rule for the whole project.
     staging:
       +materialized: table
       +schema: staging

@@ -25,3 +25,11 @@ The findings above were made on the DuckDB Domain this repo was ported from. On 
 
 - R-2: Spark aggregation is not reproducible bit for bit either; the finding holds and compares at stated precision.
 - R-3: there is no local database file. A release reloads the Domain Lakehouse in full (`replace`) and rebuilds every model; an Intent builds only what it changes and defers the rest to the Domain.
+
+## Notes after the Databricks port (2026-10-28)
+
+This repo was then ported from the Fabric Lakehouse repo to Databricks, per `docs/setup/databricks-best-practices.md`. On Databricks:
+
+- R-1: a `merge` incremental with a `unique_key` and `liquid_clustered_by` builds and reruns on Delta (P1), so a lookback window can update corrected or late trips in place; Delta layout is liquid clustering or `partition_by`, not `sort`/`dist`.
+- R-2: the models run as Spark SQL, as on the Lakehouse; the finding holds and compares at stated precision.
+- R-3: a release reloads the Domain catalog in full (`replace`) and rebuilds every model. An Intent builds only what it changes, in its own schemas of the Ephemeral catalog, and defers the rest to the Domain through the manifest the Databricks CI bundle publishes (`--defer --state /cache/prod-target`).
