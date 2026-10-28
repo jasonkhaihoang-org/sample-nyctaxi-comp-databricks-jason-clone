@@ -24,4 +24,4 @@ None in this repo.
 
 ## History
 
-- - 2026-10-14 — trip-fact — design record written; audience wording removed from the model description — D-01
+- 2026-10-14 — trip-fact — design record written; audience wording removed from the model description — D-01

@@ -26,4 +26,4 @@ Depended on by: `agg_od_flow_matrix`, `agg_trip_band_profile`, `agg_trip_zone_da
 
 ## History
 
-- - 2026-10-14 — setup-dlt-ingestion — design record written — D-01, D-02, D-03
+- 2026-10-14 — setup-dlt-ingestion — design record written — D-01, D-02, D-03

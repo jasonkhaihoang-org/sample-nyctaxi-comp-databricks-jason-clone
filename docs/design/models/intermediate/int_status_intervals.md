@@ -27,5 +27,5 @@ Depended on by: `agg_driver_daily`, `agg_driver_monthly`, `agg_garage_monthly`, 
 
 ## History
 
-- - 2026-08-29 — status-occupancy — design record written (commit 97862f7) — D-01, D-02, D-03
-- - 2026-10-14 — setup-dlt-ingestion — record conformed to the template; evidence refreshed for the dlt-loaded sources
+- 2026-08-29 — status-occupancy — design record written (commit 97862f7) — D-01, D-02, D-03
+- 2026-10-14 — setup-dlt-ingestion — record conformed to the template; evidence refreshed for the dlt-loaded sources

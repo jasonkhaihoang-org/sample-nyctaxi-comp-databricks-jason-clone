@@ -30,6 +30,6 @@ Depended on by: `agg_od_flow_matrix`, `agg_trip_band_profile`, `agg_trip_zone_da
 
 ## History
 
-- - 2026-10-14 — setup-dlt-ingestion — design record written — D-01, D-02, D-03, D-04
+- 2026-10-14 — setup-dlt-ingestion — design record written — D-01, D-02, D-03, D-04
 - 2026-10-15 — seed-domain — materialised as a view — D-05
 - 2026-10-19 — fabric-port — materialised as a table — D-06

@@ -37,5 +37,5 @@ Depended on by: `stg_mdm__boroughs`, `stg_mdm__calendar`, `stg_mdm__fare_regimes
 
 ## History
 
-- - 2026-10-14 — setup-dlt-ingestion — design record written when the generators moved from scripts into a dlt pipeline — D-01 to D-13
-- - 2026-10-18 — fabric-port — the pipeline became a Fabric notebook loading the Lakehouse — D-14
+- 2026-10-14 — setup-dlt-ingestion — design record written when the generators moved from scripts into a dlt pipeline — D-01 to D-13
+- 2026-10-18 — fabric-port — the pipeline became a Fabric notebook loading the Lakehouse — D-14

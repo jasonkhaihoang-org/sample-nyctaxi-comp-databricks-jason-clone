@@ -155,6 +155,7 @@
   "artifact_paths": {
     "design_record_model": "docs/design/models/{layer}/{model}.md",
     "design_record_pipeline": "docs/design/pipelines/{pipeline}.md",
+    "design_record_orchestration": "docs/design/pipelines/{item}.md",
     "design_record_area": "docs/design/{area}/{subject}.md",
     "context": "CONTEXT.md",
     "adr": "docs/adr/{nnnn}-{slug}.md",
@@ -297,6 +298,6 @@
     "setup_docs": "docs/setup/ is repo maintenance. Do not read or maintain it for ingestion or transformation work.",
     "reviews_and_proposals": "docs/review/ holds review findings for triage; do not read it for build tasks. Read a docs/proposal/ file only when the intent's requirement links to it.",
     "dbt_sources": "dbt sources name a schema and never a database: macros/source_defer.sql resolves a source in the Ephemeral Lakehouse and, under --defer, in the Domain's. dbt runs in the sandbox use the ephemeral_dev target.",
-    "artifact_paths": "Every artifact location is declared here: requirement, plan, verification and case_record per intent, design records per model or pipeline (layered: design_record_model) or area. The plugin names an intent's artifacts; this map places them."
+    "artifact_paths": "Every artifact location is declared here: requirement, plan, verification and case_record per intent, design records per model, dlt pipeline, orchestration item (a Data Pipeline or job notebook) or area. The plugin names an intent's artifacts; this map places them."
   }
 }

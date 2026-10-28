@@ -32,7 +32,7 @@ Operator conventions are skills in `.agents/skills/`, and the agent's skill list
 | [`dlt`](.agents/skills/dlt/SKILL.md) | Datasets, write disposition, schema contract, bronze carries no logic |
 | [`context`](.agents/skills/context/SKILL.md) | What goes into `CONTEXT.md` |
 | [`adr`](.agents/skills/adr/SKILL.md) | What goes into an ADR, and when |
-| [`workarounds`](.agents/skills/workarounds/SKILL.md) | Temporary rules for platform gaps: single edits of `plan.md` and `verify.md`, running dbt in the sandbox, large files changed by script, verify from the landed table, the Tier-1 dev dataset, sample loads that land whole pages. Each names what removes it |
+| [`workarounds`](.agents/skills/workarounds/SKILL.md) | Temporary rules for platform gaps: single edits of `plan.md` and `verify.md`, large files changed by script, verify from the landed table, the Tier-1 dev dataset, sample loads that land whole pages. Each names what removes it |
 | [`design-records`](.agents/skills/design-records/SKILL.md) | What goes into a design record |
 | [`git-and-prs`](.agents/skills/git-and-prs/SKILL.md) | Commit and pull request format |
 
@@ -50,7 +50,7 @@ python3 -m pytest tests -q                # Python tests, offline
 ruff check .                              # Python lint
 ```
 
-dbt runs in the Intent's sandbox against its Ephemeral Lakehouse as the [`workarounds`](.agents/skills/workarounds/SKILL.md) skill gives it, as plain `dbt`; dlt runs there through the plugin's runtime wrapper, as the plugin's `fabric_lakehouse/pipeline-notebook.md` gives the pipeline-notebook run. Unselected models and sources resolve against the released Domain (`--defer --state /cache/prod-target`). In production the `nyc_taxi_refresh` Data Pipeline in `orchestration/` runs the three pipeline notebooks and then the `nyc_taxi_build_dbt` notebook.
+dbt runs in the Intent's sandbox against its Ephemeral Lakehouse as the plugin's `fabric_lakehouse/dbt.md` gives it, as plain `dbt`; dlt runs there through the plugin's runtime wrapper, as the plugin's `fabric_lakehouse/pipeline-notebook.md` gives the pipeline-notebook run. Unselected models and sources resolve against the released Domain (`--defer --state /cache/prod-target`). In production the `nyc_taxi_refresh` Data Pipeline in `orchestration/` runs the three pipeline notebooks and then the `nyc_taxi_build_dbt` notebook.
 
 The Python tests need `requirements-dev.txt` installed in the same interpreter (`pip install -r requirements-dev.txt`): the map tests call dbt through `python3 -m dbt.cli.main`, and fail with `No module named 'dbt'` otherwise.
 

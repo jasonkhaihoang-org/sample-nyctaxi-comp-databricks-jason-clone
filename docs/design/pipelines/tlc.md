@@ -33,5 +33,5 @@ Depended on by: `stg_tlc__yellow_tripdata`, `stg_tlc__green_tripdata`; and by th
 
 ## History
 
-- - 2026-10-14 — setup-dlt-ingestion — design record written when TLC loading moved from scripts to dlt — D-01 to D-07
-- - 2026-10-18 — fabric-port — the pipeline became a Fabric notebook loading the Lakehouse — D-08, D-09
+- 2026-10-14 — setup-dlt-ingestion — design record written when TLC loading moved from scripts to dlt — D-01 to D-07
+- 2026-10-18 — fabric-port — the pipeline became a Fabric notebook loading the Lakehouse — D-08, D-09
