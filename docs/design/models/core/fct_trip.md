@@ -42,5 +42,5 @@ metrics:
 
 ## History
 
-- - 2026-08-29 — trip-fact — design record written (commit 97862f7) — D-01, D-02, D-03, D-04
-- - 2026-10-14 — setup-dlt-ingestion — rows come from `int_trips_conformed`; record conformed to the template; ADR links added — D-05, D-06, D-07
+- 2026-08-29 — trip-fact — design record written (commit 97862f7) — D-01, D-02, D-03, D-04
+- 2026-10-14 — setup-dlt-ingestion — rows come from `int_trips_conformed`; record conformed to the template; ADR links added — D-05, D-06, D-07

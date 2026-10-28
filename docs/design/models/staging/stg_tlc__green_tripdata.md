@@ -26,5 +26,5 @@ Depended on by: `agg_driver_daily`, `agg_driver_monthly`, `agg_garage_monthly`, 
 
 ## History
 
-- - 2026-10-14 — setup-dlt-ingestion — design record written — D-01, D-02
+- 2026-10-14 — setup-dlt-ingestion — design record written — D-01, D-02
 - 2026-10-19 — fabric-port — Spark conversion — D-03

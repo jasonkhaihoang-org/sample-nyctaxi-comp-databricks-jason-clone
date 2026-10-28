@@ -29,6 +29,6 @@ Depended on by: `agg_driver_daily`, `agg_driver_monthly`, `agg_garage_monthly`, 
 
 ## History
 
-- - 2026-10-14 — setup-dlt-ingestion — design record written when the grain moved from a script into dbt — D-01, D-02, D-03
+- 2026-10-14 — setup-dlt-ingestion — design record written when the grain moved from a script into dbt — D-01, D-02, D-03
 - 2026-10-15 — seed-domain — materialised as a view — D-04
 - 2026-10-19 — fabric-port — materialised as a table — D-05

@@ -29,7 +29,7 @@ Depended on by: `agg_driver_daily`, `agg_driver_monthly`, `agg_garage_monthly`, 
 
 ## History
 
-- - 2026-08-29 — trip-fact — design record written (commit 97862f7) — D-01, D-02, D-03
-- - 2026-10-14 — setup-dlt-ingestion — conformed trips now come from `int_trips_conformed`; the extras models apply the same timestamp conversion as staging; record conformed to the template
+- 2026-08-29 — trip-fact — design record written (commit 97862f7) — D-01, D-02, D-03
+- 2026-10-14 — setup-dlt-ingestion — conformed trips now come from `int_trips_conformed`; the extras models apply the same timestamp conversion as staging; record conformed to the template
 - 2026-10-15 — seed-domain — materialised as a view — D-04
 - 2026-10-19 — fabric-port — materialised as a table — D-05

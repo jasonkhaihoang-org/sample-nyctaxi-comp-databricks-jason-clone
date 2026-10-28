@@ -38,5 +38,5 @@ Depended on by: `stg_ops__drivers`, `stg_ops__garages`, `stg_ops__leases`, `stg_
 
 ## History
 
-- - 2026-10-14 — setup-dlt-ingestion — design record written when the generator moved from a script into a dlt pipeline — D-01 to D-13
-- - 2026-10-18 — fabric-port — the pipeline became a Fabric notebook loading the Lakehouse — D-14
+- 2026-10-14 — setup-dlt-ingestion — design record written when the generator moved from a script into a dlt pipeline — D-01 to D-13
+- 2026-10-18 — fabric-port — the pipeline became a Fabric notebook loading the Lakehouse — D-14

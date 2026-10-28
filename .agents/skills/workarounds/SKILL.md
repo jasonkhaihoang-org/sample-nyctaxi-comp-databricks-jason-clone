@@ -1,6 +1,6 @@
 ---
 name: workarounds
-description: "Use after a conversation is condensed, and before editing plan.md or verify.md, running dbt in the sandbox, linting Python, running Tier-1 tests or doing a sample load."
+description: "Use after a conversation is condensed, and before editing plan.md or verify.md, linting Python, running Tier-1 tests or doing a sample load."
 ---
 
 # Workarounds
@@ -12,18 +12,6 @@ Temporary rules that cover a gap in a platform skill or document. Each names the
 Draft the file once. Keep progress and evidence in your head or in a scratch note, and write them into the file in a single edit at the end of the phase. Do not edit the file after each task or check. Each edit echoes a snippet of the file back, and these files are large. When the work comes back on a return, rewrite the file whole in one write; do not patch it section by section.
 
 Remove when: the `planning`, `executing-the-plan` and `verifying` skills write these files once per phase (`skill-changes.md`).
-
-## Run dbt in the sandbox
-
-The runtime provides the profile (`DBT_PROFILES_DIR`, `DBT_PROFILE_NAME`) and its one target, `ephemeral_dev`, which writes the Intent's Ephemeral Lakehouse, and the image's `dbt` loads the Intent's coordinates on every call. Do not open the repo's `transformation/profiles.yml` (its `prod` target is the Domain's, read by the job notebook and the release) or `~/.dbt/profiles.yml`, for any reason. Run plain `dbt` from `transformation/`, deferring to the released Domain:
-
-```bash
-cd transformation && dbt <command> --target ephemeral_dev --defer --state /cache/prod-target
-```
-
-Every command except `parse`, `ls`, `deps`, `clean` and `init` opens a Spark session, which takes minutes on a cold capacity: launch it as the plugin's `fabric_lakehouse/dbt.md` says and wait for it. Run `dbt deps` the same way first if `dbt_packages/` is missing. The dbt commands in `repo-map.json` `commands` and `test-map.json` give the arguments only: add `--target ephemeral_dev --defer --state /cache/prod-target` to each.
-
-Remove when: the platform `fabric_lakehouse/dbt.md` states this command (`skill-changes.md`).
 
 ## Change large files with a script, not the file editor
 

@@ -36,4 +36,4 @@ metrics:
 
 ## History
 
-- - 2026-10-14 — status-occupancy — design record written — D-01, D-02, D-03
+- 2026-10-14 — status-occupancy — design record written — D-01, D-02, D-03
