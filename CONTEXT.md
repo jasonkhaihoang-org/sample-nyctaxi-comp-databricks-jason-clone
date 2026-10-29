@@ -32,7 +32,7 @@ One part of a trip's total: the fare itself, tip, tolls, taxes and surcharges.
 What is left of a trip's total after every modelled fare component. A non-zero residual means the total is not the sum of its parts.
 
 **Billable trip**:
-A trip whose total is positive. Revenue and flow reporting counts only billable trips inside the reporting window; quality reporting counts all trips and shows how many are billable.
+A trip whose total is positive. Where the rule applies is [ADR 0003](docs/adr/0003-billable-trip-definition-and-where-it-applies.md).
 _Not_: revenue trip, because whether a billable trip counts as revenue depends on how it was paid.
 
 **Refund**:
@@ -42,7 +42,7 @@ A trip with a negative total.
 A trip whose meter started and stopped in the same place.
 
 **Trip quality verdict**:
-A named condition a trip can meet, such as being a refund, being implausibly fast or touching an unresolved zone. Trips are flagged with their verdicts and never removed.
+A named condition a trip can meet, such as being a refund, being implausibly fast or touching an unresolved zone. How verdicts are applied is [ADR 0004](docs/adr/0004-quality-verdicts-flag-trips-and-never-delete-them.md).
 
 **Reporting window**:
 The period the business reports on. Trips picked up inside it are in scope for revenue and flow reporting.
@@ -103,7 +103,7 @@ _Not_: asset utilisation, because occupancy is measured against sign-on time and
 Time a driver spends waiting, with a place attached. It shows where a driver waited, where a trip shows where a driver earned.
 
 **Online hour**:
-An hour a driver is signed on. Driver performance is ranked on revenue per online hour.
+An hour a driver is signed on.
 
 **Asset utilisation**:
 The share of the 24-hour day a vehicle is in use. A vehicle idle in the depot is an asset question; a driver idle on the road is a labour question.
@@ -112,4 +112,4 @@ The share of the 24-hour day a vehicle is in use. A vehicle idle in the depot is
 Days a vehicle is out of service. They are removed from its availability, so a vehicle in the shop does not look idle.
 
 **Week**:
-A calendar week, starting on Monday.
+A calendar week. Which day it starts on is [ADR 0014](docs/adr/0014-weeks-start-on-monday.md).

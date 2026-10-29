@@ -10,7 +10,7 @@ Operator conventions for dbt models in `transformation/`. Where files live is de
 ## Medallion mapping (B1)
 
 - **Bronze**: raw data loaded by the dlt pipelines in `ingestion/` (schemas `bronze`, `ops_raw`, `mdm_raw`). dbt reads it as sources and never writes to it.
-- **Silver**: dbt `staging` and `intermediate` (tables). Staging renames and casts one source table. Intermediate applies business logic and joins, with no grain commitment of its own.
+- **Silver**: dbt `staging` and `intermediate` (tables). Staging shapes one source table: it renames and casts, and may derive a column from the same row (a flag, a duration, a date) or drop duplicate rows; it never joins or aggregates. Intermediate applies business logic and joins, with no grain commitment of its own.
 - **Gold**: dbt marts (`core`, `agg`, `finance`, `ops`): grain-committed facts, conformed dimensions, aggregates.
 
 ## Time zones (B17)
@@ -29,12 +29,13 @@ A source in `_sources.yml` names its `schema`, its tables and, as `database`, `"
 
 | Prefix | Layer | Responsibility |
 | --- | --- | --- |
-| `stg_` | staging | One source table: rename and cast only |
+| `stg_` | staging | One source table: rename, cast, same-row derivations, no joins |
 | `int_` | intermediate | Business logic and joins, no grain commitment |
 | `fct_` | gold | Grain-committed events |
 | `dim_` | gold | Descriptive entities, conformed across facts |
 | `agg_` | gold | Aggregates built from facts |
 | `mart_` | gold | Consumption-shaped marts |
+| `bridge_` | gold | Many-to-many between a dimension and another entity |
 
 - Staging models are `stg_<source>__<entity>` (B3; double underscore), for example `stg_tlc__yellow_tripdata`.
 - Intermediate and gold models name the entity directly.
@@ -42,7 +43,7 @@ A source in `_sources.yml` names its `schema`, its tables and, as `database`, `"
 
 ## Properties files (B6)
 
-One YAML file per folder, named `_<folder>.yml` (`_staging.yml`, `_intermediate.yml`, `_core.yml`). Unit tests sit in `_unit_tests.yml` beside the models they cover.
+One YAML file per folder, named `_<folder>.yml` (`_staging.yml`, `_intermediate.yml`, `_core.yml`, `_seeds.yml`). Unit tests sit in `_unit_tests.yml` beside the models they cover, and the semantic models and metrics in `_semantic.yml` beside `_core.yml`. MetricFlow's `metricflow_time_spine` sits at the models root with its own properties file: it is infrastructure, in no layer.
 
 ## Columns (B8)
 

@@ -12,9 +12,10 @@ One row per row of `bronze.yellow_tripdata`.
 
 ## Decisions
 
-- `D-01` Rename and type only, one-to-one with the bronze table. Every bronze column is carried, including the yellow-only airport fee and `_dlt_load_id`. Source: docs/requirement/2026-10-14-load-every-raw-source-with-dlt-and-build-silver-in-dbt.md R-01, [ADR 0018](../../../adr/0018-raw-sources-are-loaded-by-dlt-pipeline-notebooks-into-the-databricks-catalog.md).
+- `D-01` Rename and type only, one-to-one with the bronze table. Every bronze column is carried, including the yellow-only airport fee and `_dlt_load_id`. Superseded by `D-04`. Source: docs/requirement/2026-10-14-load-every-raw-source-with-dlt-and-build-silver-in-dbt.md R-01, [ADR 0018](../../../adr/0018-raw-sources-are-loaded-by-dlt-pipeline-notebooks-into-the-databricks-catalog.md).
 - `D-02` Bring the UTC-tagged timestamps back to plain timestamps with `timezone('UTC', ...)`, so the trip key and every date derived from them do not depend on the session's time zone ([ADR 0006](../../../adr/0006-silver-is-built-in-dbt.md)). Superseded by `D-03`. Source: docs/requirement/2026-10-14-load-every-raw-source-with-dlt-and-build-silver-in-dbt.md R-02, [ADR 0006](../../../adr/0006-silver-is-built-in-dbt.md).
 - `D-03` Bring each timestamp to the wall-clock value the meter recorded with `to_utc_timestamp(col, current_timezone())`: dlt lands UTC instants and Spark shows a timestamp in the session time zone, so the trip key and every date derived from it would otherwise depend on that zone ([ADR 0006](../../../adr/0006-silver-is-built-in-dbt.md)). Source: [ADR 0018](../../../adr/0018-raw-sources-are-loaded-by-dlt-pipeline-notebooks-into-the-databricks-catalog.md).
+- `D-04` Carry every bronze column except `_dlt_id`, which nothing downstream reads; `_dlt_load_id` is kept because `int_trips_conformed` deduplicates on it ([`int_trips_conformed`](../intermediate/int_trips_conformed.md) `D-02`). This corrects `D-01`, which said every bronze column is carried. Source: docs/requirement/2026-10-14-load-every-raw-source-with-dlt-and-build-silver-in-dbt.md R-02.
 
 ## Rejected
 
@@ -28,3 +29,4 @@ Depended on by: `agg_driver_daily`, `agg_driver_monthly`, `agg_garage_monthly`, 
 
 - 2026-10-14 — setup-dlt-ingestion — design record written — D-01, D-02
 - 2026-10-19 — fabric-port — Spark conversion — D-03
+- 2026-10-28 — design-record audit — `_dlt_id` is not carried — D-04

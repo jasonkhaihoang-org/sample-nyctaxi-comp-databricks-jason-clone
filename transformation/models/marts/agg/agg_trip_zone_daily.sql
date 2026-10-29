@@ -20,7 +20,15 @@ with daily as (
 )
 
 select
-    d.*,
+    d.pickup_date_key,
+    d.pickup_date,
+    d.pickup_location_id,
+    d.zone_name,
+    d.borough_name,
+    d.trip_count,
+    d.total_revenue,
+    d.total_miles,
+    d.attributed_driver_count,
     lag(d.trip_count, 1) over w as prev_day_trip_count,
     lag(d.trip_count, 7) over w as same_day_last_week_trip_count,
     avg(d.trip_count) over (

@@ -45,7 +45,7 @@
   "test_frameworks": [
     {
       "name": "dbt tests",
-      "scope": "Generic tests in _*.yml, singular tests in transformation/tests/, unit tests in models/intermediate/_unit_tests.yml.",
+      "scope": "Generic tests in _*.yml, singular tests in transformation/tests/, unit tests in _unit_tests.yml beside the models they cover (intermediate, agg, ops).",
       "config_files": [
         "test-map.json"
       ]
@@ -195,11 +195,11 @@
     },
     "staging": {
       "path": "transformation/models/staging/",
-      "description": "Tables: one per source table, renamed and typed. Also holds _sources.yml."
+      "description": "Tables: one per source table, renamed and typed, with same-row derivations. Also holds _sources.yml."
     },
     "intermediate": {
       "path": "transformation/models/intermediate/",
-      "description": "Business logic and joins: conformed trips, enrichment, fare components, quality flags, status intervals, shift occupancy and economics. Unit tests in _unit_tests.yml."
+      "description": "Business logic and joins: conformed trips, enrichment, fare components, quality flags, zone attributes, status intervals, shift occupancy and economics. Unit tests in _unit_tests.yml."
     },
     "core": {
       "path": "transformation/models/marts/core/",
@@ -223,7 +223,7 @@
     },
     "macros": {
       "path": "transformation/macros/",
-      "description": "trip_natural_key (the only definition of trip_key), report window, finance helpers, the plugin's generate_schema_name (the Intent's prefix in a sandbox) and source_defer.sql, which resolves source() to the Intent's own load when it holds one, else the Domain's table."
+      "description": "trip_natural_key (the only definition of trip_key), report window, finance helpers, utc_date (timestamps.sql), the plugin's generate_schema_name (the Intent's prefix in a sandbox) and source_defer.sql, which resolves source() to the Intent's own load when it holds one, else the Domain's table."
     },
     "tests": {
       "path": "transformation/tests/",

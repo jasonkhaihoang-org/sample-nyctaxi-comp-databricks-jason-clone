@@ -2,7 +2,8 @@
   The trip natural key.
 
   `int_trips_conformed` produces `trip_key` as an md5 over the trip's natural
-  columns, and `stg_ops__trip_assignments` derives the same key from the operator's records. Bronze does not carry it, so any model reaching back to a
+  columns, and `stg_ops__trip_assignments` derives the same key from the operator's
+  records. Bronze does not carry it, so any model reaching back to a
   fleet-specific bronze column has to recompute the identical expression --
   same column order, same separator -- or the join silently matches nothing.
   One macro, used on both sides, is the only way to keep them in step.

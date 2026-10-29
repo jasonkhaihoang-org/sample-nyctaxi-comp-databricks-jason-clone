@@ -33,14 +33,29 @@ downtime as (
 )
 
 select
-    mo.*,
+    mo.month_start_date,
+    mo.vehicle_key,
+    mo.medallion_number,
+    mo.make_model,
+    mo.fuel_type,
+    mo.garage_key,
+    mo.active_days,
+    mo.shift_count,
+    mo.trip_count,
+    mo.online_hours,
+    mo.on_trip_hours,
+    mo.gross_revenue,
+    mo.paid_miles,
     coalesce(dt.down_days, 0) as down_days,
     coalesce(dt.maintenance_cost, 0) as maintenance_cost,
     datediff(add_months(mo.month_start_date, 1), mo.month_start_date) as calendar_days,
     datediff(add_months(mo.month_start_date, 1), mo.month_start_date)
     - coalesce(dt.down_days, 0) as available_days,
-    {{ safe_divide('cast(mo.active_days as double)',
-        'cast(datediff(add_months(mo.month_start_date, 1), mo.month_start_date) - coalesce(dt.down_days, 0) as double)') }} as availability_adjusted_activity_rate,
+    {{ safe_divide(
+        'cast(mo.active_days as double)',
+        'cast(datediff(add_months(mo.month_start_date, 1), mo.month_start_date)'
+        ~ ' - coalesce(dt.down_days, 0) as double)'
+    ) }} as availability_adjusted_activity_rate,
     {{ safe_divide('mo.on_trip_hours', 'nullif(mo.online_hours, 0)') }} as occupancy_rate,
     {{ safe_divide('mo.gross_revenue', 'nullif(mo.online_hours, 0)') }} as revenue_per_online_hour
 from monthly mo

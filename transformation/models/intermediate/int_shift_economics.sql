@@ -45,13 +45,13 @@ select
     l.revenue_share_pct,
     case l.lease_type
         when 'lease_daily' then l.lease_rate
-        when 'lease_weekly' then l.lease_rate / 6.0
+        when 'lease_weekly' then l.lease_rate / 6e0
         when 'owner_operator' then coalesce(r.gross_revenue, 0) * l.revenue_share_pct
     end as shift_cost,
     coalesce(r.gross_revenue, 0)
     - case l.lease_type
         when 'lease_daily' then l.lease_rate
-        when 'lease_weekly' then l.lease_rate / 6.0
+        when 'lease_weekly' then l.lease_rate / 6e0
         when 'owner_operator' then coalesce(r.gross_revenue, 0) * l.revenue_share_pct
     end as shift_margin,
     {{ safe_divide('coalesce(r.gross_revenue, 0)', 'o.online_seconds / 3600e0') }} as revenue_per_online_hour,

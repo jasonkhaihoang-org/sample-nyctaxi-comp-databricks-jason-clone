@@ -7,4 +7,4 @@
 {% set start_date = '2020-01-01' %}
 {% set end_date = '2035-12-31' %}
 
-SELECT EXPLODE(SEQUENCE(TO_DATE('{{ start_date }}'), TO_DATE('{{ end_date }}'), INTERVAL 1 DAY)) AS date_day
+select explode(sequence(to_date('{{ start_date }}'), to_date('{{ end_date }}'), interval 1 day)) as date_day

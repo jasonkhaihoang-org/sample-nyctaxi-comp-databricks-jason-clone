@@ -76,7 +76,7 @@ def test_every_dlt_layer_has_a_source():
 def test_test_map_paths_exist():
     missing = []
     for name, module in TEST_MAP["modules"].items():
-        for key in ("sources", "unit", "data"):
+        for key in ("sources", "unit", "data", "structural"):
             missing += [f"{name}.{key}: {p}" for p in module.get(key, []) if not _exists(p)]
     assert missing == []
 
