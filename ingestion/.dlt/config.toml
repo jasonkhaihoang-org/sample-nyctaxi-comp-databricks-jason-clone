@@ -1,5 +1,5 @@
 # Connections are [sources.<name>] sections. No source reads a secret, so no
-# [providers.databricks_secret_scope] scope is named.
+# [providers.databricks_uc_secrets] store is named.
 
 # Bronze keeps the source's column names; Databricks folds them to lower case (VendorID lands as vendorid).
 [schema]
