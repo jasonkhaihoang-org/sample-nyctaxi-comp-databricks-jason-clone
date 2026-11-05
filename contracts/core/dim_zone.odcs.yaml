@@ -46,7 +46,7 @@ schema:
           - type: library
             metric: invalidValues
             arguments:
-              valid_values:
+              validValues:
                 - Manhattan
                 - Brooklyn
                 - Queens

@@ -719,6 +719,13 @@ def _dlt_type(physical: str) -> str | None:
     return DLT_TYPES.get(physical.split("(", 1)[0].strip().upper())
 
 
+def _valid_values(rule: dict):
+    """An `invalidValues` rule's value set: ODCS spells it `validValues`; `valid_values` is the
+    spelling earlier contracts used, still read so they keep their test."""
+    arguments = rule.get("arguments") or {}
+    return arguments["validValues"] if "validValues" in arguments else arguments.get("valid_values")
+
+
 def _relationship_test(where: str, to: str) -> dict:
     """One declared property relationship as the dbt test that enforces it.
 
@@ -761,7 +768,7 @@ def _data_tests(prop: dict, where: str, sole_key: bool = False) -> list:
             if QUALITY_TESTS[metric] not in tests:
                 tests.append(QUALITY_TESTS[metric])
         elif metric == "invalidValues":
-            values = (rule.get("arguments") or {}).get("valid_values")
+            values = _valid_values(rule)
             if values and not any(isinstance(test, dict) for test in tests):
                 tests.append({"accepted_values": {"arguments": {"values": values}}})
     for relationship in prop.get("relationships") or []:
@@ -1487,7 +1494,7 @@ def _quality_rules(column: dict | None) -> list[dict]:
             values = arguments.get("values") or (arguments.get("arguments") or {}).get("values")
             if not values:
                 continue
-            rule["arguments"] = {"valid_values": list(values)}
+            rule["arguments"] = {"validValues": list(values)}
         rule["mustBe"] = 0
         rules.append(rule)
     return rules
@@ -2335,7 +2342,7 @@ def _profile_relation(con, relation: tuple[str, str], path: str, doc: dict,
             if not (isinstance(rule, dict) and rule.get("type") == "library"
                     and rule.get("metric") == "invalidValues"):
                 continue
-            values = [v for v in (rule.get("arguments") or {}).get("valid_values") or []
+            values = [v for v in _valid_values(rule) or []
                       if v is not None]  # a NULL in NOT IN makes every row unknown
             bound = _bounded(rule)
             if not values or bound is None or not present(name):
@@ -2352,7 +2359,7 @@ def _profile_relation(con, relation: tuple[str, str], path: str, doc: dict,
                 f"order by 1 limit 5", list(values)).fetchall()]
             diags.append(_diag("error", "profile/invalid-values",
                                f"{label}.{name}: {outside} row(s) hold a value outside "
-                               f"valid_values (e.g. {', '.join(sample)}), and the rule says "
+                               f"validValues (e.g. {', '.join(sample)}), and the rule says "
                                f"{bound[0]} {bound[1]}", path))
     return diags
 
@@ -2367,7 +2374,7 @@ def profile(root: str = "", catalog: str = "",
     The primary key (every `primaryKey: true` property together, the grain the contract names)
     must not repeat (`profile/key-repeats`), a `required: true` property must hold no null
     (`profile/required-null`), and an `invalidValues` rule's count of values outside its
-    `valid_values` must meet its operator (`profile/invalid-values`). Each contradicted claim is
+    `validValues` must meet its operator (`profile/invalid-values`). Each contradicted claim is
     an error. With no built warehouse this refuses (`catalog/missing`) rather than passing.
     """
     repo_root = _repo_root(root)
@@ -2489,7 +2496,7 @@ def _asserts(rule: str, prop: dict, kwargs: dict) -> bool:
         return any(
             isinstance(rule_doc, dict) and rule_doc.get("type") == "library"
             and rule_doc.get("metric") == "invalidValues" and rule_doc.get("mustBe") == 0
-            and {str(v) for v in (rule_doc.get("arguments") or {}).get("valid_values") or []}
+            and {str(v) for v in _valid_values(rule_doc) or []}
             == tested
             for rule_doc in prop.get("quality") or [])
     return rule in _settled_metrics(prop)

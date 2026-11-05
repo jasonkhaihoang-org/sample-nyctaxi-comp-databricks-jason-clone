@@ -32,7 +32,7 @@ schema:
           - type: library
             metric: invalidValues
             arguments:
-              valid_values:
+              validValues:
                 - LOGIN
                 - AVAILABLE
                 - DISPATCHED

@@ -713,6 +713,21 @@ def test_generate_writes_accepted_values_with_its_arguments(tmp_path):
           files={"models/core/_core.yml": MODEL_WITHOUT_TESTS})
     _contract(tmp_path, "core", "a_model", schema=_element(
         "a_model", _prop("order_key", "string", physicalType="VARCHAR", quality=[
+            _rule("invalidValues", arguments={"validValues": ["online", "in_store"]})])))
+    assert _run("generate", "--root", str(tmp_path)) == (0, [])
+
+    column = _entries(tmp_path / "models" / "core" / "_core.yml")[1]["a_model"]["columns"][0]
+    assert column["data_tests"] == [
+        {"accepted_values": {"arguments": {"values": ["online", "in_store"]}}}
+    ]
+
+
+def test_generate_still_reads_the_legacy_valid_values_spelling(tmp_path):
+    """A contract written before the ODCS spelling keeps its test."""
+    _repo(tmp_path, models=["a_model"],
+          files={"models/core/_core.yml": MODEL_WITHOUT_TESTS})
+    _contract(tmp_path, "core", "a_model", schema=_element(
+        "a_model", _prop("order_key", "string", physicalType="VARCHAR", quality=[
             _rule("invalidValues", arguments={"valid_values": ["online", "in_store"]})])))
     assert _run("generate", "--root", str(tmp_path)) == (0, [])
 
@@ -1146,7 +1161,7 @@ def test_reverse_carries_a_generic_test_as_a_quality_rule(tmp_path):
     assert props["order_key"]["description"] == "Surrogate key."
     assert props["channel"]["quality"] == [
         {"type": "library", "metric": "invalidValues",
-         "arguments": {"valid_values": ["online", "in_store"]}, "mustBe": 0}
+         "arguments": {"validValues": ["online", "in_store"]}, "mustBe": 0}
     ]
     assert "quality" not in props["amount"]
 
@@ -1665,7 +1680,7 @@ def test_reverse_leaves_an_enum_alone_when_a_rule_closes_it(tmp_path):
     _contract(tmp_path, "core", "a_model", schema=_element(
         "a_model", _prop("channel", "string", description="Online or in_store.",
                          quality=[_rule("invalidValues",
-                                        arguments={"valid_values": ["online", "in_store"]})])))
+                                        arguments={"validValues": ["online", "in_store"]})])))
     _warehouse(tmp_path, {("core", "a_model"): [("channel", "VARCHAR", True)]})
     _load(tmp_path, "core", "a_model", ["channel"],
           [["online"], ["in_store"], ["online"]])

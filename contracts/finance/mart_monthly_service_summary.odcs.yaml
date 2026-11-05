@@ -28,7 +28,7 @@ schema:
           - type: library
             metric: invalidValues
             arguments:
-              valid_values:
+              validValues:
                 - yellow
                 - green
             mustBe: 0
