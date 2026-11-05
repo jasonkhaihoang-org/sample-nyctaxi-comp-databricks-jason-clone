@@ -58,8 +58,7 @@ DOMAIN_COORDINATE_FILES = {".workflow/ci-config.yml"}
 # The all-zeros id is a placeholder, never a coordinate.
 PLACEHOLDER_ID = "00000000-0000-0000-0000-000000000000"
 CONTRACT_ID = re.compile(r"^id: [0-9a-f-]{36}$", re.MULTILINE)
-VENDORED_STANDARDS = (".agents/skills/data-contract/scripts/odcs_vendor/",
-                      ".agents/skills/semantic-model/scripts/ossie_vendor/",
+VENDORED_STANDARDS = (".agents/skills/semantic-model/scripts/ossie_vendor/",
                       ".github/data-contract/scripts/odcs_vendor/")
 # The contract tool's tests build contracts with fixed, obviously fake ids.
 FIXTURE_ID = re.compile(r"c0ffee00-0000-4000-8000-[0-9]{12}")

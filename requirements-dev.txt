@@ -10,3 +10,4 @@ sqlfluff
 sqlglot>=26
 typer==0.24.1
 click>=8.1
+-r .agents/skills/data-contract/scripts/requirements.txt

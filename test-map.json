@@ -195,11 +195,7 @@
         ".agents/skills/data-contract/",
         ".agents/skills/validating-data-contract/"
       ],
-      "unit": [
-        "tests/test_odcs.py"
-      ],
       "commands": {
-        "unit": "python3 -m pytest tests/test_odcs.py -q",
         "structural": "python3 .agents/skills/data-contract/scripts/odcs.py check"
       }
     },

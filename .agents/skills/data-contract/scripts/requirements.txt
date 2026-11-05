@@ -1,7 +1,10 @@
-# What odcs.py imports beyond the standard library. Install with
-# python3 -m pip install -r requirements.txt when odcs.py version fails on a missing module.
-# duckdb is read only by check --relations, reverse and profile; its version is the runtime's.
-duckdb
-jsonschema>=4.18
-pyyaml>=6
-typer>=0.12
+# What odcs.py runs. The version is the managed constraints'; install under them:
+# python3 <plugin>/scripts/runtime_pins.py --out <scratch>/constraints.txt
+# python3 -m pip install -c <scratch>/constraints.txt -r requirements.txt
+# warehouse (duckdb): reverse on a local file and the undeclared-columns check.
+# engine-duckdb: the datacontract-cli driver for a local database file.
+# Not installed here: engine-databricks. datacontract-cli 1.2.9 caps databricks-sql-connector below 4.7,
+# which pins a vulnerable oauthlib for the whole environment, and the engine cannot authenticate in an
+# Intent yet. Until it can, profile and check --relations report this Domain's warehouse unreachable;
+# check --relations --catalog <catalog.json> compares against dbt's catalog instead.
+vibedata-odcs[warehouse,engine-duckdb]

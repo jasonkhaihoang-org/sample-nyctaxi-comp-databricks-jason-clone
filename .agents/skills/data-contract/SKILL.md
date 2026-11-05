@@ -24,7 +24,7 @@ Leaves one current ODCS `v3.2.0` contract per boundary relation, the dbt and dlt
 
    An input contract describes the landed input relation. Dropping or renaming source columns downstream is the developer's choice; dropping a column the contract promised is breaking.
 
-2. Run `python3 "$SKILL_DIR/scripts/odcs.py" version`. When it fails on a missing module, run `python3 -m pip install -r "$SKILL_DIR/scripts/requirements.txt"` once and retry; halt and report the error if it still fails.
+2. Run `python3 "$SKILL_DIR/scripts/odcs.py" version`. When it reports `cli/package-missing`, write the effective managed constraints with `python3 <plugin>/scripts/runtime_pins.py --out <scratch dir outside the repo>/constraints.txt`, run `python3 -m pip install -c <scratch dir outside the repo>/constraints.txt -r "$SKILL_DIR/scripts/requirements.txt"` once and retry; halt and report the error if it still fails.
 3. Read `references/authoring-rules.md`, then take the path the change needs.
 
    | The change | Path |
@@ -40,17 +40,21 @@ Leaves one current ODCS `v3.2.0` contract per boundary relation, the dbt and dlt
    SKILL_DIR="<this skill's directory>" && python3 "$SKILL_DIR/scripts/odcs.py" check && python3 "$SKILL_DIR/scripts/odcs.py" diff <base-ref>
    ```
 
+   `check` warns `contract/legacy-key` for the old `arguments.valid_values` spelling of an `invalidValues` rule; rename it to `arguments.validValues` in the contract, then re-run `generate`. `check` fails `<command>/ambiguous-platform` when a contract's servers name more than one platform; keep one.
+
    `generate` refuses and writes nothing when a contract cannot ground a key; fix the contract and re-run. `diff` fails `diff/version-not-bumped` when the version moved less than the change needs.
    On a Domain upgraded from an earlier plugin: (a) the first `generate` writes dbt `description`s from the Ossie fields and contracts, replacing hand-written text except `{{ doc() }}` pointers and columns neither names, so move any nuance into the Ossie document or contract first; (b) until then `check` reports `generated/stale`; (c) diagnostic codes `gold/*` became `boundary/*` and `map/no-gold-layers` became `map/no-boundary-layers`, so update any Domain tooling that matches them; a layer with no `role` keeps today's boundary.
-7. After the build, run the dynamic gates for each boundary relation the change touched and require exit 0. They read the Intent's sandbox when its platform keeps one local database file, or the file `--catalog <path>` names; otherwise they refuse (`catalog/missing`, `<command>/unsupported-platform`) rather than pass, and `check --relations --catalog <catalog.json>` compares against dbt's catalog from `dbt docs generate` instead.
+7. After the build, run the dynamic gates for each boundary relation the change touched and require exit 0. They run through the datacontract-cli engine where the engine can connect to the Intent's sandbox, or read the file `--catalog <path>` names. Where it cannot connect (the Intent states no engine credential) or lacks a driver or extra, the tool reports `engine/unavailable`, `<command>/destination-incomplete` or `profile/engine-failed` and the gate is unrun: report it as unrun, never as passing, and leave its items to the review. With no sandbox and no `--catalog` they refuse (`catalog/missing`), `<command>/unsupported-platform` is only a platform with no engine, and `<command>/destination-incomplete` names the coordinate the sandbox lacks. `check --relations --catalog <catalog.json>` compares names against dbt's catalog from `dbt docs generate` instead.
 
    ```bash
    SKILL_DIR="<this skill's directory>" && python3 "$SKILL_DIR/scripts/odcs.py" check --relations && python3 "$SKILL_DIR/scripts/odcs.py" profile --relation <schema>.<table>
    ```
 
-   A `profile` error means the data contradicts a claim — a repeating primary key, a null in a `required` property, a value outside an `invalidValues` set. Fix the claim or the data; never weaken the claim to clear the run without a review finding that says why.
+   A `profile` error means the data contradicts a claim — a repeating or null primary key, a null in a `required` property, a value outside an `invalidValues` set. Fix the claim or the data; never weaken the claim to clear the run without a review finding that says why. `profile` also tests every other check the contract implies and reports a failed `nullValues`, `duplicateValues`, relationship or other library rule as a warning (`profile/null-values`, `profile/duplicate-values`, `profile/relationship-broken`, `profile/quality-failed`), at the rule's own `severity` when it states a higher one. A `profile/unchecked` warning is a check the engine could not run or measured nothing for: the claim is unproven, so report it as such and never as passing. A `profile/engine-failed` error is a run the engine could not carry out (a schema it cannot open, a missing driver, a database file written by a newer version of its engine than the one installed): fix the cause and re-run. `check --relations` reports `relations/mismatch` for a presence or logical-type difference (and `physicalType` when the platform is the contract's) and `relations/columns-unread` when it could not read the built relation's undeclared columns.
 8. Write each doubt you cannot settle from the data or the business into the review queue as a finding, never as contract prose or a chat question. `check`'s warnings (`contract/no-grain` when a non-star contract has no `primaryKey` and no grain statement, `contract/no-document`) are facts; the finding is the question behind one, and a warning the queue already owns is not a second finding.
 9. Load `validating-data-contract` for the review before commit, then commit the contracts and the generated keys together, in the change that moved them, and record each gate command with its exit code where the current task keeps its evidence.
+
+`python3 "$SKILL_DIR/scripts/odcs.py" export <sql|jsonschema|avro|html|mermaid> --out <dir> [--relation <schema>.<table>] [--dialect <dialect>]` renders each contract into `<dir>/<schema>/<table>.<ext>` for a consumer who wants the shape in another format. It never writes dbt keys; `generate` owns those. Write the output outside the repository unless the change asks for it.
 
 `python3 "$SKILL_DIR/scripts/odcs.py" results <run_results.json>` maps a dbt run's test results to the contract assertions they enforce, one JSON record per line (contract id and version, relation, property, rule, status, failures, time), reading the `manifest.json` beside it unless `--manifest` names one. It stores nothing; the caller keeps the records.
 
@@ -68,6 +72,7 @@ Leaves one current ODCS `v3.2.0` contract per boundary relation, the dbt and dlt
 | Who writes the dbt `description`? | `generate`, from the Ossie field on a star member and from the contract elsewhere; a `{{ doc() }}` pointer is left alone; a column neither names keeps a hand-written one |
 | Nothing to say in a section? | Omit the key |
 | No warehouse for `profile`? | Report the gate as unrun with its refusal code; never as passing |
+| `reverse` on a platform with no local database file? | It reads properties and logical types through the engine, not rows: `finding/unproven-nullable`, `finding/key-repeats` and `finding/open-enum` are not raised and `reverse/no-evidence` says so, so ask those questions from a `profile` run |
 
 ## Common mistakes
 
