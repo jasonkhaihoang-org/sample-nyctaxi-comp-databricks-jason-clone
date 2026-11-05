@@ -149,6 +149,17 @@
         "data": "cd transformation && dbt test --select path:models/marts/ops --exclude test_type:unit"
       }
     },
+    "seeds": {
+      "sources": [
+        "transformation/seeds/"
+      ],
+      "selectors": {
+        "data": "path:seeds"
+      },
+      "commands": {
+        "data": "cd transformation && dbt test --select path:seeds --exclude test_type:unit"
+      }
+    },
     "semantic": {
       "sources": [
         "transformation/models/marts/core/_semantic.yml",

@@ -151,10 +151,37 @@
               "script"
             ]
           },
+          "role": {
+            "enum": [
+              "input",
+              "internal",
+              "boundary"
+            ],
+            "description": "What the layer is for, which decides the rules that apply to it, never its name: `input` is landed by a loader and read by nothing in the repo, `internal` is built for the Domain's own use, `boundary` is read by a consumer outside the repo. `input` and `boundary` layers owe a data contract (ADR-0225); a `boundary` relation is a candidate for the semantic layer. When absent it is derived (`built_by: dlt` is `input`, any other is `internal`), so a Domain declares it on every layer."
+          },
           "path": {
             "type": "string"
           },
           "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "semantic_exclusions": {
+      "type": "array",
+      "description": "Boundary relations deliberately outside the semantic layer, as schema.table with the reason (a different population or method, a reshape that fans out when summed, no join key into any star). Coverage and the contract check report an excluded relation as information, not as undeclared. The contract of an excluded relation stays.",
+      "items": {
+        "type": "object",
+        "required": [
+          "relation",
+          "reason"
+        ],
+        "properties": {
+          "relation": {
+            "type": "string"
+          },
+          "reason": {
             "type": "string"
           }
         }

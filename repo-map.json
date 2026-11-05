@@ -77,53 +77,83 @@
     "bronze": {
       "schema": "bronze",
       "built_by": "dlt",
+      "role": "input",
       "path": "ingestion/",
       "notes": "TLC trips and zone lookup, verbatim."
     },
     "ops_raw": {
       "schema": "ops_raw",
       "built_by": "dlt",
+      "role": "input",
       "path": "ingestion/",
       "notes": "Simulated fleet-operations source."
     },
     "mdm_raw": {
       "schema": "mdm_raw",
       "built_by": "dlt",
+      "role": "input",
       "path": "ingestion/",
       "notes": "Simulated master-data source."
     },
     "staging": {
       "schema": "staging",
       "built_by": "dbt",
+      "role": "internal",
       "path": "transformation/models/staging/",
       "notes": "Flat: one folder, stg_<source>__<entity> files."
     },
     "intermediate": {
       "schema": "intermediate",
       "built_by": "dbt",
+      "role": "internal",
       "path": "transformation/models/intermediate/"
     },
     "core": {
       "schema": "core",
       "built_by": "dbt",
+      "role": "boundary",
       "path": "transformation/models/marts/core/"
     },
     "agg": {
       "schema": "agg",
       "built_by": "dbt",
+      "role": "boundary",
       "path": "transformation/models/marts/agg/"
     },
     "finance": {
       "schema": "finance",
       "built_by": "dbt",
+      "role": "boundary",
       "path": "transformation/models/marts/finance/"
     },
     "ops": {
       "schema": "ops",
       "built_by": "dbt",
+      "role": "boundary",
       "path": "transformation/models/marts/ops/"
+    },
+    "seeds": {
+      "schema": "seeds",
+      "built_by": "dbt",
+      "role": "internal",
+      "path": "transformation/seeds/",
+      "notes": "Analyst-owned banding tables, loaded by dbt seed into their own schema; internal, like staging."
     }
   },
+  "semantic_exclusions": [
+    {
+      "relation": "agg.agg_od_flow_matrix",
+      "reason": "Not a star member: a HAVING floor (at least 25 trips) keeps only well-populated origin-destination pairs, so it is a filtered population, not the full set of trips; a model over it would mislead."
+    },
+    {
+      "relation": "finance.mart_revenue_component_bridge",
+      "reason": "Unpivot of fare components into one row per component: summing its measures across trips fans out, so it cannot be a fact in a star."
+    },
+    {
+      "relation": "core.dim_fare_regime",
+      "reason": "No join key into any star: no fact carries a fare-regime key, so it cannot be a conformed dimension."
+    }
+  ],
   "sources": {
     "tlc": {
       "kind": "dlt",

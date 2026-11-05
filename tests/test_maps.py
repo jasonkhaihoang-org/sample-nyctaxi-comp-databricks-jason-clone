@@ -28,7 +28,7 @@ def test_repo_map_validates_against_its_schema():
 
 def test_repo_map_names_every_layer_with_one_builder():
     assert set(REPO_MAP["layers"]) == {
-        "bronze", "staging", "intermediate", "core", "agg", "finance", "ops", "ops_raw", "mdm_raw",
+        "bronze", "staging", "intermediate", "core", "agg", "finance", "ops", "ops_raw", "mdm_raw", "seeds",
     }
     assert {layer["built_by"] for layer in REPO_MAP["layers"].values()} == {"dlt", "dbt"}
 
