@@ -1,0 +1,42 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 95a2769a-fcc4-583e-b30a-d338ede7d99e
+name: dim_service_type
+version: 1.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: core
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: dim_service_type
+    properties:
+      - name: service_type_key
+        logicalType: string
+        physicalType: string
+        primaryKey: true
+        quality:
+          - type: library
+            metric: duplicateValues
+            mustBe: 0
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: service_type_name
+        logicalType: string
+        physicalType: string
+      - name: may_serve_airports
+        logicalType: boolean
+        physicalType: boolean
+      - name: may_serve_manhattan_core
+        logicalType: boolean
+        physicalType: boolean
+      - name: hail_rule
+        logicalType: string
+        physicalType: string
+authoritativeDefinitions:
+  - url: logical-model/nyc_taxi_analytics.ossie.yaml
+    type: businessDefinition

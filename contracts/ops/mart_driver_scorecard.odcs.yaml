@@ -1,0 +1,106 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 6c804919-cbf6-554d-8414-23b559c3632c
+name: mart_driver_scorecard
+version: 1.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: ops
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: mart_driver_scorecard
+    properties:
+      - name: driver_key
+        logicalType: integer
+        physicalType: bigint
+        quality:
+          - type: library
+            metric: duplicateValues
+            mustBe: 0
+          - type: library
+            metric: nullValues
+            mustBe: 0
+        relationships:
+          - to: dim_driver.driver_key
+      - name: is_below_ranking_floor
+        logicalType: boolean
+        physicalType: boolean
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: occupancy_rate
+        logicalType: number
+        physicalType: double
+      - name: driver_ref
+        logicalType: string
+        physicalType: string
+      - name: engagement_type
+        logicalType: string
+        physicalType: string
+      - name: garage_key
+        logicalType: integer
+        physicalType: bigint
+        relationships:
+          - to: dim_garage.garage_key
+      - name: home_garage_name
+        logicalType: string
+        physicalType: string
+      - name: active_days
+        logicalType: integer
+        physicalType: bigint
+      - name: shift_count
+        logicalType: integer
+        physicalType: bigint
+      - name: trip_count
+        logicalType: integer
+        physicalType: bigint
+      - name: online_hours
+        logicalType: number
+        physicalType: double
+      - name: on_trip_hours
+        logicalType: number
+        physicalType: double
+      - name: gross_revenue
+        logicalType: number
+        physicalType: double
+      - name: tip_revenue
+        logicalType: number
+        physicalType: double
+      - name: total_cost
+        logicalType: number
+        physicalType: double
+      - name: total_margin
+        logicalType: number
+        physicalType: double
+      - name: paid_miles
+        logicalType: number
+        physicalType: double
+      - name: revenue_per_online_hour
+        logicalType: number
+        physicalType: double
+      - name: revenue_per_trip
+        logicalType: number
+        physicalType: double
+      - name: trips_per_online_hour
+        logicalType: number
+        physicalType: double
+      - name: tip_share
+        logicalType: number
+        physicalType: double
+      - name: fleet_rank
+        logicalType: integer
+        physicalType: int
+      - name: garage_rank
+        logicalType: integer
+        physicalType: int
+      - name: revenue_quartile
+        logicalType: integer
+        physicalType: int
+      - name: occupancy_percentile
+        logicalType: number
+        physicalType: double

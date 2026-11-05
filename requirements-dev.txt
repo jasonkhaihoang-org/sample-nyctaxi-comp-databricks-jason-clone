@@ -6,3 +6,7 @@ pytest
 pyyaml
 ruff
 sqlfluff
+# The semantic-model and data-contract scripts (.agents/skills/*/scripts) and their tests.
+sqlglot>=26
+typer==0.24.1
+click>=8.1

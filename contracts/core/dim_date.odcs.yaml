@@ -1,0 +1,85 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: bff3122d-9cd2-531f-b113-6c17d6832c15
+name: dim_date
+version: 1.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: core
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: dim_date
+    properties:
+      - name: date_key
+        logicalType: integer
+        physicalType: int
+        primaryKey: true
+        quality:
+          - type: library
+            metric: duplicateValues
+            mustBe: 0
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: calendar_date
+        logicalType: date
+        physicalType: date
+        quality:
+          - type: library
+            metric: duplicateValues
+            mustBe: 0
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: calendar_year
+        logicalType: integer
+        physicalType: int
+      - name: calendar_quarter
+        logicalType: integer
+        physicalType: int
+      - name: calendar_month
+        logicalType: integer
+        physicalType: int
+      - name: month_name
+        logicalType: string
+        physicalType: string
+      - name: iso_week
+        logicalType: integer
+        physicalType: int
+      - name: month_start_date
+        logicalType: date
+        physicalType: date
+      - name: week_start_date
+        logicalType: date
+        physicalType: date
+      - name: day_of_week
+        logicalType: integer
+        physicalType: int
+      - name: day_name
+        logicalType: string
+        physicalType: string
+      - name: is_weekend
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_holiday
+        logicalType: boolean
+        physicalType: boolean
+      - name: holiday_name
+        logicalType: string
+        physicalType: string
+      - name: holiday_class
+        logicalType: string
+        physicalType: string
+      - name: is_school_term
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_non_working_day
+        logicalType: boolean
+        physicalType: boolean
+authoritativeDefinitions:
+  - url: logical-model/nyc_taxi_fleet.ossie.yaml
+    type: businessDefinition

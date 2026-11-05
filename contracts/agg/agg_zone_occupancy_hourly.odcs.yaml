@@ -1,0 +1,75 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 354be355-0612-5027-9d8f-125d777a3421
+name: agg_zone_occupancy_hourly
+version: 1.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: agg
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: agg_zone_occupancy_hourly
+    properties:
+      - name: interval_date
+        logicalType: date
+        physicalType: date
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: interval_hour
+        logicalType: integer
+        physicalType: int
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: daypart_code
+        logicalType: string
+        physicalType: string
+      - name: location_id
+        logicalType: integer
+        physicalType: bigint
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+        relationships:
+          - to: dim_zone.zone_natural_key
+      - name: zone_name
+        logicalType: string
+        physicalType: string
+      - name: borough_name
+        logicalType: string
+        physicalType: string
+      - name: is_airport_zone
+        logicalType: boolean
+        physicalType: boolean
+      - name: interval_count
+        logicalType: integer
+        physicalType: bigint
+      - name: distinct_drivers
+        logicalType: integer
+        physicalType: bigint
+      - name: distinct_vehicles
+        logicalType: integer
+        physicalType: bigint
+      - name: total_hours
+        logicalType: number
+        physicalType: double
+      - name: on_trip_hours
+        logicalType: number
+        physicalType: double
+      - name: available_hours
+        logicalType: number
+        physicalType: double
+      - name: break_hours
+        logicalType: number
+        physicalType: double
+      - name: zone_occupancy_rate
+        logicalType: number
+        physicalType: double

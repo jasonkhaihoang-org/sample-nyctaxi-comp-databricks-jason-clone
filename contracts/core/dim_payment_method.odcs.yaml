@@ -1,0 +1,52 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: a45a09d1-7457-595b-b0ce-61689d83d4ea
+name: dim_payment_method
+version: 1.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: core
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: dim_payment_method
+    properties:
+      - name: payment_method_key
+        logicalType: integer
+        physicalType: int
+        primaryKey: true
+        quality:
+          - type: library
+            metric: duplicateValues
+            mustBe: 0
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: tip_is_captured
+        logicalType: boolean
+        physicalType: boolean
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: payment_method_name
+        logicalType: string
+        physicalType: string
+      - name: settlement_class
+        logicalType: string
+        physicalType: string
+      - name: settlement_days
+        logicalType: integer
+        physicalType: int
+      - name: processor_fee_pct
+        logicalType: number
+        physicalType: decimal(5,4)
+      - name: counts_as_revenue
+        logicalType: boolean
+        physicalType: boolean
+authoritativeDefinitions:
+  - url: logical-model/nyc_taxi_analytics.ossie.yaml
+    type: businessDefinition

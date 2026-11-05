@@ -1,0 +1,102 @@
+version: 0.2.0.dev0
+name: nyc_taxi_fleet_mapping
+description: "Maps the fleet's Shift, Driver, Vehicle, Garage, Maintenance event, Medallion, Zone, Date and Daypart concepts onto the shift document. Medallion is a transferable licence granted to a driver: the lakehouse records its plate number on the vehicle row, so identity is mapped there, while who holds it and when it moved are not in the data and stay a gap. Date and Daypart are conformed dimensions, so this document restates the identity expression the trips document uses. Shift appears in this document and in the trips document; the ontology holds it once and both mappings identify the same concept."
+ontology_ref:
+  name: nyc_taxi
+semantic_model_ref:
+  name: nyc_taxi_fleet
+concept_mappings:
+- concept: Shift
+  object_mappings:
+  - referent_mappings:
+    - relationship: shift_id
+      expression: shift.shift_id
+    - relationship: driver
+      referent_mappings:
+      - relationship: driver_id
+        expression: shift.driver_key
+    - relationship: vehicle
+      referent_mappings:
+      - relationship: vehicle_id
+        expression: shift.vehicle_key
+    - relationship: garage
+      referent_mappings:
+      - relationship: garage_id
+        expression: shift.garage_key
+- concept: Driver
+  object_mappings:
+  - referent_mappings:
+    - relationship: driver_id
+      expression: driver.driver_key
+- concept: Vehicle
+  object_mappings:
+  - referent_mappings:
+    - relationship: vehicle_id
+      expression: vehicle.vehicle_key
+- concept: Zone
+  object_mappings:
+  - referent_mappings:
+    - relationship: zone_id
+      expression: zone.zone_natural_key
+- concept: Garage
+  object_mappings:
+  - referent_mappings:
+    - relationship: garage_id
+      expression: garage.garage_key
+- concept: Maintenance event
+  object_mappings:
+  - referent_mappings:
+    - relationship: maintenance_id
+      expression: maintenance.maintenance_id
+    - relationship: vehicle
+      referent_mappings:
+      - relationship: vehicle_id
+        expression: maintenance.vehicle_key
+    - relationship: garage
+      referent_mappings:
+      - relationship: garage_id
+        expression: maintenance.garage_key
+- concept: Date
+  object_mappings:
+  - referent_mappings:
+    - relationship: date_id
+      expression: date.calendar_date
+- concept: Daypart
+  object_mappings:
+  - referent_mappings:
+    - relationship: daypart_id
+      expression: daypart.daypart_code
+- concept: Medallion
+  object_mappings:
+  - referent_mappings:
+    - relationship: medallion_id
+      expression: vehicle.medallion_number
+- concept: Status interval
+  object_mappings:
+  - referent_mappings:
+    - relationship: interval_id
+      expression: status_interval.interval_id
+    - relationship: shift
+      referent_mappings:
+      - relationship: shift_id
+        expression: status_interval.shift_id
+    - relationship: driver
+      referent_mappings:
+      - relationship: driver_id
+        expression: status_interval.driver_key
+    - relationship: vehicle
+      referent_mappings:
+      - relationship: vehicle_id
+        expression: status_interval.vehicle_key
+    - relationship: zone
+      referent_mappings:
+      - relationship: zone_id
+        expression: status_interval.zone_natural_key
+    - relationship: occurred_on
+      referent_mappings:
+      - relationship: date_id
+        expression: status_interval.interval_date
+    - relationship: part_of_day
+      referent_mappings:
+      - relationship: daypart_id
+        expression: status_interval.daypart_code

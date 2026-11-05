@@ -1,0 +1,45 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 74987f1a-e398-5566-8b82-35f2d97727e1
+name: dim_garage
+version: 2.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: core
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: dim_garage
+    properties:
+      - name: garage_key
+        logicalType: integer
+        physicalType: int
+        primaryKey: true
+        quality:
+          - type: library
+            metric: duplicateValues
+            mustBe: 0
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: garage_name
+        logicalType: string
+        physicalType: string
+      - name: borough_name
+        logicalType: string
+        physicalType: string
+      - name: bay_capacity
+        logicalType: integer
+        physicalType: int
+      - name: opened_date
+        logicalType: date
+        physicalType: date
+      - name: assigned_vehicle_count
+        logicalType: integer
+        physicalType: bigint
+authoritativeDefinitions:
+  - url: logical-model/nyc_taxi_fleet.ossie.yaml
+    type: businessDefinition

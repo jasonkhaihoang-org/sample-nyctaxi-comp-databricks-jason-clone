@@ -1,0 +1,65 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 6ce38f3d-33c6-5629-8e99-2465ee936e46
+name: mart_monthly_service_summary
+version: 1.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: finance
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: mart_monthly_service_summary
+    properties:
+      - name: trip_month
+        logicalType: timestamp
+        physicalType: timestamp
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: service_type
+        logicalType: string
+        physicalType: string
+        quality:
+          - type: library
+            metric: invalidValues
+            arguments:
+              valid_values:
+                - yellow
+                - green
+            mustBe: 0
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: payment_method_name
+        logicalType: string
+        physicalType: string
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: settlement_class
+        logicalType: string
+        physicalType: string
+      - name: counts_as_revenue
+        logicalType: boolean
+        physicalType: boolean
+      - name: trip_count
+        logicalType: integer
+        physicalType: bigint
+      - name: total_miles
+        logicalType: number
+        physicalType: double
+      - name: total_revenue
+        logicalType: number
+        physicalType: double
+      - name: avg_fare
+        logicalType: number
+        physicalType: double
+      - name: est_processor_fees
+        logicalType: number
+        physicalType: double

@@ -187,6 +187,13 @@
         }
       }
     },
+    "contract_layers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The layers whose relations owe a data contract, replacing the default (every input and boundary layer). Each entry names a key of `layers`."
+    },
     "sources": {
       "type": "object",
       "description": "Each raw source loaded by dlt.",
@@ -283,6 +290,10 @@
       "additionalProperties": {
         "type": "string"
       }
+    },
+    "data_platform": {
+      "type": "string",
+      "description": "The Data Platform kind this Domain runs on, as the shared vocabulary names it. One Domain runs on one platform, so this is the only source for `servers[].type` in a data contract."
     }
   }
 }

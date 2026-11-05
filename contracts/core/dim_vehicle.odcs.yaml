@@ -1,0 +1,88 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 262efed7-9487-51b8-b4e4-f7e83e0a5237
+name: dim_vehicle
+version: 2.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: core
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: dim_vehicle
+    properties:
+      - name: vehicle_key
+        logicalType: integer
+        physicalType: bigint
+        primaryKey: true
+        quality:
+          - type: library
+            metric: duplicateValues
+            mustBe: 0
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: medallion_number
+        logicalType: string
+        physicalType: string
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: vin
+        logicalType: string
+        physicalType: string
+      - name: make
+        logicalType: string
+        physicalType: string
+      - name: model
+        logicalType: string
+        physicalType: string
+      - name: make_model
+        logicalType: string
+        physicalType: string
+      - name: model_year
+        logicalType: integer
+        physicalType: bigint
+      - name: vehicle_age_years
+        logicalType: integer
+        physicalType: bigint
+      - name: fuel_type
+        logicalType: string
+        physicalType: string
+      - name: is_low_emission
+        logicalType: boolean
+        physicalType: boolean
+      - name: wheelchair_accessible
+        logicalType: boolean
+        physicalType: boolean
+      - name: garage_key
+        logicalType: integer
+        physicalType: bigint
+      - name: garage_name
+        logicalType: string
+        physicalType: string
+      - name: in_service_date
+        logicalType: date
+        physicalType: date
+      - name: retired_date
+        logicalType: date
+        physicalType: date
+      - name: is_in_service
+        logicalType: boolean
+        physicalType: boolean
+      - name: maintenance_events
+        logicalType: integer
+        physicalType: bigint
+      - name: maintenance_down_days
+        logicalType: integer
+        physicalType: bigint
+      - name: maintenance_cost_usd
+        logicalType: number
+        physicalType: bigint
+authoritativeDefinitions:
+  - url: logical-model/nyc_taxi_fleet.ossie.yaml
+    type: businessDefinition

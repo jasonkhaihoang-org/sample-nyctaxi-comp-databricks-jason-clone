@@ -1,0 +1,53 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 97033d74-7cba-5638-a216-b2c914855977
+name: dim_fare_regime
+version: 2.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: core
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: dim_fare_regime
+    dataGranularityDescription: One row per surcharge regime version, effective-dated per fare component.
+    properties:
+      - name: fare_regime_key
+        logicalType: string
+        physicalType: string
+        primaryKey: true
+        description: Regime code identifying the surcharge regime.
+        quality:
+          - type: library
+            metric: duplicateValues
+            mustBe: 0
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: fare_component
+        logicalType: string
+        physicalType: string
+        description: The fare component the rate applies to (mta_tax, improvement_surcharge, congestion_surcharge, airport_fee).
+      - name: rate_amount
+        logicalType: number
+        physicalType: decimal(3,2)
+        description: Surcharge amount in effect for the interval.
+      - name: applies_to_fleet
+        logicalType: string
+        physicalType: string
+        description: Whether the regime applies to the fleet service types.
+      - name: valid_from_date
+        logicalType: date
+        physicalType: date
+        description: Half-open validity start.
+      - name: valid_to_date
+        logicalType: date
+        physicalType: date
+        description: Half-open validity end; 2099-12-31 marks the current version.
+      - name: is_current_regime
+        logicalType: boolean
+        physicalType: boolean
+        description: True for the current version of each regime.

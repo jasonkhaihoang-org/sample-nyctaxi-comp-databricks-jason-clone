@@ -1,0 +1,70 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 6767ad11-6380-5435-8382-25fdafb31a75
+name: agg_trip_zone_daily
+version: 1.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: agg
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: agg_trip_zone_daily
+    properties:
+      - name: pickup_date_key
+        logicalType: integer
+        physicalType: int
+        relationships:
+          - to: dim_date.date_key
+      - name: pickup_date
+        logicalType: date
+        physicalType: date
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: pickup_location_id
+        logicalType: integer
+        physicalType: bigint
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+        relationships:
+          - to: dim_zone.zone_natural_key
+      - name: zone_name
+        logicalType: string
+        physicalType: string
+      - name: borough_name
+        logicalType: string
+        physicalType: string
+      - name: trip_count
+        logicalType: integer
+        physicalType: bigint
+      - name: total_revenue
+        logicalType: number
+        physicalType: double
+      - name: total_miles
+        logicalType: number
+        physicalType: double
+      - name: attributed_driver_count
+        logicalType: integer
+        physicalType: bigint
+      - name: prev_day_trip_count
+        logicalType: integer
+        physicalType: bigint
+      - name: same_day_last_week_trip_count
+        logicalType: integer
+        physicalType: bigint
+      - name: trip_count_7d_avg
+        logicalType: number
+        physicalType: double
+      - name: revenue_28d_rolling
+        logicalType: number
+        physicalType: double
+      - name: revenue_rank_that_day
+        logicalType: integer
+        physicalType: int

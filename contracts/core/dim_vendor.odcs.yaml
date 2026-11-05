@@ -1,0 +1,61 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 8a55813e-4ef7-5110-8a69-06f60a995cfa
+name: dim_vendor
+version: 2.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: core
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: dim_vendor
+    properties:
+      - name: vendor_key
+        logicalType: string
+        physicalType: string
+        primaryKey: true
+        quality:
+          - type: library
+            metric: duplicateValues
+            mustBe: 0
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: vendor_natural_key
+        logicalType: integer
+        physicalType: int
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: vendor_version
+        logicalType: integer
+        physicalType: int
+      - name: valid_from_date
+        logicalType: date
+        physicalType: date
+      - name: valid_to_date
+        logicalType: date
+        physicalType: date
+      - name: is_current_version
+        logicalType: boolean
+        physicalType: boolean
+      - name: vendor_legal_name
+        logicalType: string
+        physicalType: string
+      - name: vendor_short_code
+        logicalType: string
+        physicalType: string
+      - name: contract_tier
+        logicalType: string
+        physicalType: string
+      - name: is_approved
+        logicalType: boolean
+        physicalType: boolean
+authoritativeDefinitions:
+  - url: logical-model/nyc_taxi_analytics.ossie.yaml
+    type: businessDefinition

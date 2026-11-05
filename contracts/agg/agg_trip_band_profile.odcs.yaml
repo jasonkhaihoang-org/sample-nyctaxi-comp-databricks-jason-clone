@@ -1,0 +1,84 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 175967c6-9238-5978-8ae0-27e3fda308cf
+name: agg_trip_band_profile
+version: 1.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: agg
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: agg_trip_band_profile
+    properties:
+      - name: distance_band
+        logicalType: string
+        physicalType: string
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: distance_band_order
+        logicalType: integer
+        physicalType: bigint
+      - name: duration_band
+        logicalType: string
+        physicalType: string
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: duration_band_order
+        logicalType: integer
+        physicalType: bigint
+      - name: fare_band
+        logicalType: string
+        physicalType: string
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: fare_band_order
+        logicalType: integer
+        physicalType: bigint
+      - name: service_type_key
+        logicalType: string
+        physicalType: string
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+        relationships:
+          - to: dim_service_type.service_type_key
+      - name: pickup_borough
+        logicalType: string
+        physicalType: string
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: daypart_code
+        logicalType: string
+        physicalType: string
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: trip_count
+        logicalType: integer
+        physicalType: bigint
+      - name: total_revenue
+        logicalType: number
+        physicalType: double
+      - name: avg_total_amount
+        logicalType: number
+        physicalType: double
+      - name: avg_measurable_tip_rate
+        logicalType: number
+        physicalType: double
+      - name: non_billable_count
+        logicalType: integer
+        physicalType: bigint

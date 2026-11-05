@@ -1,0 +1,87 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: f75e64d6-bb26-5665-bc1e-a3b76385cb76
+name: agg_vehicle_daily
+version: 1.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: agg
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: agg_vehicle_daily
+    properties:
+      - name: shift_date
+        logicalType: date
+        physicalType: date
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: date_key
+        logicalType: integer
+        physicalType: int
+        relationships:
+          - to: dim_date.date_key
+      - name: vehicle_key
+        logicalType: integer
+        physicalType: int
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+        relationships:
+          - to: dim_vehicle.vehicle_key
+      - name: medallion_number
+        logicalType: string
+        physicalType: string
+      - name: make_model
+        logicalType: string
+        physicalType: string
+      - name: fuel_type
+        logicalType: string
+        physicalType: string
+      - name: is_low_emission
+        logicalType: boolean
+        physicalType: boolean
+      - name: garage_key
+        logicalType: integer
+        physicalType: bigint
+        relationships:
+          - to: dim_garage.garage_key
+      - name: shift_count
+        logicalType: integer
+        physicalType: bigint
+      - name: distinct_drivers
+        logicalType: integer
+        physicalType: bigint
+      - name: trip_count
+        logicalType: integer
+        physicalType: bigint
+      - name: online_hours
+        logicalType: number
+        physicalType: double
+      - name: on_trip_hours
+        logicalType: number
+        physicalType: double
+      - name: gross_revenue
+        logicalType: number
+        physicalType: double
+      - name: paid_miles
+        logicalType: number
+        physicalType: double
+      - name: odometer_miles
+        logicalType: number
+        physicalType: double
+      - name: occupancy_rate
+        logicalType: number
+        physicalType: double
+      - name: asset_utilisation_rate
+        logicalType: number
+        physicalType: double
+      - name: paid_mile_ratio
+        logicalType: number
+        physicalType: double

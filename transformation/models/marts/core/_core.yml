@@ -2,186 +2,789 @@ version: 2
 
 models:
   - name: dim_date
-    description: Date spine with holiday, weekend and school-term flags from master data.
+    description: Date spine with holiday, weekend, and school-term flags from master data.
+    contract: {enforced: true}
     columns:
       - name: date_key
-        tests: [unique, not_null]
+        data_type: int
+        data_tests: [unique, not_null]
+        description: yyyymmdd integer key.
       - name: calendar_date
-        tests: [unique, not_null]
+        data_type: date
+        data_tests: [unique, not_null]
+        description: Calendar date.
+      - name: calendar_year
+        data_type: int
+        description: Calendar year grain.
+      - name: calendar_quarter
+        data_type: int
+        description: Calendar quarter grain (1-4).
+      - name: calendar_month
+        data_type: int
+        description: Calendar month grain (1-12).
+      - name: month_name
+        data_type: string
+        description: Month label for the month grain.
+      - name: iso_week
+        data_type: int
+      - name: month_start_date
+        data_type: date
+        description: First day of the calendar month; key of the month level, since calendar_month repeats every year.
+      - name: week_start_date
+        data_type: date
+        description: Monday that starts the calendar week (ADR 0014); key of the week level.
+      - name: day_of_week
+        data_type: int
+      - name: day_name
+        data_type: string
+      - name: is_weekend
+        data_type: boolean
+        description: Saturday or Sunday.
+      - name: is_holiday
+        data_type: boolean
+        description: Master-data holiday flag; corrections restate reports without code change.
+      - name: holiday_name
+        data_type: string
+      - name: holiday_class
+        data_type: string
+      - name: is_school_term
+        data_type: boolean
+      - name: is_non_working_day
+        data_type: boolean
+        description: Weekend or holiday; weekday holidays behave like weekends for demand.
 
   - name: dim_daypart
-    description: "One row per hour of the day, with its daypart. Analyst-owned banding from the daypart seed."
+    description: One row per hour of the day, with its analyst-owned daypart band and peak flag.
+    contract: {enforced: true}
     columns:
       - name: hour_of_day
-        tests: [unique, not_null]
+        data_type: bigint
+        data_tests: [unique, not_null]
+        description: Hour of day (0-23); joins trips on pickup_hour.
+      - name: daypart_code
+        data_type: string
+        description: 'Daypart band code from the daypart seed: LATE, EARLY, MID, AMPEAK, PMPEAK or EVE.'
+      - name: daypart_name
+        data_type: string
+        description: Daypart label for the band.
+      - name: is_peak
+        data_type: boolean
+        description: Whether the hour is a peak hour in the seed's daypart bands.
 
   - name: dim_zone
     description: |
       Type 2 zone dimension, natural key `location_id`.
       {{ doc("scd2_asof") }}
+    contract: {enforced: true}
     columns:
       - name: zone_key
-        description: Surrogate key over natural key plus valid-from date.
-        tests: [unique, not_null]
+        description: Surrogate over natural key plus valid-from date.
+        data_type: string
+        data_tests: [unique, not_null]
       - name: zone_natural_key
-        tests: [not_null]
+        data_type: bigint
+        data_tests: [not_null]
+        description: TLC location_id.
       - name: is_current_version
-        tests: [not_null]
+        data_type: boolean
+        data_tests: [not_null]
+        description: True for the current version of each zone.
       - name: borough_name
-        tests:
-          - accepted_values:
-              arguments:
-                values: ['Manhattan','Brooklyn','Queens','Bronx','Staten Island','EWR','Unknown','N/A']
+        data_type: string
+        data_tests: [{accepted_values: {arguments: {values: [Manhattan, Brooklyn, Queens, Bronx, Staten Island, EWR, Unknown, N/A]}}}]
+        description: Borough, including Unknown and N/A for unresolved zones.
+      - name: zone_version
+        data_type: int
+      - name: valid_from_date
+        data_type: date
+        description: Half-open validity start for the as-of join. Audit column, not a time dimension.
+      - name: valid_to_date
+        data_type: date
+        description: Half-open validity end; 2099-12-31 marks the current version.
+      - name: zone_name
+        data_type: string
+        description: Zone display name.
+      - name: borough_code
+        data_type: string
+      - name: reporting_region
+        data_type: string
+        description: Reporting region above borough.
+      - name: tlc_service_zone
+        data_type: string
+      - name: zone_class
+        data_type: string
+      - name: demand_tier
+        data_type: string
+      - name: centroid_lat
+        data_type: double
+      - name: centroid_lon
+        data_type: double
+      - name: area_sq_mi
+        data_type: double
+      - name: resident_population
+        data_type: bigint
+      - name: is_airport_zone
+        data_type: boolean
+      - name: is_congestion_zone
+        data_type: boolean
+      - name: is_nyc
+        data_type: boolean
+      - name: is_core_market
+        data_type: boolean
+      - name: is_unresolved_zone
+        data_type: boolean
+      - name: poi_count
+        data_type: bigint
+      - name: poi_categories
+        data_type: string
 
   - name: dim_vendor
     description: |
       Type 2 vendor dimension, natural key `vendor_id`. VendorID 2 carries two
       versions across the July 2023 Curb Mobility rebrand.
       {{ doc("scd2_asof") }}
+    contract: {enforced: true}
     columns:
       - name: vendor_key
-        tests: [unique, not_null]
+        data_type: string
+        data_tests: [unique, not_null]
+        description: Surrogate over natural key plus valid-from date.
       - name: vendor_natural_key
-        tests: [not_null]
+        data_type: int
+        data_tests: [not_null]
+        description: Source vendor identifier.
+      - name: vendor_version
+        data_type: int
+      - name: valid_from_date
+        data_type: date
+        description: Half-open validity start for the as-of join.
+      - name: valid_to_date
+        data_type: date
+        description: Half-open validity end.
+      - name: is_current_version
+        data_type: boolean
+        description: True for the current version of each vendor.
+      - name: vendor_legal_name
+        data_type: string
+      - name: vendor_short_code
+        data_type: string
+      - name: contract_tier
+        data_type: string
+      - name: is_approved
+        data_type: boolean
 
   - name: dim_payment_method
-    description: "One row per payment method: how it settles, whether tips are recorded and whether trips paid this way count as revenue."
+    description: 'One row per payment method: settlement, tip capture, and revenue eligibility.'
+    contract: {enforced: true}
     columns:
       - name: payment_method_key
-        tests: [unique, not_null]
+        data_type: int
+        data_tests: [unique, not_null]
+        description: Payment type code.
       - name: tip_is_captured
         description: '{{ doc("measurable_tip_rate") }}'
-        tests: [not_null]
+        data_type: boolean
+        data_tests: [not_null]
+      - name: payment_method_name
+        data_type: string
+        description: Name of the payment method; its display key, as the finance marts carry it.
+      - name: settlement_class
+        data_type: string
+      - name: settlement_days
+        data_type: int
+      - name: processor_fee_pct
+        data_type: decimal(5,4)
+      - name: counts_as_revenue
+        data_type: boolean
 
   - name: dim_rate_plan
-    description: "One row per rate plan, with its pricing model and flat-fare amount."
+    description: One row per rate plan, with its pricing model and flat-fare terms from master data.
+    contract: {enforced: true}
     columns:
       - name: rate_plan_key
-        tests: [unique, not_null]
+        data_type: int
+        data_tests: [unique, not_null]
+        description: Source rate code (rate_code_id).
+      - name: rate_plan_name
+        data_type: string
+        description: Rate plan display name.
+      - name: pricing_model
+        data_type: string
+        description: Pricing basis the plan charges on.
+      - name: is_flat_fare
+        data_type: boolean
+        description: True when the plan charges a flat amount rather than the meter.
+      - name: flat_fare_amount
+        data_type: decimal(4,2)
+        description: Flat amount charged under the plan; null for metered plans.
+      - name: is_airport_plan
+        data_type: boolean
+        description: True for the airport flat-fare plans.
+      - name: is_metered_baseline
+        data_type: boolean
+        description: True for the standard metered plan every other plan is compared against.
 
   - name: dim_service_type
-    description: "One row per service type (fleet), with its airport and Manhattan-core hail rules."
+    description: One row per fleet service type, with its hail and airport rules.
+    contract: {enforced: true}
     columns:
       - name: service_type_key
-        tests: [unique, not_null]
+        data_type: string
+        data_tests: [unique, not_null]
+        description: yellow or green; the fact carries the same value.
+      - name: service_type_name
+        data_type: string
+        description: Service type display name.
+      - name: may_serve_airports
+        data_type: boolean
+        description: True when the fleet may pick up at the airports.
+      - name: may_serve_manhattan_core
+        data_type: boolean
+        description: True when the fleet may street-hail inside the Manhattan core.
+      - name: hail_rule
+        data_type: string
+        description: Where the fleet may street-hail, in words.
 
   - name: dim_fare_regime
     description: Effective-dated surcharge rates, joined on component and date.
+    contract: {enforced: true}
     columns:
       - name: fare_regime_key
-        tests: [unique, not_null]
+        data_type: string
+        data_tests: [unique, not_null]
+        description: Regime code identifying the surcharge regime.
+      - name: fare_component
+        data_type: string
+        description: The fare component the rate applies to (mta_tax, improvement_surcharge, congestion_surcharge, airport_fee).
+      - name: rate_amount
+        data_type: decimal(3,2)
+        description: Surcharge amount in effect for the interval.
+      - name: applies_to_fleet
+        data_type: string
+        description: Whether the regime applies to the fleet service types.
+      - name: valid_from_date
+        data_type: date
+        description: Half-open validity start.
+      - name: valid_to_date
+        data_type: date
+        description: Half-open validity end; 2099-12-31 marks the current version.
+      - name: is_current_regime
+        data_type: boolean
+        description: True for the current version of each regime.
 
   - name: dim_driver
-    description: >
-      Type 1. Drivers change garage and status but the operator keeps no history,
-      so claiming Type 2 here would be a dimension whose history is fabricated.
+    description: Type 1 driver dimension — current state with lease and home garage. The operator keeps no driver history, so a Type 2 here would fabricate it.
+    contract: {enforced: true}
     columns:
       - name: driver_key
-        tests: [unique, not_null]
+        data_type: bigint
+        data_tests: [unique, not_null]
+        description: Operator's driver identifier.
       - name: garage_key
-        tests:
-          - relationships: {arguments: {to: ref('dim_garage'), field: garage_key}}
+        data_type: bigint
+        data_tests: [{relationships: {arguments: {field: garage_key, to: ref('dim_garage')}}}]
+        description: Driver's home garage.
+      - name: hack_licence_no
+        data_type: string
+      - name: driver_ref
+        data_type: string
+        description: Short driver reference used in reports.
+      - name: engagement_type
+        data_type: string
+        description: How the driver is engaged (employee, contractor, ...).
+      - name: driver_status
+        data_type: string
+        description: Current activation status of the driver.
+      - name: is_wav_certified
+        data_type: boolean
+        description: Certified to drive a wheelchair-accessible vehicle.
+      - name: hire_date
+        data_type: date
+        description: Date engagement started; an attribute of the driver, not a time dimension.
+      - name: termination_date
+        data_type: date
+        description: Date engagement ended; null while active.
+      - name: tenure_days
+        data_type: int
+        description: Days from hire to the report end; restates with the reporting window.
+      - name: home_garage_name
+        data_type: string
+        description: Display name of the driver's home garage.
+      - name: lease_id
+        data_type: bigint
+      - name: lease_type
+        data_type: string
+        description: Current lease arrangement, null when the driver is not on a lease.
+      - name: lease_rate
+        data_type: decimal(22,2)
+        description: Current lease rate charged to the driver.
+      - name: revenue_share_pct
+        data_type: decimal(3,2)
+        description: Share of revenue retained under the current lease.
+      - name: primary_vehicle_id
+        data_type: bigint
 
   - name: dim_vehicle
-    description: Type 1, with maintenance downtime folded in.
+    description: Type 1 vehicle dimension with maintenance downtime folded in, so a vehicle out of the shop is not read as an underperforming asset.
+    contract: {enforced: true}
     columns:
       - name: vehicle_key
-        tests: [unique, not_null]
+        data_type: bigint
+        data_tests: [unique, not_null]
+        description: Operator's vehicle identifier.
       - name: medallion_number
-        tests: [not_null]
+        data_type: string
+        data_tests: [not_null]
+        description: Medallion the vehicle operates under.
+      - name: vin
+        data_type: string
+      - name: make
+        data_type: string
+      - name: model
+        data_type: string
+      - name: make_model
+        data_type: string
+        description: Reporting label for make and model.
+      - name: model_year
+        data_type: bigint
+        description: Model year of the vehicle.
+      - name: vehicle_age_years
+        data_type: bigint
+        description: Model age in years at the report end; restates with the reporting window.
+      - name: fuel_type
+        data_type: string
+        description: Fuel or drivetrain type.
+      - name: is_low_emission
+        data_type: boolean
+        description: Hybrid or electric.
+      - name: wheelchair_accessible
+        data_type: boolean
+        description: Equipped for wheelchair access.
+      - name: garage_key
+        data_type: bigint
+        description: Garage the vehicle is assigned to; not the driver's home garage.
+      - name: garage_name
+        data_type: string
+        description: Display name of the assigned garage.
+      - name: in_service_date
+        data_type: date
+        description: Date the vehicle entered service.
+      - name: retired_date
+        data_type: date
+        description: Date the vehicle left service; null while in service.
+      - name: is_in_service
+        data_type: boolean
+        description: True while the vehicle is available to the fleet.
+      - name: maintenance_events
+        data_type: bigint
+        description: Lifetime count of maintenance events.
+      - name: maintenance_down_days
+        data_type: bigint
+        description: Lifetime down-days across maintenance events; semi-additive.
+      - name: maintenance_cost_usd
+        data_type: bigint
+        description: Lifetime maintenance cost in USD.
 
   - name: dim_garage
-    description: "One row per garage, with its capacity and the number of vehicles assigned."
+    description: One row per garage with its capacity and the vehicles assigned to it.
+    contract: {enforced: true}
     columns:
       - name: garage_key
-        tests: [unique, not_null]
+        data_type: int
+        data_tests: [unique, not_null]
+        description: Garage identifier.
+      - name: garage_name
+        data_type: string
+        description: Garage display name.
+      - name: borough_name
+        data_type: string
+        description: Borough the garage sits in.
+      - name: bay_capacity
+        data_type: int
+        description: Number of bays available for vehicles.
+      - name: opened_date
+        data_type: date
+        description: Date the garage opened.
+      - name: assigned_vehicle_count
+        data_type: bigint
+        description: Vehicles currently assigned to the garage.
 
   - name: dim_trip_quality
-    description: >
-      Junk dimension over the observed combinations of the trip quality verdicts.
-      Only combinations that occur are materialised; the full cross product would
-      be 4096 rows, almost all empty.
+    description: Junk dimension over the observed combinations of trip quality verdicts. Only combinations that occur are materialised, not the 4096-row cross product (ADR 0004).
+    contract: {enforced: true}
     columns:
       - name: trip_quality_key
-        tests: [unique, not_null]
+        data_type: string
+        data_tests: [unique, not_null]
+        description: Key over the observed verdict combination.
+      - name: is_billable
+        data_type: boolean
+      - name: is_refund
+        data_type: boolean
+      - name: is_zero_distance
+        data_type: boolean
+      - name: is_implausibly_short
+        data_type: boolean
+      - name: is_implausibly_fast
+        data_type: boolean
+      - name: is_negative_duration
+        data_type: boolean
+      - name: is_zero_passenger
+        data_type: boolean
+      - name: is_missing_passenger_count
+        data_type: boolean
+      - name: is_sparse_vendor_feed
+        data_type: boolean
+      - name: is_unresolved_pickup_zone
+        data_type: boolean
+      - name: is_undocumented_rate_code
+        data_type: boolean
+      - name: is_missing_airport_fee
+        data_type: boolean
+      - name: is_clean_trip
+        data_type: boolean
 
   - name: bridge_zone_poi
-    description: >
-      Bridge for the zone-to-POI many-to-many. Any join through it multiplies
-      rows by design, which is why it is a separate object and carries an
-      allocation factor.
+    description: One row per point of interest with its zone and the share of that zone's demand weight. Zone to POI is one-to-many, so a zone-level measure fans out across categories; it is allocated by the weight, never repeated.
+    contract: {enforced: true}
     columns:
       - name: poi_id
-        tests: [unique, not_null]
+        data_type: string
+        data_tests: [unique, not_null]
+        description: Point-of-interest identifier.
+      - name: zone_natural_key
+        data_type: bigint
+        data_tests: [{relationships: {arguments: {field: zone_natural_key, to: ref('dim_zone')}}}]
+        description: TLC location_id of the zone the POI sits in.
+      - name: poi_category
+        data_type: string
+        description: Category code of the point of interest.
+      - name: poi_category_name
+        data_type: string
+        description: Category label of the point of interest.
+      - name: poi_name
+        data_type: string
+        description: Display name of the point of interest.
+      - name: demand_weight
+        data_type: int
+        description: Raw demand weight of the POI within its zone.
+      - name: allocation_factor
+        data_type: double
+        description: The POI's share of its zone's total demand weight; multiply an allocated measure by it.
 
   - name: fct_trip
     description: |
       One row per TLC trip. The grain of the warehouse.
 
       {{ doc("fleet_attribution") }}
+    contract: {enforced: true}
     columns:
       - name: trip_key
         description: '{{ doc("trip_key") }}'
-        tests: [unique, not_null]
+        data_type: string
+        data_tests: [unique, not_null]
       - name: pickup_zone_key
-        description: Role-playing zone key, resolved as of the trip's own date.
-        tests:
-          - relationships: {arguments: {to: ref('dim_zone'), field: zone_key}}
+        description: Role-playing zone key for the origin, resolved as of the trip date (Pickup_Zone role).
+        data_type: string
+        data_tests: [{relationships: {arguments: {field: zone_key, to: ref('dim_zone')}}}]
       - name: dropoff_zone_key
-        description: The same dimension in its destination role.
-        tests:
-          - relationships: {arguments: {to: ref('dim_zone'), field: zone_key}}
+        description: Role-playing zone key for the destination, resolved as of the trip date (Dropoff_Zone role).
+        data_type: string
+        data_tests: [{relationships: {arguments: {field: zone_key, to: ref('dim_zone')}}}]
       - name: vendor_key
-        tests:
-          - relationships: {arguments: {to: ref('dim_vendor'), field: vendor_key}}
+        data_type: string
+        data_tests: [{relationships: {arguments: {field: vendor_key, to: ref('dim_vendor')}}}]
+        description: Vendor surrogate, resolved as of the trip date.
       - name: trip_quality_key
-        tests:
-          - relationships: {arguments: {to: ref('dim_trip_quality'), field: trip_quality_key}}
+        data_type: string
+        data_tests: [{relationships: {arguments: {field: trip_quality_key, to: ref('dim_trip_quality')}}}]
+        description: Junk-dimension key over the observed quality verdicts.
       - name: payment_method_key
-        tests:
-          - relationships: {arguments: {to: ref('dim_payment_method'), field: payment_method_key}}
+        data_type: bigint
+        data_tests: [{relationships: {arguments: {field: payment_method_key, to: ref('dim_payment_method')}}}]
+        description: How the trip settled.
       - name: is_fleet_attributed
         description: '{{ doc("fleet_attribution") }}'
-        tests: [not_null]
+        data_type: boolean
+        data_tests: [not_null]
       - name: fare_residual
         description: '{{ doc("fare_residual") }}'
+        data_type: double
       - name: airport_fee
         description: >
           Yellow only, rejoined from bronze. Null for every green trip by
           construction -- see airport_fee_status before aggregating it.
+        data_type: double
+      - name: pickup_date_key
+        data_type: int
+        data_tests: [{relationships: {arguments: {field: date_key, to: ref('dim_date')}}}]
+        description: Surrogate key into date for the pickup date.
+      - name: pickup_date
+        data_type: date
+        description: Calendar date of pickup; report window grain is day.
+      - name: pickup_hour
+        data_type: int
+        data_tests: [{relationships: {arguments: {field: hour_of_day, to: ref('dim_daypart')}}}]
+        description: Hour of day of pickup (0-23), joins dim_daypart.
+      - name: daypart_code
+        data_type: string
+        description: Analyst-owned daypart band for pickup_hour.
+      - name: service_type_key
+        data_type: string
+        data_tests: [{relationships: {arguments: {field: service_type_key, to: ref('dim_service_type')}}}]
+        description: Fleet service type of the trip.
+      - name: rate_plan_key
+        data_type: bigint
+        data_tests: [{relationships: {arguments: {field: rate_plan_key, to: ref('dim_rate_plan')}}}]
+        description: Rate plan in effect for the trip.
+      - name: shift_id
+        data_type: string
+        description: Attributed fleet shift; null for non-fleet trips.
+      - name: driver_key
+        data_type: bigint
+      - name: vehicle_key
+        data_type: int
+      - name: assignment_method
+        data_type: string
+      - name: pickup_datetime
+        data_type: timestamp
+      - name: dropoff_datetime
+        data_type: timestamp
+      - name: pickup_location_id
+        data_type: int
+        description: TLC location id of the pickup zone before the as-of join; the zone's natural key, and what the trip-to-zone join matches.
+      - name: dropoff_location_id
+        data_type: int
+        description: TLC location id of the dropoff zone before the as-of join; the zone's natural key.
+      - name: passenger_count
+        data_type: bigint
+      - name: store_and_fwd_flag
+        data_type: string
+      - name: trip_type
+        data_type: bigint
+      - name: trip_distance
+        data_type: double
+      - name: trip_seconds
+        data_type: bigint
+      - name: avg_mph
+        data_type: double
+      - name: fare_amount
+        data_type: double
+      - name: extra
+        data_type: double
+      - name: mta_tax
+        data_type: double
+      - name: tip_amount
+        data_type: double
+      - name: tolls_amount
+        data_type: double
+      - name: improvement_surcharge
+        data_type: double
+      - name: congestion_surcharge
+        data_type: double
+      - name: ehail_fee
+        data_type: double
+      - name: total_amount
+        data_type: double
+        description: Total amount charged, row level. Aggregate only through metrics.
+      - name: total_surcharges
+        data_type: double
+      - name: measurable_tip_rate
+        data_type: double
+      - name: is_billable
+        data_type: boolean
+        description: Total amount is positive (ADR 0003). Null handling per ADR.
+      - name: airport_fee_status
+        data_type: string
+        description: Yellow only; null for every green trip by construction.
 
   - name: fct_shift
-    description: The bridge between the operational world and the revenue world.
+    description: One row per driver sign-on, bridging the operational world (occupancy, leases) and the revenue world (trips).
+    contract: {enforced: true}
     columns:
       - name: shift_id
-        tests: [unique, not_null]
+        data_type: string
+        data_tests: [unique, not_null]
+        description: Sign-on identifier; the grain of the fleet revenue fact.
       - name: driver_key
-        tests:
-          - relationships: {arguments: {to: ref('dim_driver'), field: driver_key}}
+        data_type: bigint
+        data_tests: [{relationships: {arguments: {field: driver_key, to: ref('dim_driver')}}}]
+        description: Driver who signed on.
       - name: vehicle_key
-        tests:
-          - relationships: {arguments: {to: ref('dim_vehicle'), field: vehicle_key}}
+        data_type: int
+        data_tests: [{relationships: {arguments: {field: vehicle_key, to: ref('dim_vehicle')}}}]
+        description: Vehicle operated during the shift.
       - name: occupancy_rate
         description: '{{ doc("occupancy_rate") }}'
+        data_type: double
+      - name: shift_date_key
+        data_type: int
+        data_tests: [{relationships: {arguments: {field: date_key, to: ref('dim_date')}}}]
+        description: Surrogate key into date for the shift date.
+      - name: shift_date
+        data_type: date
+        description: Calendar date of sign-on.
+      - name: garage_key
+        data_type: bigint
+        data_tests: [{relationships: {arguments: {field: garage_key, to: ref('dim_garage')}}}]
+        description: Driver's home garage at sign-on, carried from dim_driver; not the vehicle's garage.
+      - name: engagement_type
+        data_type: string
+        description: How the driver is engaged (employee, contractor, ...).
+      - name: lease_type
+        data_type: string
+        description: Lease arrangement in force for the shift; null when the driver is not on a lease.
+      - name: shift_start_ts
+        data_type: timestamp
+        description: Timestamp the driver signed on.
+      - name: effective_end_ts
+        data_type: timestamp
+      - name: is_unclosed_shift
+        data_type: boolean
+        description: True when no sign-off event closed the shift and the effective end was used instead.
+      - name: online_seconds
+        data_type: bigint
+        description: Signed-on seconds, to the shift's effective end. Denominator of the rate metrics; aggregate only through metrics.
+      - name: on_trip_seconds
+        data_type: bigint
+        description: Seconds spent carrying a fare. Numerator of occupancy; aggregate only through metrics.
+      - name: available_seconds
+        data_type: bigint
+      - name: break_seconds
+        data_type: bigint
+      - name: unaccounted_seconds
+        data_type: bigint
+      - name: idle_rate
+        data_type: double
+      - name: trip_count
+        data_type: bigint
+        description: Trips attributed to the shift, row level; sum it rather than reading a single row.
+      - name: gross_revenue
+        data_type: double
+        description: Revenue earned on the shift's trips, row level; aggregate only through metrics.
+      - name: fare_revenue
+        data_type: double
+      - name: tip_revenue
+        data_type: double
+      - name: airport_fee_collected
+        data_type: double
+      - name: surcharge_collected
+        data_type: double
+      - name: recognised_revenue
+        data_type: double
+      - name: paid_miles
+        data_type: double
+      - name: paid_seconds
+        data_type: bigint
+      - name: shift_cost
+        data_type: double
+      - name: shift_margin
+        data_type: double
+      - name: revenue_per_online_hour
+        data_type: double
+        description: Gross revenue per online hour, from summed revenue and summed hours. The driver ranking basis (ADR 0010).
+      - name: revenue_per_paid_mile
+        data_type: double
+      - name: odometer_miles
+        data_type: double
+      - name: paid_mile_ratio
+        data_type: double
+      - name: negative_interval_count
+        data_type: bigint
+      - name: telematics_source
+        data_type: string
 
   - name: fct_status_interval
-    description: >
-      One row per driver state interval. The only place idle time is locatable --
-      a trip says where a driver earned, this says where they waited.
+    description: One row per driver state interval. The only place idle time is locatable — a trip says where a driver earned, this says where they waited.
+    contract: {enforced: true}
     columns:
       - name: interval_id
-        tests: [unique, not_null]
+        data_type: string
+        data_tests: [unique, not_null]
+        description: Interval identifier; the grain of the occupancy fact.
       - name: status_code
-        tests:
-          - accepted_values:
-              arguments:
-                values: [LOGIN, AVAILABLE, DISPATCHED, ON_TRIP, BREAK, LOGOUT]
+        data_type: string
+        data_tests: [{accepted_values: {arguments: {values: [LOGIN, AVAILABLE, DISPATCHED, ON_TRIP, BREAK, LOGOUT]}}}]
+        description: Driver state for the interval (LOGIN, AVAILABLE, DISPATCHED, ON_TRIP, BREAK, LOGOUT).
+      - name: shift_id
+        data_type: string
+        description: Shift the interval belongs to.
+      - name: driver_key
+        data_type: bigint
+        data_tests: [{relationships: {arguments: {field: driver_key, to: ref('dim_driver')}}}]
+        description: Driver the interval is attributed to.
+      - name: vehicle_key
+        data_type: int
+        data_tests: [{relationships: {arguments: {field: vehicle_key, to: ref('dim_vehicle')}}}]
+        description: Vehicle the driver was in during the interval.
+      - name: interval_date_key
+        data_type: int
+        data_tests: [{relationships: {arguments: {field: date_key, to: ref('dim_date')}}}]
+        description: Surrogate key into date for the interval date.
+      - name: interval_date
+        data_type: date
+        description: Calendar date the interval started.
+      - name: interval_hour
+        data_type: int
+        data_tests: [{relationships: {arguments: {field: hour_of_day, to: ref('dim_daypart')}}}]
+        description: Hour of day the interval started (0-23), joins dim_daypart.
+      - name: daypart_code
+        data_type: string
+        description: Analyst-owned daypart band for interval_hour.
+      - name: zone_key
+        data_type: string
+        data_tests: [{relationships: {arguments: {field: zone_key, to: ref('dim_zone')}}}]
+        description: Zone surrogate resolved to the current version of the zone.
+      - name: zone_natural_key
+        data_type: int
+        description: TLC location_id of the interval's zone.
+      - name: interval_start_ts
+        data_type: timestamp
+      - name: interval_end_ts
+        data_type: timestamp
+      - name: interval_seconds
+        data_type: bigint
+        description: Duration of the interval. Sum it for time; do not read a single row.
+      - name: is_terminal_interval
+        data_type: boolean
+      - name: is_negative_interval
+        data_type: boolean
+        description: True when the event stream closes the interval before it opens; a quality flag, not a duration.
+      - name: skew_seconds
+        data_type: bigint
 
   - name: fct_maintenance
-    description: >
-      Semi-additive. Down-days sum across vehicles but not across overlapping
-      ranges, so availability must expand this to a daily grain rather than
-      summing the column.
+    description: One row per vehicle maintenance event. Semi-additive — down-days sum across vehicles but not across overlapping date ranges, so availability expands this to a daily grain rather than summing the column.
+    contract: {enforced: true}
     columns:
       - name: maintenance_id
-        tests: [unique, not_null]
+        data_type: string
+        data_tests: [unique, not_null]
+        description: Maintenance event identifier; the grain of the downtime fact.
+      - name: vehicle_key
+        data_type: bigint
+        data_tests: [{relationships: {arguments: {field: vehicle_key, to: ref('dim_vehicle')}}}]
+        description: Vehicle that was in the shop.
+      - name: garage_key
+        data_type: bigint
+        data_tests: [{relationships: {arguments: {field: garage_key, to: ref('dim_garage')}}}]
+        description: Garage the vehicle belongs to, carried from dim_vehicle.
+      - name: started_date_key
+        data_type: int
+        data_tests: [{relationships: {arguments: {field: date_key, to: ref('dim_date')}}}]
+        description: Surrogate key into date for the start date.
+      - name: started_date
+        data_type: date
+        description: First day of the downtime.
+      - name: ended_date
+        data_type: date
+        description: Last day of the downtime; a range end, not a time dimension.
+      - name: down_days
+        data_type: bigint
+        description: Days out of service for the event; semi-additive across overlapping ranges.
+      - name: maintenance_type
+        data_type: string
+        description: Kind of work performed.
+      - name: cost_usd
+        data_type: bigint
+        description: Cost of the event in USD, row level.

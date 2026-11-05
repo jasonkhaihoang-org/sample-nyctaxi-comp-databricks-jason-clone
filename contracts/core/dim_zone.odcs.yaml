@@ -1,0 +1,121 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 2fcad8ea-ee90-5f09-81a9-3219ceb038e8
+name: dim_zone
+version: 1.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: core
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: dim_zone
+    properties:
+      - name: zone_key
+        logicalType: string
+        physicalType: string
+        primaryKey: true
+        quality:
+          - type: library
+            metric: duplicateValues
+            mustBe: 0
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: zone_natural_key
+        logicalType: integer
+        physicalType: bigint
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: is_current_version
+        logicalType: boolean
+        physicalType: boolean
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: borough_name
+        logicalType: string
+        physicalType: string
+        quality:
+          - type: library
+            metric: invalidValues
+            arguments:
+              valid_values:
+                - Manhattan
+                - Brooklyn
+                - Queens
+                - Bronx
+                - Staten Island
+                - EWR
+                - Unknown
+                - N/A
+            mustBe: 0
+      - name: zone_version
+        logicalType: integer
+        physicalType: int
+      - name: valid_from_date
+        logicalType: date
+        physicalType: date
+      - name: valid_to_date
+        logicalType: date
+        physicalType: date
+      - name: zone_name
+        logicalType: string
+        physicalType: string
+      - name: borough_code
+        logicalType: string
+        physicalType: string
+      - name: reporting_region
+        logicalType: string
+        physicalType: string
+      - name: tlc_service_zone
+        logicalType: string
+        physicalType: string
+      - name: zone_class
+        logicalType: string
+        physicalType: string
+      - name: demand_tier
+        logicalType: string
+        physicalType: string
+      - name: centroid_lat
+        logicalType: number
+        physicalType: double
+      - name: centroid_lon
+        logicalType: number
+        physicalType: double
+      - name: area_sq_mi
+        logicalType: number
+        physicalType: double
+      - name: resident_population
+        logicalType: integer
+        physicalType: bigint
+      - name: is_airport_zone
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_congestion_zone
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_nyc
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_core_market
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_unresolved_zone
+        logicalType: boolean
+        physicalType: boolean
+      - name: poi_count
+        logicalType: integer
+        physicalType: bigint
+      - name: poi_categories
+        logicalType: string
+        physicalType: string
+authoritativeDefinitions:
+  - url: logical-model/nyc_taxi_fleet.ossie.yaml
+    type: businessDefinition

@@ -1,0 +1,895 @@
+version: "0.2.0.dev0"
+name: nyc_taxi_trips
+description: One row per TLC trip (yellow + green, 2024-01 to 2024-03) with billable flag, fleet attribution, and conformed dimensions. Trips star of the nyc-taxi-duckdb-demo warehouse.
+ai_context:
+  instructions: Use for trip-level revenue and demand analysis inside the report window (ADR 0003). Billable math must filter on is_billable; green trips never carry airport_fee.
+  synonyms:
+    - yellow and green taxi trips
+    - TLC trips
+datasets:
+  - name: trips
+    source: core.fct_trip
+    primary_key: [trip_key]
+    description: One row per TLC trip. The grain of the warehouse.
+    ai_context:
+      synonyms:
+        - trips
+        - rides
+    fields:
+      - name: trip_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: trip_key
+        datatype: String
+        description: Natural key from the trip_natural_key macro.
+      - name: pickup_date
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: pickup_date
+        datatype: Date
+        dimension:
+          is_time: true
+        description: Calendar date of pickup; report window grain is day.
+      - name: pickup_date_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: pickup_date_key
+        datatype: Integer
+        description: Surrogate key into date for the pickup date.
+      - name: pickup_hour
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: pickup_hour
+        datatype: Integer
+        description: Hour of day of pickup (0-23), joins dim_daypart.
+      - name: daypart_code
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: daypart_code
+        datatype: String
+        description: Analyst-owned daypart band for pickup_hour.
+      - name: service_type_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: service_type_key
+        datatype: String
+        description: Fleet service type of the trip.
+      - name: pickup_location_id
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: pickup_location_id
+        datatype: Integer
+        description: TLC location id of the pickup zone before the as-of join; the zone's natural key, and what the trip-to-zone join matches.
+      - name: dropoff_location_id
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: dropoff_location_id
+        datatype: Integer
+        description: TLC location id of the dropoff zone before the as-of join; the zone's natural key.
+      - name: pickup_zone_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: pickup_zone_key
+        datatype: String
+        description: Role-playing zone key for the origin, resolved as of the trip date (Pickup_Zone role).
+      - name: dropoff_zone_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: dropoff_zone_key
+        datatype: String
+        description: Role-playing zone key for the destination, resolved as of the trip date (Dropoff_Zone role).
+      - name: vendor_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: vendor_key
+        datatype: String
+        description: Vendor surrogate, resolved as of the trip date.
+      - name: payment_method_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: payment_method_key
+        datatype: Integer
+        description: How the trip settled.
+      - name: rate_plan_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: rate_plan_key
+        datatype: Integer
+        description: Rate plan in effect for the trip.
+      - name: trip_quality_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: trip_quality_key
+        datatype: String
+        description: Junk-dimension key over the observed quality verdicts.
+      - name: is_billable
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: is_billable
+        datatype: Boolean
+        description: Total amount is positive (ADR 0003). Null handling per ADR.
+      - name: is_fleet_attributed
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: is_fleet_attributed
+        datatype: Boolean
+        description: True when Harbour Point operated the trip; null driver/vehicle/shift otherwise.
+      - name: airport_fee_status
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: airport_fee_status
+        datatype: String
+        description: Yellow only; null for every green trip by construction.
+      - name: total_amount
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: total_amount
+        datatype: Decimal
+        description: Total amount charged, row level. Aggregate only through metrics.
+      - name: fare_residual
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: fare_residual
+        datatype: Decimal
+        description: Trip total minus every modelled fare component, row level.
+      - name: shift_id
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: shift_id
+        datatype: String
+        description: Attributed fleet shift; null for non-fleet trips.
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "logical_sources": [{"name": "LTS1_detail", "physical_table": "fct_trip", "priority_group": 1, "content_grain": ["trip"], "column_map": {"trip_key": "trip_key", "pickup_location_id": "pickup_location_id", "dropoff_location_id": "dropoff_location_id", "pickup_date_key": "pickup_date_key", "pickup_date": "pickup_date", "pickup_hour": "pickup_hour", "daypart_code": "daypart_code", "service_type_key": "service_type_key", "pickup_zone_key": "pickup_zone_key", "dropoff_zone_key": "dropoff_zone_key", "vendor_key": "vendor_key", "payment_method_key": "payment_method_key", "rate_plan_key": "rate_plan_key", "trip_quality_key": "trip_quality_key", "is_billable": "is_billable", "is_fleet_attributed": "is_fleet_attributed", "airport_fee_status": "airport_fee_status", "total_amount": "total_amount", "fare_residual": "fare_residual", "shift_id": "shift_id", "fare_residual_total": "fare_residual", "trip_count": "trip_key", "billable_trip_count": "is_billable", "billable_revenue": "total_amount", "billable_revenue_pickup_borough": "total_amount"}}, {"name": "LTS2_zone_day_agg", "physical_table": "agg_trip_zone_daily", "priority_group": 0, "content_grain": ["pickup_date", "pickup_location_id"], "note": "trip_count checked against agg_trip_zone_daily.sql: count(*) over in-window trips, the same aggregation as the metric. content_filter held by assert_semantic_content_holds. Refused: trip_count_7d_avg, revenue_28d_rolling, prev_day_trip_count and same_day_last_week_trip_count. Their windows count rows, not days, so a zone-day with no trips stretches them, and revenue_28d_rolling sums unfiltered totals; the rolling metrics are time_series ROLLING over the calendar instead.", "column_map": {"pickup_date": "pickup_date", "trip_count": "trip_count"}, "content_levels": [{"via": "trips_to_date", "level": "day", "key_columns": ["pickup_date"]}, {"via": "trips_to_pickup_zone", "level": "zone", "key_columns": ["pickup_location_id"]}], "content_filter": "pickup_date >= DATE ''2024-01-01'' AND pickup_date < DATE ''2024-04-01'' AND pickup_zone_key IS NOT NULL"}, {"name": "LTS3_zone_daypart_dow", "physical_table": "agg_trip_zone_daypart_dow", "priority_group": 0, "content_grain": ["pickup_location_id", "day_of_week", "is_non_working_day", "daypart_code", "is_peak", "service_type_key"], "note": "trip_count checked: count(*) unfiltered; billable_trip_count checked: count(*) filter (where f.is_billable), the same aggregation as the metric. content_filter held by assert_semantic_content_holds. day_of_week and is_non_working_day split the rows below the Time hierarchy''s total but are no level of it, so no Time level is claimed.", "column_map": {"service_type_key": "service_type_key", "daypart_code": "daypart_code", "trip_count": "trip_count", "billable_trip_count": "billable_trip_count"}, "content_levels": [{"via": "trips_to_pickup_zone", "level": "zone", "key_columns": ["pickup_location_id"]}, {"via": "trips_to_daypart", "level": "daypart", "key_columns": ["daypart_code"]}, {"via": "trips_to_service_type", "key_columns": ["service_type_key"]}], "content_filter": "pickup_date >= DATE ''2024-01-01'' AND pickup_date < DATE ''2024-04-01'' AND pickup_zone_key IS NOT NULL AND pickup_date_key IS NOT NULL AND daypart_code IS NOT NULL AND pickup_hour IS NOT NULL"}, {"name": "LTS4_band_profile", "physical_table": "agg_trip_band_profile", "priority_group": 0, "content_grain": ["distance_band", "duration_band", "fare_band", "service_type_key", "pickup_borough", "daypart_code"], "note": "reconciliation held by assert_aggs_cover_every_trip; the joins that define this population live in the mart SQL. Binding held by assert_semantic_content_holds.", "column_map": {"service_type_key": "service_type_key", "daypart_code": "daypart_code", "trip_count": "trip_count"}, "content_levels": [{"via": "trips_to_service_type", "key_columns": ["service_type_key"]}, {"via": "trips_to_daypart", "level": "daypart", "key_columns": ["daypart_code"]}, {"via": "trips_to_pickup_zone", "level": "borough", "key_columns": ["pickup_borough"]}], "content_filter": "pickup_date >= DATE ''2024-01-01'' AND pickup_date < DATE ''2024-04-01''"}, {"name": "LTS5_weather_borough_daily", "physical_table": "agg_weather_demand_daily", "priority_group": 0, "content_grain": ["obs_date", "borough_name"], "note": "reconciliation held by assert_aggs_cover_every_trip; the spine and as-of attribution that define this population live in the mart SQL (ADR 0009). Its borough_name carries the sentinel ''unresolved'' for trips no zone places in a borough (ADR 0012); that group is no Geography member, so assert_semantic_levels_hold reports it and a join at the borough level drops it. Binding held by assert_semantic_content_holds.", "column_map": {"pickup_date": "obs_date", "trip_count": "trip_count"}, "content_levels": [{"via": "trips_to_date", "level": "day", "key_columns": ["obs_date"]}, {"via": "trips_to_pickup_zone", "level": "borough", "key_columns": ["borough_name"]}], "content_filter": "pickup_date >= DATE ''2024-01-01'' AND pickup_date < DATE ''2024-04-01''"}, {"name": "LTS7_daily_zone_revenue", "physical_table": "mart_daily_zone_revenue", "priority_group": 0, "content_grain": ["trip_date", "pickup_location_id"], "note": "Refused: trip_count (the mart applies f.is_billable, so its trip_count is the billable count); pickup_zone_key (the mart carries zone_natural_key as pickup_location_id, not the zone surrogate); fare_residual_total and total_amount (no residual or row-level total column survives the group by); fare, tip, surcharge and toll revenue (no metric declared). content_filter held by assert_semantic_content_holds.", "column_map": {"pickup_date": "trip_date", "billable_trip_count": "trip_count", "billable_revenue": "total_revenue"}, "content_levels": [{"via": "trips_to_date", "level": "day", "key_columns": ["trip_date"]}, {"via": "trips_to_pickup_zone", "level": "zone", "key_columns": ["pickup_location_id"]}], "content_filter": "pickup_date >= DATE ''2024-01-01'' AND pickup_date < DATE ''2024-04-01'' AND is_billable AND pickup_zone_key IS NOT NULL"}, {"name": "LTS8_monthly_service_summary", "physical_table": "mart_monthly_service_summary", "priority_group": 0, "content_grain": ["trip_month", "service_type", "payment_method_name"], "note": "Refused: pickup_date (month grain only); trip_count (the mart applies f.is_billable); payment_method_key (the mart carries payment_method_name, not the key); total_miles, avg_fare and est_processor_fees (no metric declared). content_filter held by assert_semantic_content_holds.", "column_map": {"service_type_key": "service_type", "billable_trip_count": "trip_count", "billable_revenue": "total_revenue"}, "content_levels": [{"via": "trips_to_date", "level": "month", "key_columns": ["trip_month"]}, {"via": "trips_to_service_type", "key_columns": ["service_type"]}, {"via": "trips_to_payment_method", "level": "payment_method", "key": "payment_method_name", "key_columns": ["payment_method_name"]}], "content_filter": "pickup_date >= DATE ''2024-01-01'' AND pickup_date < DATE ''2024-04-01'' AND is_billable AND payment_method_key IS NOT NULL"}, {"name": "LTS9_trip_quality_scorecard", "physical_table": "mart_trip_quality_scorecard", "priority_group": 0, "content_grain": ["trip_month", "vendor_id", "service_type_key"], "note": "Refused: billable_trip_count (the mart only carries non_billable_count; billable is the difference, not a column, so the map would be an expression the model does not have); vendor_key (the mart carries vendor_natural_key as vendor_id); pickup_date (month grain only); clean, non-billable, refund, zero-distance, implausible-speed, sparse-feed, unresolved-zone, undocumented-rate, unbalanced-total counts and the two rates (no metric declared). content_filter held by assert_semantic_content_holds.", "column_map": {"service_type_key": "service_type_key", "trip_count": "trip_count"}, "content_levels": [{"via": "trips_to_date", "level": "month", "key_columns": ["trip_month"]}, {"via": "trips_to_service_type", "key_columns": ["service_type_key"]}, {"via": "trips_to_vendor", "level": "vendor", "key_columns": ["vendor_id"]}], "content_filter": "pickup_date >= DATE ''2024-01-01'' AND pickup_date < DATE ''2024-04-01'' AND trip_quality_key IS NOT NULL"}]}'
+  - name: date
+    source: core.dim_date
+    primary_key: [date_key]
+    description: Date spine with holiday, weekend, and school-term flags from master data.
+    fields:
+      - name: date_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: date_key
+        datatype: Integer
+        description: yyyymmdd integer key.
+      - name: calendar_date
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: calendar_date
+        datatype: Date
+        dimension:
+          is_time: true
+        description: Calendar date.
+      - name: calendar_year
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: calendar_year
+        datatype: Integer
+        dimension:
+          is_time: true
+        description: Calendar year grain.
+      - name: calendar_quarter
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: calendar_quarter
+        datatype: Integer
+        dimension:
+          is_time: true
+        description: Calendar quarter grain (1-4).
+      - name: calendar_month
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: calendar_month
+        datatype: Integer
+        dimension:
+          is_time: true
+        description: Calendar month grain (1-12).
+      - name: month_name
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: month_name
+        datatype: String
+        dimension:
+          is_time: true
+        description: Month label for the month grain.
+      - name: month_start_date
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: month_start_date
+        datatype: Date
+        description: First day of the calendar month; key of the month level, since calendar_month repeats every year.
+      - name: week_start_date
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: week_start_date
+        datatype: Date
+        description: Monday that starts the calendar week (ADR 0014); key of the week level.
+      - name: is_weekend
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: is_weekend
+        datatype: Boolean
+        description: Saturday or Sunday.
+      - name: is_holiday
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: is_holiday
+        datatype: Boolean
+        description: Master-data holiday flag; corrections restate reports without code change.
+      - name: is_non_working_day
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: is_non_working_day
+        datatype: Boolean
+        description: Weekend or holiday; weekday holidays behave like weekends for demand.
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "logical_sources": [{"name": "LTS1_calendar", "physical_table": "dim_date", "priority_group": 1, "content_grain": ["calendar_date"], "column_map": {"date_key": "date_key", "calendar_date": "calendar_date", "calendar_year": "calendar_year", "calendar_quarter": "calendar_quarter", "calendar_month": "calendar_month", "month_name": "month_name", "is_weekend": "is_weekend", "is_holiday": "is_holiday", "is_non_working_day": "is_non_working_day", "month_start_date": "month_start_date", "week_start_date": "week_start_date"}}], "levels": [{"name": "year", "keys": [{"name": "calendar_year", "fields": ["calendar_year"], "primary": true, "display": true}]}, {"name": "quarter", "keys": [{"name": "year_quarter", "fields": ["calendar_year", "calendar_quarter"], "primary": true}]}, {"name": "month", "keys": [{"name": "month_start_date", "fields": ["month_start_date"], "primary": true, "display": true}, {"name": "year_month", "fields": ["calendar_year", "calendar_month"]}], "attributes": ["month_name"]}, {"name": "week", "keys": [{"name": "week_start_date", "fields": ["week_start_date"], "primary": true, "display": true}]}, {"name": "day", "keys": [{"name": "calendar_date", "fields": ["calendar_date"], "primary": true, "display": true}, {"name": "date_key", "fields": ["date_key"]}], "attributes": ["is_weekend", "is_holiday", "is_non_working_day"]}], "row_level": {"level": "day", "versioned": false}, "hierarchies": [{"name": "Time", "is_time": true, "levels": ["year", "quarter", "month", "day"]}, {"name": "Week", "is_time": true, "levels": ["week", "day"]}]}'
+  - name: zone
+    source: core.dim_zone
+    primary_key: [zone_key]
+    description: Type 2 zone dimension, natural key location_id, versioned by master data.
+    ai_context:
+      synonyms:
+        - pickup zone
+        - dropoff zone
+        - taxi zone
+    fields:
+      - name: zone_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: zone_key
+        datatype: String
+        description: Surrogate over natural key plus valid-from date.
+      - name: zone_natural_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: zone_natural_key
+        datatype: Integer
+        description: TLC location_id.
+      - name: zone_name
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: zone_name
+        datatype: String
+        description: Zone display name.
+      - name: borough_name
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: borough_name
+        datatype: String
+        description: Borough, including Unknown and N/A for unresolved zones.
+      - name: reporting_region
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: reporting_region
+        datatype: String
+        description: Reporting region above borough.
+      - name: valid_from_date
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: valid_from_date
+        datatype: Date
+        dimension:
+          is_time: false
+        description: Half-open validity start for the as-of join. Audit column, not a time dimension.
+      - name: valid_to_date
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: valid_to_date
+        datatype: Date
+        dimension:
+          is_time: false
+        description: Half-open validity end; 2099-12-31 marks the current version.
+      - name: is_current_version
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: is_current_version
+        datatype: Boolean
+        description: True for the current version of each zone.
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "scd": {"type": 2, "natural_key": "zone_natural_key", "valid_from": "valid_from_date", "valid_to": "valid_to_date", "is_current": "is_current_version", "open_ended_value": "2099-12-31"}, "logical_sources": [{"name": "LTS1_base", "physical_table": "dim_zone", "priority_group": 1, "content_grain": ["zone"], "column_map": {"zone_key": "zone_key", "zone_natural_key": "zone_natural_key", "zone_name": "zone_name", "borough_name": "borough_name", "reporting_region": "reporting_region", "valid_from_date": "valid_from_date", "valid_to_date": "valid_to_date", "is_current_version": "is_current_version"}}, {"name": "LTS2_pickup_role", "physical_table": "Pickup_Zone", "priority_group": 1, "content_grain": ["zone"], "column_map": {"zone_key": "zone_key", "zone_natural_key": "zone_natural_key", "zone_name": "zone_name", "borough_name": "borough_name", "reporting_region": "reporting_region", "valid_from_date": "valid_from_date", "valid_to_date": "valid_to_date", "is_current_version": "is_current_version"}}, {"name": "LTS3_dropoff_role", "physical_table": "Dropoff_Zone", "priority_group": 1, "content_grain": ["zone"], "column_map": {"zone_key": "zone_key", "zone_natural_key": "zone_natural_key", "zone_name": "zone_name", "borough_name": "borough_name", "reporting_region": "reporting_region", "valid_from_date": "valid_from_date", "valid_to_date": "valid_to_date", "is_current_version": "is_current_version"}}], "levels": [{"name": "region", "keys": [{"name": "reporting_region", "fields": ["reporting_region"], "primary": true, "display": true}]}, {"name": "borough", "keys": [{"name": "borough_name", "fields": ["borough_name"], "primary": true, "display": true}]}, {"name": "zone", "keys": [{"name": "zone_natural_key", "fields": ["zone_natural_key"], "primary": true, "display": true}], "attributes": ["zone_name"]}], "row_level": {"level": "zone", "versioned": true}, "hierarchies": [{"name": "Geography", "scd_rollup": "as_of", "levels": ["region", "borough", "zone"]}]}'
+  - name: vendor
+    source: core.dim_vendor
+    primary_key: [vendor_key]
+    description: Type 2 vendor dimension, natural key vendor_id.
+    fields:
+      - name: vendor_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: vendor_key
+        datatype: String
+        description: Surrogate over natural key plus valid-from date.
+      - name: vendor_natural_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: vendor_natural_key
+        datatype: Integer
+        description: Source vendor identifier.
+      - name: valid_from_date
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: valid_from_date
+        datatype: Date
+        dimension:
+          is_time: false
+        description: Half-open validity start for the as-of join.
+      - name: valid_to_date
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: valid_to_date
+        datatype: Date
+        dimension:
+          is_time: false
+        description: Half-open validity end.
+      - name: is_current_version
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: is_current_version
+        datatype: Boolean
+        description: True for the current version of each vendor.
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "scd": {"type": 2, "natural_key": "vendor_natural_key", "valid_from": "valid_from_date", "valid_to": "valid_to_date", "is_current": "is_current_version", "open_ended_value": "2099-12-31"}, "logical_sources": [{"name": "LTS1_base", "physical_table": "dim_vendor", "priority_group": 1, "content_grain": ["vendor"], "column_map": {"vendor_key": "vendor_key", "vendor_natural_key": "vendor_natural_key", "valid_from_date": "valid_from_date", "valid_to_date": "valid_to_date", "is_current_version": "is_current_version"}}], "levels": [{"name": "vendor", "keys": [{"name": "vendor_natural_key", "fields": ["vendor_natural_key"], "primary": true, "display": true}]}], "row_level": {"level": "vendor", "versioned": true}}'
+  - name: payment_method
+    source: core.dim_payment_method
+    primary_key: [payment_method_key]
+    description: "One row per payment method: settlement, tip capture, and revenue eligibility."
+    fields:
+      - name: payment_method_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: payment_method_key
+        datatype: Integer
+        description: Payment type code.
+      - name: payment_method_name
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: payment_method_name
+        datatype: String
+        description: Name of the payment method; its display key, as the finance marts carry it.
+      - name: tip_is_captured
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: tip_is_captured
+        datatype: Boolean
+        description: Whether trips paid this way record tips.
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "logical_sources": [{"name": "LTS1_base", "physical_table": "dim_payment_method", "priority_group": 1, "content_grain": ["payment_method"], "column_map": {"payment_method_key": "payment_method_key", "tip_is_captured": "tip_is_captured", "payment_method_name": "payment_method_name"}}], "levels": [{"name": "payment_method", "keys": [{"name": "payment_method_key", "fields": ["payment_method_key"], "primary": true}, {"name": "payment_method_name", "fields": ["payment_method_name"], "display": true}]}], "row_level": {"level": "payment_method", "versioned": false}}'
+  - name: trip_quality
+    source: core.dim_trip_quality
+    primary_key: [trip_quality_key]
+    description: Junk dimension over the observed combinations of trip quality verdicts. Only combinations that occur are materialised, not the 4096-row cross product (ADR 0004).
+    fields:
+      - name: trip_quality_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: trip_quality_key
+        datatype: String
+        description: Key over the observed verdict combination.
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "logical_sources": [{"name": "LTS1_base", "physical_table": "dim_trip_quality", "priority_group": 1, "content_grain": ["trip_quality"], "column_map": {"trip_quality_key": "trip_quality_key"}}]}'
+  - name: daypart
+    source: core.dim_daypart
+    primary_key: [hour_of_day]
+    description: One row per hour of the day, with its analyst-owned daypart band and peak flag.
+    fields:
+      - name: hour_of_day
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: hour_of_day
+        datatype: Integer
+        description: Hour of day (0-23); joins trips on pickup_hour.
+      - name: daypart_code
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: daypart_code
+        datatype: String
+        description: "Daypart band code from the daypart seed: LATE, EARLY, MID, AMPEAK, PMPEAK or EVE."
+      - name: daypart_name
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: daypart_name
+        datatype: String
+        description: Daypart label for the band.
+      - name: is_peak
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: is_peak
+        datatype: Boolean
+        description: Whether the hour is a peak hour in the seed's daypart bands.
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "logical_sources": [{"name": "LTS1_base", "physical_table": "dim_daypart", "priority_group": 1, "content_grain": ["daypart"], "column_map": {"hour_of_day": "hour_of_day", "daypart_code": "daypart_code", "daypart_name": "daypart_name", "is_peak": "is_peak"}}], "levels": [{"name": "daypart", "keys": [{"name": "daypart_code", "fields": ["daypart_code"], "primary": true}, {"name": "daypart_name", "fields": ["daypart_name"], "display": true}], "attributes": ["is_peak"]}, {"name": "hour", "keys": [{"name": "hour_of_day", "fields": ["hour_of_day"], "primary": true, "display": true}]}], "row_level": {"level": "hour", "versioned": false}, "hierarchies": [{"name": "Daypart", "levels": ["daypart", "hour"]}]}'
+  - name: rate_plan
+    source: core.dim_rate_plan
+    primary_key: [rate_plan_key]
+    description: One row per rate plan, with its pricing model and flat-fare terms from master data.
+    fields:
+      - name: rate_plan_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: rate_plan_key
+        datatype: Integer
+        description: Source rate code (rate_code_id).
+      - name: rate_plan_name
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: rate_plan_name
+        datatype: String
+        description: Rate plan display name.
+      - name: pricing_model
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: pricing_model
+        datatype: String
+        description: Pricing basis the plan charges on.
+      - name: is_flat_fare
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: is_flat_fare
+        datatype: Boolean
+        description: True when the plan charges a flat amount rather than the meter.
+      - name: flat_fare_amount
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: flat_fare_amount
+        datatype: Decimal
+        description: Flat amount charged under the plan; null for metered plans.
+      - name: is_airport_plan
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: is_airport_plan
+        datatype: Boolean
+        description: True for the airport flat-fare plans.
+      - name: is_metered_baseline
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: is_metered_baseline
+        datatype: Boolean
+        description: True for the standard metered plan every other plan is compared against.
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "logical_sources": [{"name": "LTS1_base", "physical_table": "dim_rate_plan", "priority_group": 1, "content_grain": ["rate_plan"], "column_map": {"rate_plan_key": "rate_plan_key", "rate_plan_name": "rate_plan_name", "pricing_model": "pricing_model", "is_flat_fare": "is_flat_fare", "flat_fare_amount": "flat_fare_amount", "is_airport_plan": "is_airport_plan", "is_metered_baseline": "is_metered_baseline"}}]}'
+  - name: service_type
+    source: core.dim_service_type
+    primary_key: [service_type_key]
+    description: One row per fleet service type, with its hail and airport rules.
+    fields:
+      - name: service_type_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: service_type_key
+        datatype: String
+        description: yellow or green; the fact carries the same value.
+      - name: service_type_name
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: service_type_name
+        datatype: String
+        description: Service type display name.
+      - name: may_serve_airports
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: may_serve_airports
+        datatype: Boolean
+        description: True when the fleet may pick up at the airports.
+      - name: may_serve_manhattan_core
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: may_serve_manhattan_core
+        datatype: Boolean
+        description: True when the fleet may street-hail inside the Manhattan core.
+      - name: hail_rule
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: hail_rule
+        datatype: String
+        description: Where the fleet may street-hail, in words.
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "logical_sources": [{"name": "LTS1_base", "physical_table": "dim_service_type", "priority_group": 1, "content_grain": ["service_type"], "column_map": {"service_type_key": "service_type_key", "service_type_name": "service_type_name", "may_serve_airports": "may_serve_airports", "may_serve_manhattan_core": "may_serve_manhattan_core", "hail_rule": "hail_rule"}}]}'
+  - name: zone_poi
+    source: core.bridge_zone_poi
+    primary_key: [poi_id]
+    description: "One row per point of interest with its zone and the share of that zone's demand weight. Zone to POI is one-to-many, so a zone-level measure fans out across categories; it is allocated by the weight, never repeated."
+    fields:
+      - name: poi_id
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: poi_id
+        datatype: String
+        description: Point-of-interest identifier.
+      - name: zone_natural_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: zone_natural_key
+        datatype: Integer
+        description: TLC location_id of the zone the POI sits in.
+      - name: poi_category
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: poi_category
+        datatype: String
+        description: Category code of the point of interest.
+      - name: poi_category_name
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: poi_category_name
+        datatype: String
+        description: Category label of the point of interest.
+      - name: poi_name
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: poi_name
+        datatype: String
+        description: Display name of the point of interest.
+      - name: demand_weight
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: demand_weight
+        datatype: Integer
+        description: Raw demand weight of the POI within its zone.
+      - name: allocation_factor
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: allocation_factor
+        datatype: Float
+        description: The POI's share of its zone's total demand weight; multiply an allocated measure by it.
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "logical_sources": [{"name": "LTS1_detail", "physical_table": "bridge_zone_poi", "priority_group": 1, "content_grain": ["poi"], "note": "One row per (zone, POI category). A zone-level measure reaches it through zone_poi_to_zone from the one side and is allocated by allocation_factor, whose shares sum to 1 per zone: held by assert_zone_poi_allocation_sums_to_one. A zone with no POI keeps its trips under a null category at weight 1, so no trip is dropped (ADR 0015).", "column_map": {"poi_id": "poi_id", "zone_natural_key": "zone_natural_key", "poi_category": "poi_category", "poi_category_name": "poi_category_name", "poi_name": "poi_name", "demand_weight": "demand_weight", "allocation_factor": "allocation_factor"}}]}'
+relationships:
+  - name: trips_to_pickup_zone
+    from: trips
+    to: zone
+    from_columns: [pickup_zone_key]
+    to_columns: [zone_key]
+    ai_context:
+      synonyms:
+        - origin zone
+        - where the trip started
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "physical_join": "fct_trip_to_Pickup_Zone", "cardinality": "many-to-one", "join_type": "LEFT OUTER"}'
+  - name: trips_to_dropoff_zone
+    from: trips
+    to: zone
+    from_columns: [dropoff_zone_key]
+    to_columns: [zone_key]
+    ai_context:
+      synonyms:
+        - destination zone
+        - where the trip ended
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "physical_join": "fct_trip_to_Dropoff_Zone", "cardinality": "many-to-one", "join_type": "LEFT OUTER"}'
+  - name: trips_to_date
+    from: trips
+    to: date
+    from_columns: [pickup_date_key]
+    to_columns: [date_key]
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "physical_join": "fct_trip_to_dim_date", "cardinality": "many-to-one", "join_type": "LEFT OUTER"}'
+  - name: trips_to_vendor
+    from: trips
+    to: vendor
+    from_columns: [vendor_key]
+    to_columns: [vendor_key]
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "physical_join": "fct_trip_to_dim_vendor", "cardinality": "many-to-one", "join_type": "LEFT OUTER"}'
+  - name: trips_to_payment_method
+    from: trips
+    to: payment_method
+    from_columns: [payment_method_key]
+    to_columns: [payment_method_key]
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "physical_join": "fct_trip_to_dim_payment_method", "cardinality": "many-to-one", "join_type": "LEFT OUTER"}'
+  - name: trips_to_trip_quality
+    from: trips
+    to: trip_quality
+    from_columns: [trip_quality_key]
+    to_columns: [trip_quality_key]
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "physical_join": "fct_trip_to_dim_trip_quality", "cardinality": "many-to-one", "join_type": "LEFT OUTER"}'
+  - name: trips_to_daypart
+    from: trips
+    to: daypart
+    from_columns: [pickup_hour]
+    to_columns: [hour_of_day]
+    ai_context:
+      synonyms:
+        - time of day
+        - daypart of the pickup
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "physical_join": "fct_trip_to_dim_daypart", "cardinality": "many-to-one", "join_type": "LEFT OUTER"}'
+  - name: trips_to_rate_plan
+    from: trips
+    to: rate_plan
+    from_columns: [rate_plan_key]
+    to_columns: [rate_plan_key]
+    ai_context:
+      synonyms:
+        - rate code
+        - fare plan
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "physical_join": "fct_trip_to_dim_rate_plan", "cardinality": "many-to-one", "join_type": "LEFT OUTER"}'
+  - name: trips_to_service_type
+    from: trips
+    to: service_type
+    from_columns: [service_type_key]
+    to_columns: [service_type_key]
+    ai_context:
+      synonyms:
+        - fleet
+        - yellow or green
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "physical_join": "fct_trip_to_dim_service_type", "cardinality": "many-to-one", "join_type": "LEFT OUTER"}'
+  - name: zone_poi_to_zone
+    from: zone_poi
+    to: zone
+    from_columns:
+      - zone_natural_key
+    to_columns:
+      - zone_natural_key
+    ai_context:
+      synonyms:
+        - rate code
+        - fare plan
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "physical_join": "bridge_zone_poi_to_dim_zone", "cardinality": "many-to-one", "join_type": "LEFT OUTER", "to_level": "zone", "weight": "allocation_factor", "note": "Joins the zone member, not a version: to_columns are the zone level''s primary key. A query reaching zone through a role (pickup, dropoff) reuses that role''s alias for this join"}'
+metrics:
+  - name: trip_count
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(CASE WHEN trips.trip_key IS NOT NULL THEN 1 ELSE 0 END)
+    description: Trips, billable or not.
+    datatype: Integer
+    ai_context:
+      synonyms:
+        - Trips
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "aggregation": "SUM"}'
+  - name: billable_trip_count
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(CASE WHEN trips.is_billable THEN 1 ELSE 0 END)
+    description: Trips whose total amount is positive.
+    datatype: Integer
+    ai_context:
+      synonyms:
+        - Billable trips
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "aggregation": "SUM", "filter": "trips.is_billable"}'
+  - name: billable_revenue
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(CASE WHEN trips.is_billable THEN trips.total_amount ELSE 0 END)
+    description: Total amount charged on billable trips. Excludes cash tips.
+    datatype: Decimal
+    ai_context:
+      synonyms:
+        - Billable revenue
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "aggregation": "SUM", "filter": "trips.is_billable"}'
+  - name: billable_average_fare
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(CASE WHEN trips.is_billable THEN trips.total_amount ELSE 0 END) * 1.0 / NULLIF(SUM(CASE WHEN trips.is_billable THEN 1 ELSE 0 END), 0)
+    description: 'Average total per billable trip, weighted by trips: billable revenue over billable trips, rebuilt at whatever grain is asked (two-pass).'
+    datatype: Decimal
+    ai_context:
+      synonyms:
+        - Average fare
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "derived_expression": "billable_revenue * 1.0 / NULLIF(billable_trip_count, 0)"}'
+  - name: mean_pickup_zone_average_fare
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(CASE WHEN trips.is_billable THEN trips.total_amount ELSE 0 END) * 1.0 / NULLIF(SUM(CASE WHEN trips.is_billable THEN 1 ELSE 0 END), 0)
+    description: "Unweighted mean of each pickup zone's average fare: the average fare is computed per zone first, then the zones are averaged with equal weight. A thin zone counts as much as a busy one; billable_average_fare is the trip-weighted figure."
+    datatype: Decimal
+    ai_context:
+      synonyms:
+        - Average of zone average fares
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "based_on_dimensions": {"of": "billable_average_fare", "across": [{"via": "trips_to_pickup_zone", "level": "zone"}], "rule": "AVG"}}'
+  - name: avg_daily_billable_revenue
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(CASE WHEN trips.is_billable THEN trips.total_amount ELSE 0 END)
+    description: Billable revenue summed per pickup day, then averaged over the days that had billable trips.
+    datatype: Decimal
+    ai_context:
+      synonyms:
+        - Average daily billable revenue
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "based_on_dimensions": {"of": "billable_revenue", "across": [{"via": "trips_to_date", "level": "day"}], "rule": "AVG"}}'
+  - name: peak_day_billable_trip_count
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(CASE WHEN trips.is_billable THEN 1 ELSE 0 END)
+    description: 'Billable trips on the busiest pickup day of the period: counted per day, then the largest day kept.'
+    datatype: Integer
+    ai_context:
+      synonyms:
+        - Busiest day trips
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "based_on_dimensions": {"of": "billable_trip_count", "across": [{"via": "trips_to_date", "level": "day"}], "rule": "MAX"}}'
+  - name: fare_residual_total
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(trips.fare_residual)
+    description: Trip total minus every modelled fare component, summed.
+    datatype: Decimal
+    ai_context:
+      synonyms:
+        - Fare residual
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "aggregation": "SUM"}'
+  - name: billable_revenue_pickup_borough
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(CASE WHEN trips.is_billable THEN trips.total_amount ELSE 0 END)
+    description: Billable revenue of the whole pickup borough, whatever zone the query groups by. The denominator of a zone's share of its borough.
+    datatype: Decimal
+    ai_context:
+      synonyms:
+        - Borough billable revenue
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "aggregation": "SUM", "at_levels": [{"via": "trips_to_pickup_zone", "level": "borough"}], "filter": "trips.is_billable"}'
+  - name: billable_revenue_prior_month
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(CASE WHEN trips.is_billable THEN trips.total_amount ELSE 0 END)
+    description: Billable revenue of the month before, aligned to each row's month.
+    datatype: Decimal
+    ai_context:
+      synonyms:
+        - Last month's billable revenue
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "aggregation": "SUM", "time_series": {"function": "AGO", "of": "billable_revenue", "via": "trips_to_date", "level": "month", "offset": 1}}'
+  - name: billable_revenue_month_to_date
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(CASE WHEN trips.is_billable THEN trips.total_amount ELSE 0 END)
+    description: Billable revenue from the first of the month to each row's date.
+    datatype: Decimal
+    ai_context:
+      synonyms:
+        - Month-to-date billable revenue
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "aggregation": "SUM", "time_series": {"function": "TODATE", "of": "billable_revenue", "via": "trips_to_date", "level": "month"}}'
+  - name: billable_revenue_rolling_28_days
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(CASE WHEN trips.is_billable THEN trips.total_amount ELSE 0 END)
+    description: Billable revenue over the 28 calendar days ending on each row's day.
+    datatype: Decimal
+    ai_context:
+      synonyms:
+        - 28-day billable revenue
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "aggregation": "SUM", "time_series": {"function": "ROLLING", "of": "billable_revenue", "via": "trips_to_date", "level": "day", "periods": 28}}'
+  - name: billable_trip_count_rolling_7_days
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(CASE WHEN trips.is_billable THEN 1 ELSE 0 END)
+    description: Billable trips over the 7 calendar days ending on each row's day.
+    datatype: Integer
+    ai_context:
+      synonyms:
+        - 7-day billable trips
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.5", "aggregation": "SUM", "time_series": {"function": "ROLLING", "of": "billable_trip_count", "via": "trips_to_date", "level": "day", "periods": 7}}'
+custom_extensions:
+  - vendor_name: VIBEDATA
+    data: '{"vibedata_version": "1.5", "physical_tables": [{"name": "fct_trip", "source": "core.fct_trip", "dbt_model": "fct_trip", "table_type": "TABLE"}, {"name": "dim_date", "source": "core.dim_date", "dbt_model": "dim_date", "table_type": "TABLE"}, {"name": "dim_zone", "source": "core.dim_zone", "dbt_model": "dim_zone", "table_type": "TABLE"}, {"name": "Pickup_Zone", "source": "core.dim_zone", "dbt_model": "dim_zone", "table_type": "ALIAS", "alias_of": "dim_zone", "role": "origin zone for trips"}, {"name": "Dropoff_Zone", "source": "core.dim_zone", "dbt_model": "dim_zone", "table_type": "ALIAS", "alias_of": "dim_zone", "role": "destination zone for trips"}, {"name": "dim_vendor", "source": "core.dim_vendor", "dbt_model": "dim_vendor", "table_type": "TABLE"}, {"name": "dim_payment_method", "source": "core.dim_payment_method", "dbt_model": "dim_payment_method", "table_type": "TABLE"}, {"name": "dim_trip_quality", "source": "core.dim_trip_quality", "dbt_model": "dim_trip_quality", "table_type": "TABLE"}, {"name": "agg_trip_zone_daily", "source": "agg.agg_trip_zone_daily", "dbt_model": "agg_trip_zone_daily", "table_type": "TABLE"}, {"name": "agg_trip_zone_daypart_dow", "source": "agg.agg_trip_zone_daypart_dow", "dbt_model": "agg_trip_zone_daypart_dow", "table_type": "TABLE"}, {"name": "agg_trip_band_profile", "source": "agg.agg_trip_band_profile", "dbt_model": "agg_trip_band_profile", "table_type": "TABLE"}, {"name": "agg_weather_demand_daily", "source": "agg.agg_weather_demand_daily", "dbt_model": "agg_weather_demand_daily", "table_type": "TABLE"}, {"name": "dim_daypart", "source": "core.dim_daypart", "dbt_model": "dim_daypart", "table_type": "TABLE"}, {"name": "dim_rate_plan", "source": "core.dim_rate_plan", "dbt_model": "dim_rate_plan", "table_type": "TABLE"}, {"name": "dim_service_type", "source": "core.dim_service_type", "dbt_model": "dim_service_type", "table_type": "TABLE"}, {"name": "mart_daily_zone_revenue", "source": "finance.mart_daily_zone_revenue", "dbt_model": "mart_daily_zone_revenue", "table_type": "TABLE"}, {"name": "mart_monthly_service_summary", "source": "finance.mart_monthly_service_summary", "dbt_model": "mart_monthly_service_summary", "table_type": "TABLE"}, {"name": "mart_trip_quality_scorecard", "source": "ops.mart_trip_quality_scorecard", "dbt_model": "mart_trip_quality_scorecard", "table_type": "TABLE"}, {"name": "bridge_zone_poi", "source": "core.bridge_zone_poi", "dbt_model": "bridge_zone_poi", "table_type": "TABLE", "note": "Weighted bridge from the zone member to its points of interest (zone_poi_to_zone). Any join through it multiplies rows, so measures are allocated by allocation_factor"}], "physical_joins": [{"name": "fct_trip_to_Pickup_Zone", "from": "fct_trip", "to": "Pickup_Zone"}, {"name": "fct_trip_to_Dropoff_Zone", "from": "fct_trip", "to": "Dropoff_Zone"}, {"name": "fct_trip_to_dim_date", "from": "fct_trip", "to": "dim_date"}, {"name": "fct_trip_to_dim_vendor", "from": "fct_trip", "to": "dim_vendor"}, {"name": "fct_trip_to_dim_payment_method", "from": "fct_trip", "to": "dim_payment_method"}, {"name": "fct_trip_to_dim_trip_quality", "from": "fct_trip", "to": "dim_trip_quality"}, {"name": "fct_trip_to_dim_daypart", "from": "fct_trip", "to": "dim_daypart"}, {"name": "fct_trip_to_dim_rate_plan", "from": "fct_trip", "to": "dim_rate_plan"}, {"name": "fct_trip_to_dim_service_type", "from": "fct_trip", "to": "dim_service_type"}, {"name": "mart_monthly_service_summary_to_dim_service_type", "from": "mart_monthly_service_summary", "to": "dim_service_type"}, {"name": "mart_trip_quality_scorecard_to_dim_service_type", "from": "mart_trip_quality_scorecard", "to": "dim_service_type"}, {"name": "agg_trip_zone_daily_to_dim_date", "from": "agg_trip_zone_daily", "to": "dim_date"}, {"name": "agg_trip_zone_daily_to_Pickup_Zone", "from": "agg_trip_zone_daily", "to": "Pickup_Zone"}, {"name": "agg_trip_zone_daypart_dow_to_Pickup_Zone", "from": "agg_trip_zone_daypart_dow", "to": "Pickup_Zone"}, {"name": "agg_trip_zone_daypart_dow_to_dim_daypart", "from": "agg_trip_zone_daypart_dow", "to": "dim_daypart"}, {"name": "agg_trip_zone_daypart_dow_to_dim_service_type", "from": "agg_trip_zone_daypart_dow", "to": "dim_service_type"}, {"name": "agg_trip_band_profile_to_dim_service_type", "from": "agg_trip_band_profile", "to": "dim_service_type"}, {"name": "agg_trip_band_profile_to_dim_daypart", "from": "agg_trip_band_profile", "to": "dim_daypart"}, {"name": "agg_trip_band_profile_to_Pickup_Zone", "from": "agg_trip_band_profile", "to": "Pickup_Zone"}, {"name": "agg_weather_demand_daily_to_dim_date", "from": "agg_weather_demand_daily", "to": "dim_date"}, {"name": "agg_weather_demand_daily_to_Pickup_Zone", "from": "agg_weather_demand_daily", "to": "Pickup_Zone"}, {"name": "mart_daily_zone_revenue_to_dim_date", "from": "mart_daily_zone_revenue", "to": "dim_date"}, {"name": "mart_daily_zone_revenue_to_Pickup_Zone", "from": "mart_daily_zone_revenue", "to": "Pickup_Zone"}, {"name": "mart_monthly_service_summary_to_dim_date", "from": "mart_monthly_service_summary", "to": "dim_date"}, {"name": "mart_monthly_service_summary_to_dim_payment_method", "from": "mart_monthly_service_summary", "to": "dim_payment_method"}, {"name": "mart_trip_quality_scorecard_to_dim_date", "from": "mart_trip_quality_scorecard", "to": "dim_date"}, {"name": "mart_trip_quality_scorecard_to_dim_vendor", "from": "mart_trip_quality_scorecard", "to": "dim_vendor"}, {"name": "bridge_zone_poi_to_dim_zone", "from": "bridge_zone_poi", "to": "dim_zone"}]}'

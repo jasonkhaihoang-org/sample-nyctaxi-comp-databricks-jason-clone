@@ -1,0 +1,100 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 18a03801-8362-5453-8397-f3d2d7e073a5
+name: fct_status_interval
+version: 2.1.0
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: core
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: fct_status_interval
+    properties:
+      - name: interval_id
+        logicalType: string
+        physicalType: string
+        primaryKey: true
+        quality:
+          - type: library
+            metric: duplicateValues
+            mustBe: 0
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: status_code
+        logicalType: string
+        physicalType: string
+        quality:
+          - type: library
+            metric: invalidValues
+            arguments:
+              valid_values:
+                - LOGIN
+                - AVAILABLE
+                - DISPATCHED
+                - ON_TRIP
+                - BREAK
+                - LOGOUT
+            mustBe: 0
+      - name: shift_id
+        logicalType: string
+        physicalType: string
+      - name: driver_key
+        logicalType: integer
+        physicalType: bigint
+        relationships:
+          - to: dim_driver.driver_key
+      - name: vehicle_key
+        logicalType: integer
+        physicalType: int
+        relationships:
+          - to: dim_vehicle.vehicle_key
+      - name: interval_date_key
+        logicalType: integer
+        physicalType: int
+        relationships:
+          - to: dim_date.date_key
+      - name: interval_date
+        logicalType: date
+        physicalType: date
+      - name: interval_hour
+        logicalType: integer
+        physicalType: int
+        relationships:
+          - to: dim_daypart.hour_of_day
+      - name: daypart_code
+        logicalType: string
+        physicalType: string
+      - name: zone_key
+        logicalType: string
+        physicalType: string
+        relationships:
+          - to: dim_zone.zone_key
+      - name: zone_natural_key
+        logicalType: integer
+        physicalType: int
+      - name: interval_start_ts
+        logicalType: timestamp
+        physicalType: timestamp
+      - name: interval_end_ts
+        logicalType: timestamp
+        physicalType: timestamp
+      - name: interval_seconds
+        logicalType: integer
+        physicalType: bigint
+      - name: is_terminal_interval
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_negative_interval
+        logicalType: boolean
+        physicalType: boolean
+      - name: skew_seconds
+        logicalType: integer
+        physicalType: bigint
+authoritativeDefinitions:
+  - url: logical-model/nyc_taxi_fleet.ossie.yaml
+    type: businessDefinition

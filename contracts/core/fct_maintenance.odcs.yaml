@@ -1,0 +1,60 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 97947e8f-11d3-5e7f-8778-c53e454545fa
+name: fct_maintenance
+version: 2.1.0
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: core
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: fct_maintenance
+    properties:
+      - name: maintenance_id
+        logicalType: string
+        physicalType: string
+        primaryKey: true
+        quality:
+          - type: library
+            metric: duplicateValues
+            mustBe: 0
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: vehicle_key
+        logicalType: integer
+        physicalType: bigint
+        relationships:
+          - to: dim_vehicle.vehicle_key
+      - name: garage_key
+        logicalType: integer
+        physicalType: bigint
+        relationships:
+          - to: dim_garage.garage_key
+      - name: started_date_key
+        logicalType: integer
+        physicalType: int
+        relationships:
+          - to: dim_date.date_key
+      - name: started_date
+        logicalType: date
+        physicalType: date
+      - name: ended_date
+        logicalType: date
+        physicalType: date
+      - name: down_days
+        logicalType: integer
+        physicalType: bigint
+      - name: maintenance_type
+        logicalType: string
+        physicalType: string
+      - name: cost_usd
+        logicalType: number
+        physicalType: bigint
+authoritativeDefinitions:
+  - url: logical-model/nyc_taxi_fleet.ossie.yaml
+    type: businessDefinition

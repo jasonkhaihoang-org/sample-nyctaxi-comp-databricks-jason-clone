@@ -46,6 +46,9 @@ models:
       +materialized: table
       core:
         +schema: core
+        # fct_trip is the only incremental model and carries an enforced contract; dbt
+        # refuses that pair without an explicit on_schema_change.
+        +on_schema_change: append_new_columns
       agg:
         +schema: agg
       finance:

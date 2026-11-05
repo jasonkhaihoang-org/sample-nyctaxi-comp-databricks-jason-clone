@@ -1,0 +1,63 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: edf94c85-cbf3-58ee-9672-f448930698dd
+name: mart_daily_zone_revenue
+version: 1.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: finance
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: mart_daily_zone_revenue
+    properties:
+      - name: trip_date
+        logicalType: date
+        physicalType: date
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: total_revenue
+        logicalType: number
+        physicalType: double
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: pickup_location_id
+        logicalType: integer
+        physicalType: bigint
+        relationships:
+          - to: dim_zone.zone_natural_key
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: borough
+        logicalType: string
+        physicalType: string
+      - name: zone_name
+        logicalType: string
+        physicalType: string
+      - name: reporting_region
+        logicalType: string
+        physicalType: string
+      - name: trip_count
+        logicalType: integer
+        physicalType: bigint
+      - name: fare_revenue
+        logicalType: number
+        physicalType: double
+      - name: tip_revenue
+        logicalType: number
+        physicalType: double
+      - name: surcharge_revenue
+        logicalType: number
+        physicalType: double
+      - name: toll_revenue
+        logicalType: number
+        physicalType: double

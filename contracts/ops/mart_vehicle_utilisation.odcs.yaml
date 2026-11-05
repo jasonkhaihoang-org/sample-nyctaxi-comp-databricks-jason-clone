@@ -1,0 +1,96 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 3fa52b31-93fd-5f25-824f-176c37a87fa4
+name: mart_vehicle_utilisation
+version: 1.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: ops
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: mart_vehicle_utilisation
+    properties:
+      - name: vehicle_key
+        logicalType: integer
+        physicalType: bigint
+        quality:
+          - type: library
+            metric: duplicateValues
+            mustBe: 0
+          - type: library
+            metric: nullValues
+            mustBe: 0
+        relationships:
+          - to: dim_vehicle.vehicle_key
+      - name: medallion_number
+        logicalType: string
+        physicalType: string
+      - name: make_model
+        logicalType: string
+        physicalType: string
+      - name: model_year
+        logicalType: integer
+        physicalType: bigint
+      - name: fuel_type
+        logicalType: string
+        physicalType: string
+      - name: is_low_emission
+        logicalType: boolean
+        physicalType: boolean
+      - name: garage_key
+        logicalType: integer
+        physicalType: bigint
+        relationships:
+          - to: dim_garage.garage_key
+      - name: garage_name
+        logicalType: string
+        physicalType: string
+      - name: is_in_service
+        logicalType: boolean
+        physicalType: boolean
+      - name: active_days
+        logicalType: integer
+        physicalType: bigint
+      - name: shift_count
+        logicalType: integer
+        physicalType: bigint
+      - name: trip_count
+        logicalType: integer
+        physicalType: bigint
+      - name: online_hours
+        logicalType: number
+        physicalType: double
+      - name: on_trip_hours
+        logicalType: number
+        physicalType: double
+      - name: gross_revenue
+        logicalType: number
+        physicalType: double
+      - name: paid_miles
+        logicalType: number
+        physicalType: double
+      - name: down_days
+        logicalType: integer
+        physicalType: bigint
+      - name: maintenance_cost
+        logicalType: integer
+        physicalType: bigint
+      - name: available_days
+        logicalType: integer
+        physicalType: bigint
+      - name: occupancy_rate
+        logicalType: number
+        physicalType: double
+      - name: availability_adjusted_rate
+        logicalType: number
+        physicalType: double
+      - name: revenue_per_online_hour
+        logicalType: number
+        physicalType: double
+      - name: net_revenue_per_active_day
+        logicalType: number
+        physicalType: double

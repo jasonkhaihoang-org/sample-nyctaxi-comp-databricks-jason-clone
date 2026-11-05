@@ -1,0 +1,319 @@
+version: 0.2.0.dev0
+name: nyc_taxi
+description: The business vocabulary of the NYC taxi data product — a trip, the fleet shift it may be attributed to, the driver and vehicle that shift used, the depot it signed on at, the meter vendor that recorded the trip, and the zone it started and ended in.
+ontology:
+- concept: TripKey
+  description: The natural identifier of a trip, derived from the columns the TLC records a trip with.
+  type: ValueType
+  extends: [String]
+- concept: ShiftId
+  description: The identifier the operator gives a driver's sign-on.
+  type: ValueType
+  extends: [String]
+- concept: DriverId
+  description: The operator's identifier for one driver.
+  type: ValueType
+  extends: [String]
+- concept: VehicleId
+  description: The operator's identifier for one vehicle.
+  type: ValueType
+  extends: [String]
+- concept: ZoneNaturalKey
+  description: The TLC location id of a taxi zone, which stays the same across the zone's versions.
+  type: ValueType
+  extends: [Integer]
+- concept: GarageId
+  description: The operator's identifier for one depot.
+  type: ValueType
+  extends: [String]
+- concept: VendorNaturalKey
+  description: The TLC's code for a meter vendor, which stays the same when the vendor is renamed or acquired.
+  type: ValueType
+  extends: [String]
+- concept: CalendarDate
+  description: A calendar day, the grain a trip is reported at.
+  type: ValueType
+  extends: [Date]
+- concept: DaypartCode
+  description: The code the business gives a band of the day.
+  type: ValueType
+  extends: [String]
+- concept: ServiceTypeCode
+  description: "The TLC's code for a service class, yellow or green, which the fact carries as service_type_key."
+  type: ValueType
+  extends: [String]
+- concept: RatePlanCode
+  description: "The TLC's rate code, which the fact carries as rate_plan_key."
+  type: ValueType
+  extends: [String]
+- concept: PaymentMethodKey
+  description: The only identifier the lakehouse holds for a payment method; it is a key with no natural code beside it.
+  type: ValueType
+  extends: [String]
+- concept: IntervalId
+  description: The identifier of one driver-state interval, carried from the status event that opened it.
+  type: ValueType
+  extends: [String]
+- concept: MedallionNumber
+  description: The plate number the TLC issues for a medallion; it stays with the licence when the licence is transferred.
+  type: ValueType
+  extends: [String]
+- concept: MaintenanceId
+  description: The operator's identifier for one maintenance event.
+  type: ValueType
+  extends: [String]
+- concept: Trip
+  description: One completed taxi journey as the TLC records it.
+  type: EntityType
+  identify_by: [trip_key]
+  relationships:
+  - name: trip_key
+    roles:
+    - concept: TripKey
+    verbalizes: ['{Trip} is identified by {TripKey}']
+    multiplicity: OneToOne
+  - name: shift
+    roles:
+    - concept: Shift
+    verbalizes: ['{Trip} is attributed to {Shift}']
+    multiplicity: ManyToOne
+  - name: pickup_zone
+    roles:
+    - concept: Zone
+    verbalizes: ['{Trip} starts in {Zone}']
+    multiplicity: ManyToOne
+  - name: dropoff_zone
+    roles:
+    - concept: Zone
+    verbalizes: ['{Trip} ends in {Zone}']
+    multiplicity: ManyToOne
+  - name: vendor
+    roles:
+    - concept: Technology vendor
+    verbalizes: ['{Trip} is recorded by {Technology vendor}']
+    multiplicity: ManyToOne
+  - name: occurred_on
+    roles:
+    - concept: Date
+    verbalizes: ['{Trip} occurred on {Date}']
+    multiplicity: ManyToOne
+  - name: part_of_day
+    roles:
+    - concept: Daypart
+    verbalizes: ['{Trip} started in {Daypart}']
+    multiplicity: ManyToOne
+  - name: served_by
+    roles:
+    - concept: Service type
+    verbalizes: ['{Trip} was carried by {Service type}']
+    multiplicity: ManyToOne
+  - name: priced_by
+    roles:
+    - concept: Rate plan
+    verbalizes: ['{Trip} was priced under {Rate plan}']
+    multiplicity: ManyToOne
+  - name: paid_by
+    roles:
+    - concept: Payment method
+    verbalizes: ['{Trip} was paid by {Payment method}']
+    multiplicity: ManyToOne
+- concept: Shift
+  description: A driver's working period on one vehicle, from sign-on to sign-off.
+  type: EntityType
+  identify_by: [shift_id]
+  relationships:
+  - name: shift_id
+    roles:
+    - concept: ShiftId
+    verbalizes: ['{Shift} is identified by {ShiftId}']
+    multiplicity: OneToOne
+  - name: driver
+    roles:
+    - concept: Driver
+    verbalizes: ['{Shift} is worked by {Driver}']
+    multiplicity: ManyToOne
+  - name: vehicle
+    roles:
+    - concept: Vehicle
+    verbalizes: ['{Shift} uses {Vehicle}']
+    multiplicity: ManyToOne
+  - name: garage
+    roles:
+    - concept: Garage
+    verbalizes: ['{Shift} signs on at {Garage}']
+    multiplicity: ManyToOne
+- concept: Driver
+  description: A person who signs on to work a shift for the fleet operator.
+  type: EntityType
+  identify_by: [driver_id]
+  relationships:
+  - name: driver_id
+    roles:
+    - concept: DriverId
+    verbalizes: ['{Driver} is identified by {DriverId}']
+    multiplicity: OneToOne
+  - name: holds_medallion
+    roles:
+    - concept: Medallion
+    verbalizes: ['{Driver} currently holds {Medallion}']
+    multiplicity: ManyToOne
+- concept: Vehicle
+  description: A taxi the fleet operator runs, identified by the operator rather than by its medallion.
+  type: EntityType
+  identify_by: [vehicle_id]
+  relationships:
+  - name: vehicle_id
+    roles:
+    - concept: VehicleId
+    verbalizes: ['{Vehicle} is identified by {VehicleId}']
+    multiplicity: OneToOne
+- concept: Zone
+  description: A TLC taxi zone, the area a trip starts or ends in. It belongs to a borough.
+  type: EntityType
+  identify_by: [zone_id]
+  relationships:
+  - name: zone_id
+    roles:
+    - concept: ZoneNaturalKey
+    verbalizes: ['{Zone} is identified by {ZoneNaturalKey}']
+    multiplicity: OneToOne
+- concept: Garage
+  description: A depot where the fleet operator keeps its vehicles. Unlike a zone, a garage is not re-designated, so its operator id is its identity and there is no version to resolve.
+  type: EntityType
+  identify_by: [garage_id]
+  relationships:
+  - name: garage_id
+    roles:
+    - concept: GarageId
+    verbalizes: ['{Garage} is identified by {GarageId}']
+    multiplicity: OneToOne
+- concept: Technology vendor
+  description: The provider that supplies a taxi's meter and sends its trip records. It is identified by the TLC's vendor code across its renamings and acquisitions, so a vendor's history is one identity, not several.
+  type: EntityType
+  identify_by: [vendor_id]
+  relationships:
+  - name: vendor_id
+    roles:
+    - concept: VendorNaturalKey
+    verbalizes: ['{Technology vendor} is identified by {VendorNaturalKey}']
+    multiplicity: OneToOne
+- concept: Date
+  description: "A calendar day, used to group a trip by the day it started. It is a conformed dimension: the same day means the same day in every document."
+  type: EntityType
+  identify_by: [date_id]
+  relationships:
+  - name: date_id
+    roles:
+    - concept: CalendarDate
+    verbalizes: ['{Date} is identified by {CalendarDate}']
+    multiplicity: OneToOne
+- concept: Daypart
+  description: A named band of the day, defined by the business. The lakehouse holds one row per hour, so the concept is the band and the hour is its grain.
+  type: EntityType
+  identify_by: [daypart_id]
+  relationships:
+  - name: daypart_id
+    roles:
+    - concept: DaypartCode
+    verbalizes: ['{Daypart} is identified by {DaypartCode}']
+    multiplicity: OneToOne
+- concept: Service type
+  description: Which fleet carried a trip, yellow or green. It is a licence condition as much as a fare class, because a green taxi may not pick up in the core or at the airports.
+  type: EntityType
+  identify_by: [service_type_id]
+  relationships:
+  - name: service_type_id
+    roles:
+    - concept: ServiceTypeCode
+    verbalizes: ['{Service type} is identified by {ServiceTypeCode}']
+    multiplicity: OneToOne
+- concept: Rate plan
+  description: "How a trip is priced: metered, flat fare or negotiated. The rules behind each plan live in the model and its ADR; the concept carries only the identity."
+  type: EntityType
+  identify_by: [rate_plan_id]
+  relationships:
+  - name: rate_plan_id
+    roles:
+    - concept: RatePlanCode
+    verbalizes: ['{Rate plan} is identified by {RatePlanCode}']
+    multiplicity: OneToOne
+- concept: Payment method
+  description: How a passenger paid, such as card or cash, which decides whether a tip is recorded. The lakehouse exposes only a key for it, so its identity is that key and the gap is recorded on the mapping.
+  type: EntityType
+  identify_by: [payment_method_id]
+  relationships:
+  - name: payment_method_id
+    roles:
+    - concept: PaymentMethodKey
+    verbalizes: ['{Payment method} is identified by {PaymentMethodKey}']
+    multiplicity: OneToOne
+- concept: Maintenance event
+  description: "One visit that takes a vehicle out of service, with the days lost and the cost. It is an event, not a state: the vehicle's availability rule is derived from these rows."
+  type: EntityType
+  identify_by: [maintenance_id]
+  relationships:
+  - name: maintenance_id
+    roles:
+    - concept: MaintenanceId
+    verbalizes: ['{Maintenance event} is identified by {MaintenanceId}']
+    multiplicity: OneToOne
+  - name: vehicle
+    roles:
+    - concept: Vehicle
+    verbalizes: ['{Maintenance event} keeps {Vehicle} off the road']
+    multiplicity: ManyToOne
+  - name: garage
+    roles:
+    - concept: Garage
+    verbalizes: ['{Maintenance event} happened at {Garage}']
+    multiplicity: ManyToOne
+- concept: Medallion
+  description: "The licence to operate a taxi, identified by its plate number. It is granted to a driver and transferable, so the holder changes while the licence stays: the transfer is time-varying and the ontology has no validity window, so this concept states the licence and the model's history carries the transfers."
+  type: EntityType
+  identify_by: [medallion_id]
+  relationships:
+  - name: medallion_id
+    roles:
+    - concept: MedallionNumber
+    verbalizes: ['{Medallion} is identified by {MedallionNumber}']
+    multiplicity: OneToOne
+- concept: Status interval
+  description: "A period during which a driver held one state inside a shift, opened by a status event and closed by the next one. It is a fact at interval grain, not a rebuilt snapshot: the sessionizing derives it, as the trip fact derives a journey from meter rows, and rolling it up to the shift loses where the fleet was idle."
+  type: EntityType
+  identify_by: [interval_id]
+  relationships:
+  - name: interval_id
+    roles:
+    - concept: IntervalId
+    verbalizes: ['{Status interval} is identified by {IntervalId}']
+    multiplicity: OneToOne
+  - name: shift
+    roles:
+    - concept: Shift
+    verbalizes: ['{Status interval} falls inside {Shift}']
+    multiplicity: ManyToOne
+  - name: driver
+    roles:
+    - concept: Driver
+    verbalizes: ['{Status interval} is attributed to {Driver}']
+    multiplicity: ManyToOne
+  - name: vehicle
+    roles:
+    - concept: Vehicle
+    verbalizes: ['{Status interval} was spent in {Vehicle}']
+    multiplicity: ManyToOne
+  - name: zone
+    roles:
+    - concept: Zone
+    verbalizes: ['{Status interval} happened in {Zone}']
+    multiplicity: ManyToOne
+  - name: occurred_on
+    roles:
+    - concept: Date
+    verbalizes: ['{Status interval} started on {Date}']
+    multiplicity: ManyToOne
+  - name: part_of_day
+    roles:
+    - concept: Daypart
+    verbalizes: ['{Status interval} started in {Daypart}']
+    multiplicity: ManyToOne

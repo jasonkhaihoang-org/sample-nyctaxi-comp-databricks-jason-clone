@@ -7,42 +7,166 @@ models:
       revenue per online hour, not gross revenue -- gross rewards whoever worked
       the most hours, which is a roster fact rather than a performance one.
       Drivers below the hours floor are carried but flagged.
+    contract: {enforced: true}
     columns:
       - name: driver_key
-        tests:
-          - unique
-          - not_null
-          - relationships: {arguments: {to: ref('dim_driver'), field: driver_key}}
+        data_type: bigint
+        data_tests: [unique, not_null, {relationships: {arguments: {field: driver_key, to: ref('dim_driver')}}}]
       - name: is_below_ranking_floor
-        tests: [not_null]
+        data_type: boolean
+        data_tests: [not_null]
       - name: occupancy_rate
         description: '{{ doc("occupancy_rate") }}'
+        data_type: double
       - name: garage_key
-        tests:
-          - relationships: {arguments: {to: ref('dim_garage'), field: garage_key}}
+        data_type: bigint
+        data_tests: [{relationships: {arguments: {field: garage_key, to: ref('dim_garage')}}}]
+      - name: driver_ref
+        data_type: string
+      - name: engagement_type
+        data_type: string
+      - name: home_garage_name
+        data_type: string
+      - name: active_days
+        data_type: bigint
+      - name: shift_count
+        data_type: bigint
+        description: Driver sign-ons.
+      - name: trip_count
+        data_type: bigint
+      - name: online_hours
+        data_type: double
+        description: Hours a driver was signed on, from effective shift end so an unclosed shift keeps the time it was worked.
+      - name: on_trip_hours
+        data_type: double
+        description: Hours a driver was carrying a fare.
+      - name: gross_revenue
+        data_type: double
+        description: Revenue earned on the fleet's shifts.
+      - name: tip_revenue
+        data_type: double
+      - name: total_cost
+        data_type: double
+      - name: total_margin
+        data_type: double
+      - name: paid_miles
+        data_type: double
+      - name: revenue_per_online_hour
+        data_type: double
+        description: Gross revenue per online hour, from summed revenue and summed hours. The driver ranking basis (ADR 0010).
+      - name: revenue_per_trip
+        data_type: double
+      - name: trips_per_online_hour
+        data_type: double
+      - name: tip_share
+        data_type: double
+      - name: fleet_rank
+        data_type: int
+      - name: garage_rank
+        data_type: int
+      - name: revenue_quartile
+        data_type: int
+      - name: occupancy_percentile
+        data_type: double
 
   - name: mart_vehicle_utilisation
     description: Asset utilisation for the period with downtime netted out.
+    contract: {enforced: true}
     columns:
       - name: vehicle_key
-        tests:
-          - unique
-          - not_null
-          - relationships: {arguments: {to: ref('dim_vehicle'), field: vehicle_key}}
+        data_type: bigint
+        data_tests: [unique, not_null, {relationships: {arguments: {field: vehicle_key, to: ref('dim_vehicle')}}}]
       - name: garage_key
-        tests:
-          - relationships: {arguments: {to: ref('dim_garage'), field: garage_key}}
+        data_type: bigint
+        data_tests: [{relationships: {arguments: {field: garage_key, to: ref('dim_garage')}}}]
+      - name: medallion_number
+        data_type: string
+      - name: make_model
+        data_type: string
+      - name: model_year
+        data_type: bigint
+      - name: fuel_type
+        data_type: string
+      - name: is_low_emission
+        data_type: boolean
+      - name: garage_name
+        data_type: string
+      - name: is_in_service
+        data_type: boolean
+      - name: active_days
+        data_type: bigint
+      - name: shift_count
+        data_type: bigint
+        description: Driver sign-ons.
+      - name: trip_count
+        data_type: bigint
+      - name: online_hours
+        data_type: double
+        description: Hours a driver was signed on, from effective shift end so an unclosed shift keeps the time it was worked.
+      - name: on_trip_hours
+        data_type: double
+        description: Hours a driver was carrying a fare.
+      - name: gross_revenue
+        data_type: double
+        description: Revenue earned on the fleet's shifts.
+      - name: paid_miles
+        data_type: double
+      - name: down_days
+        data_type: bigint
+      - name: maintenance_cost
+        data_type: bigint
+      - name: available_days
+        data_type: bigint
+      - name: occupancy_rate
+        data_type: double
+        description: Share of online time spent carrying a fare, rebuilt from summed seconds (ADR 0016); null when the fleet was never online.
+      - name: availability_adjusted_rate
+        data_type: double
+      - name: revenue_per_online_hour
+        data_type: double
+        description: Gross revenue per online hour, from summed revenue and summed hours. The driver ranking basis (ADR 0010).
+      - name: net_revenue_per_active_day
+        data_type: double
 
   - name: mart_trip_quality_scorecard
     description: >
       What proportion of the feed is trustworthy and whose records are not.
       Aggregated through the junk dimension so every verdict is groupable.
+    contract: {enforced: true}
     columns:
       - name: trip_month
-        tests: [not_null]
+        data_type: timestamp
+        data_tests: [not_null]
       - name: vendor_id
-        tests: [not_null]
+        data_type: int
+        data_tests: [not_null]
       - name: service_type_key
-        tests:
-          - not_null
-          - relationships: {arguments: {to: ref('dim_service_type'), field: service_type_key}}
+        data_type: string
+        data_tests: [not_null, {relationships: {arguments: {field: service_type_key, to: ref('dim_service_type')}}}]
+      - name: vendor_legal_name
+        data_type: string
+      - name: trip_count
+        data_type: bigint
+        description: Trips, billable or not.
+      - name: clean_trip_count
+        data_type: bigint
+      - name: non_billable_count
+        data_type: bigint
+      - name: refund_count
+        data_type: bigint
+      - name: zero_distance_count
+        data_type: bigint
+      - name: implausible_speed_count
+        data_type: bigint
+      - name: sparse_feed_count
+        data_type: bigint
+      - name: unresolved_zone_count
+        data_type: bigint
+      - name: undocumented_rate_count
+        data_type: bigint
+      - name: unbalanced_total_count
+        data_type: bigint
+      - name: clean_rate
+        data_type: double
+      - name: sparse_feed_rate
+        data_type: double

@@ -1,0 +1,140 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 2b07e811-f17f-5272-aae8-1fe29c31de24
+name: fct_shift
+version: 2.1.0
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: core
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: fct_shift
+    properties:
+      - name: shift_id
+        logicalType: string
+        physicalType: string
+        primaryKey: true
+        quality:
+          - type: library
+            metric: duplicateValues
+            mustBe: 0
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: driver_key
+        logicalType: integer
+        physicalType: bigint
+        relationships:
+          - to: dim_driver.driver_key
+      - name: vehicle_key
+        logicalType: integer
+        physicalType: int
+        relationships:
+          - to: dim_vehicle.vehicle_key
+      - name: occupancy_rate
+        logicalType: number
+        physicalType: double
+      - name: shift_date_key
+        logicalType: integer
+        physicalType: int
+        relationships:
+          - to: dim_date.date_key
+      - name: shift_date
+        logicalType: date
+        physicalType: date
+      - name: garage_key
+        logicalType: integer
+        physicalType: bigint
+        relationships:
+          - to: dim_garage.garage_key
+      - name: engagement_type
+        logicalType: string
+        physicalType: string
+      - name: lease_type
+        logicalType: string
+        physicalType: string
+      - name: shift_start_ts
+        logicalType: timestamp
+        physicalType: timestamp
+      - name: effective_end_ts
+        logicalType: timestamp
+        physicalType: timestamp
+      - name: is_unclosed_shift
+        logicalType: boolean
+        physicalType: boolean
+      - name: online_seconds
+        logicalType: integer
+        physicalType: bigint
+      - name: on_trip_seconds
+        logicalType: integer
+        physicalType: bigint
+      - name: available_seconds
+        logicalType: integer
+        physicalType: bigint
+      - name: break_seconds
+        logicalType: integer
+        physicalType: bigint
+      - name: unaccounted_seconds
+        logicalType: integer
+        physicalType: bigint
+      - name: idle_rate
+        logicalType: number
+        physicalType: double
+      - name: trip_count
+        logicalType: integer
+        physicalType: bigint
+      - name: gross_revenue
+        logicalType: number
+        physicalType: double
+      - name: fare_revenue
+        logicalType: number
+        physicalType: double
+      - name: tip_revenue
+        logicalType: number
+        physicalType: double
+      - name: airport_fee_collected
+        logicalType: number
+        physicalType: double
+      - name: surcharge_collected
+        logicalType: number
+        physicalType: double
+      - name: recognised_revenue
+        logicalType: number
+        physicalType: double
+      - name: paid_miles
+        logicalType: number
+        physicalType: double
+      - name: paid_seconds
+        logicalType: integer
+        physicalType: bigint
+      - name: shift_cost
+        logicalType: number
+        physicalType: double
+      - name: shift_margin
+        logicalType: number
+        physicalType: double
+      - name: revenue_per_online_hour
+        logicalType: number
+        physicalType: double
+      - name: revenue_per_paid_mile
+        logicalType: number
+        physicalType: double
+      - name: odometer_miles
+        logicalType: number
+        physicalType: double
+      - name: paid_mile_ratio
+        logicalType: number
+        physicalType: double
+      - name: negative_interval_count
+        logicalType: integer
+        physicalType: bigint
+      - name: telematics_source
+        logicalType: string
+        physicalType: string
+authoritativeDefinitions:
+  - url: logical-model/nyc_taxi_fleet.ossie.yaml
+    type: businessDefinition

@@ -1,0 +1,74 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 362fcfbe-00f9-5ff8-9bba-a806f90619a2
+name: agg_garage_monthly
+version: 1.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: agg
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: agg_garage_monthly
+    properties:
+      - name: month_start_date
+        logicalType: date
+        physicalType: date
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: garage_key
+        logicalType: integer
+        physicalType: int
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+        relationships:
+          - to: dim_garage.garage_key
+      - name: garage_name
+        logicalType: string
+        physicalType: string
+      - name: borough_name
+        logicalType: string
+        physicalType: string
+      - name: bay_capacity
+        logicalType: integer
+        physicalType: int
+      - name: active_vehicles
+        logicalType: integer
+        physicalType: bigint
+      - name: shift_count
+        logicalType: integer
+        physicalType: bigint
+      - name: trip_count
+        logicalType: integer
+        physicalType: bigint
+      - name: online_hours
+        logicalType: number
+        physicalType: double
+      - name: on_trip_hours
+        logicalType: number
+        physicalType: double
+      - name: gross_revenue
+        logicalType: number
+        physicalType: double
+      - name: maintenance_cost
+        logicalType: integer
+        physicalType: bigint
+      - name: down_days
+        logicalType: integer
+        physicalType: bigint
+      - name: occupancy_rate
+        logicalType: number
+        physicalType: double
+      - name: revenue_per_online_hour
+        logicalType: number
+        physicalType: double
+      - name: bay_occupancy_rate
+        logicalType: number
+        physicalType: double

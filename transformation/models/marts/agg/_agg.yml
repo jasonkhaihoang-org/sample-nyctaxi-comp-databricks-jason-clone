@@ -10,27 +10,76 @@ models:
       The grain most operational questions land on. Tip metrics are restricted to payment
       methods where the meter captures tips, and the covered share is published
       alongside so the reader can see how much traffic the rate speaks for.
+    contract: {enforced: true}
     columns:
       - name: avg_measurable_tip_rate
         description: '{{ doc("measurable_tip_rate") }}'
+        data_type: double
       - name: trip_count
-        tests: [not_null]
+        data_type: bigint
+        data_tests: [not_null]
+        description: Trips, billable or not.
       - name: pickup_location_id
-        tests:
-          - not_null
-          - relationships: {arguments: {to: ref('dim_zone'), field: zone_natural_key}}
+        data_type: bigint
+        data_tests: [not_null, {relationships: {arguments: {field: zone_natural_key, to: ref('dim_zone')}}}]
       - name: day_of_week
-        tests: [not_null]
+        data_type: int
+        data_tests: [not_null]
       - name: is_non_working_day
-        tests: [not_null]
+        data_type: boolean
+        data_tests: [not_null]
       - name: daypart_code
-        tests: [not_null]
+        data_type: string
+        data_tests: [not_null]
       - name: is_peak
-        tests: [not_null]
+        data_type: boolean
+        data_tests: [not_null]
       - name: service_type_key
-        tests:
-          - not_null
-          - relationships: {arguments: {to: ref('dim_service_type'), field: service_type_key}}
+        data_type: string
+        data_tests: [not_null, {relationships: {arguments: {field: service_type_key, to: ref('dim_service_type')}}}]
+      - name: zone_name
+        data_type: string
+      - name: borough_name
+        data_type: string
+      - name: reporting_region
+        data_type: string
+      - name: zone_class
+        data_type: string
+      - name: is_airport_zone
+        data_type: boolean
+      - name: day_name
+        data_type: string
+      - name: is_weekend
+        data_type: boolean
+      - name: daypart_name
+        data_type: string
+      - name: billable_trip_count
+        data_type: bigint
+        description: Trips whose total amount is positive.
+      - name: total_revenue
+        data_type: double
+      - name: fare_revenue
+        data_type: double
+      - name: tip_revenue
+        data_type: double
+      - name: surcharge_revenue
+        data_type: double
+      - name: total_miles
+        data_type: double
+      - name: total_paid_hours
+        data_type: double
+      - name: avg_total_amount
+        data_type: double
+      - name: avg_trip_distance
+        data_type: double
+      - name: avg_trip_minutes
+        data_type: double
+      - name: median_total_amount
+        data_type: double
+      - name: measurable_tip_trip_count
+        data_type: bigint
+      - name: tip_measurable_share
+        data_type: double
 
   - name: agg_trip_zone_daily
     description: >
@@ -38,97 +87,308 @@ models:
       the point: a raw count answers "how many", the lag and rolling average
       answer "is that normal". `revenue_rank_that_day` ranks revenue at the cent,
       so two zones that took the same money share a rank.
+    contract: {enforced: true}
     columns:
       - name: pickup_date
-        tests: [not_null]
+        data_type: date
+        data_tests: [not_null]
       - name: pickup_location_id
-        tests:
-          - not_null
-          - relationships: {arguments: {to: ref('dim_zone'), field: zone_natural_key}}
+        data_type: bigint
+        data_tests: [not_null, {relationships: {arguments: {field: zone_natural_key, to: ref('dim_zone')}}}]
       - name: pickup_date_key
-        tests:
-          - relationships: {arguments: {to: ref('dim_date'), field: date_key}}
+        data_type: int
+        data_tests: [{relationships: {arguments: {field: date_key, to: ref('dim_date')}}}]
+      - name: zone_name
+        data_type: string
+      - name: borough_name
+        data_type: string
+      - name: trip_count
+        data_type: bigint
+        description: Trips, billable or not.
+      - name: total_revenue
+        data_type: double
+      - name: total_miles
+        data_type: double
+      - name: attributed_driver_count
+        data_type: bigint
+      - name: prev_day_trip_count
+        data_type: bigint
+      - name: same_day_last_week_trip_count
+        data_type: bigint
+      - name: trip_count_7d_avg
+        data_type: double
+      - name: revenue_28d_rolling
+        data_type: double
+      - name: revenue_rank_that_day
+        data_type: int
 
   - name: agg_od_flow_matrix
     description: >
       Origin-to-destination flow -- the same zone dimension joined twice, in both
       roles. Bounded to pairs with at least 25 trips; the full 265x265 product is
       mostly ones and twos, and publishing it invites reading noise as a route.
+    contract: {enforced: true}
     columns:
       - name: origin_location_id
-        tests:
-          - not_null
-          - relationships: {arguments: {to: ref('dim_zone'), field: zone_natural_key}}
+        data_type: bigint
+        description: TLC location_id of the pickup zone.
+        data_tests: [not_null, {relationships: {arguments: {field: zone_natural_key, to: ref('dim_zone')}}}]
       - name: dest_location_id
-        tests:
-          - not_null
-          - relationships: {arguments: {to: ref('dim_zone'), field: zone_natural_key}}
+        data_type: bigint
+        description: TLC location_id of the dropoff zone.
+        data_tests: [not_null, {relationships: {arguments: {field: zone_natural_key, to: ref('dim_zone')}}}]
+      - name: origin_zone
+        data_type: string
+        description: Display name of the pickup zone.
+      - name: origin_borough
+        data_type: string
+        description: Borough of the pickup zone.
+      - name: origin_is_airport
+        data_type: boolean
+        description: True when the pickup zone is an airport zone.
+      - name: dest_zone
+        data_type: string
+        description: Display name of the dropoff zone.
+      - name: dest_borough
+        data_type: string
+        description: Borough of the dropoff zone.
+      - name: dest_is_airport
+        data_type: boolean
+        description: True when the dropoff zone is an airport zone.
+      - name: is_intra_borough
+        data_type: boolean
+        description: True when the pickup and dropoff zones are in the same borough.
+      - name: trip_count
+        data_type: bigint
+        description: Billable trips picked up in the reporting window for the pair; at least 25, since smaller pairs are not published (ADR 0017).
+      - name: total_revenue
+        data_type: double
+        description: Sum of total_amount over the pair's billable trips.
+      - name: avg_fare
+        data_type: double
+        description: Mean total_amount per billable trip on the pair.
+      - name: avg_distance
+        data_type: double
+        description: Mean trip_distance in miles per billable trip on the pair.
+      - name: avg_minutes
+        data_type: double
+        description: Mean trip duration in minutes per billable trip on the pair.
+      - name: avg_corridor_mph
+        data_type: double
+        description: Mean trip distance divided by mean trip hours for the pair, in miles per hour; null when the divisor is zero.
 
   - name: agg_trip_band_profile
     description: >
       Distance, duration and fare banding in one profile. Three independent range
-      joins with half-open bands, so a trip of exactly three miles lands in
-      "3 - 6" once rather than in two bands or none.
+      joins with half-open bands, so a trip of exactly three miles lands in "3 - 6"
+      once rather than in two bands or none. The joins are LEFT joins: a refund or a
+      negative duration falls outside every band and appears once as 'unbanded' (order
+      0), so the profile covers every in-window trip and sum(trip_count) equals
+      fct_trip's count.
+    contract: {enforced: true}
     columns:
       - name: distance_band
-        tests: [not_null]
+        data_type: string
+        data_tests: [not_null]
       - name: duration_band
-        tests: [not_null]
+        data_type: string
+        data_tests: [not_null]
       - name: fare_band
-        tests: [not_null]
+        data_type: string
+        data_tests: [not_null]
       - name: service_type_key
-        tests:
-          - not_null
-          - relationships: {arguments: {to: ref('dim_service_type'), field: service_type_key}}
+        data_type: string
+        data_tests: [not_null, {relationships: {arguments: {field: service_type_key, to: ref('dim_service_type')}}}]
       - name: pickup_borough
-        tests: [not_null]
+        data_type: string
+        data_tests: [not_null]
       - name: daypart_code
-        tests: [not_null]
+        data_type: string
+        data_tests: [not_null]
+      - name: distance_band_order
+        data_type: bigint
+      - name: duration_band_order
+        data_type: bigint
+      - name: fare_band_order
+        data_type: bigint
+      - name: trip_count
+        data_type: bigint
+        description: Trips, billable or not.
+      - name: total_revenue
+        data_type: double
+      - name: avg_total_amount
+        data_type: double
+      - name: avg_measurable_tip_rate
+        data_type: double
+      - name: non_billable_count
+        data_type: bigint
 
   - name: agg_weather_demand_daily
-    description: Demand against weather, by borough and day.
+    description: >
+      Demand against weather, by borough and day. The spine is every borough crossed
+      with every day in the window, so a borough-day with weather and no trips keeps a
+      zero row, and a trip in an unresolved or non-weather borough keeps its row with
+      null weather (ADR 0012) instead of disappearing. Trips are attributed through
+      their own zone surrogate, the version resolved as of the trip's date (ADR 0009),
+      not the borough's current version.
+    contract: {enforced: true}
     columns:
       - name: obs_date
-        tests: [not_null]
+        data_type: date
+        data_tests: [not_null]
       - name: borough_name
-        tests: [not_null]
+        data_type: string
+        data_tests: [not_null]
+      - name: day_name
+        data_type: string
+      - name: is_weekend
+        data_type: boolean
+      - name: is_holiday
+        data_type: boolean
+      - name: temp_avg_f
+        data_type: double
+      - name: precip_inches
+        data_type: double
+      - name: snow_inches
+        data_type: double
+      - name: is_wet_day
+        data_type: boolean
+      - name: is_snow_day
+        data_type: boolean
+      - name: weather_class
+        data_type: string
+      - name: trip_count
+        data_type: bigint
+        description: Trips, billable or not.
+      - name: total_revenue
+        data_type: double
+      - name: avg_trip_distance
+        data_type: double
+      - name: avg_fare
+        data_type: double
+      - name: avg_paid_hours_per_trip
+        data_type: double
 
   - name: agg_driver_daily
     description: >
       Driver-day, the base of the driver pyramid. Rates are rebuilt from summed
       numerators and denominators, never averaged from shift rates -- the mean of
       two ratios is not the ratio anyone asked for.
+    contract: {enforced: true}
     columns:
       - name: occupancy_rate
         description: '{{ doc("occupancy_rate") }}'
+        data_type: double
       - name: shift_date
-        tests: [not_null]
+        data_type: date
+        data_tests: [not_null]
       - name: driver_key
-        tests:
-          - not_null
-          - relationships: {arguments: {to: ref('dim_driver'), field: driver_key}}
+        data_type: bigint
+        data_tests: [not_null, {relationships: {arguments: {field: driver_key, to: ref('dim_driver')}}}]
       - name: garage_key
-        tests:
-          - relationships: {arguments: {to: ref('dim_garage'), field: garage_key}}
+        data_type: bigint
+        data_tests: [{relationships: {arguments: {field: garage_key, to: ref('dim_garage')}}}]
       - name: date_key
-        tests:
-          - relationships: {arguments: {to: ref('dim_date'), field: date_key}}
+        data_type: int
+        data_tests: [{relationships: {arguments: {field: date_key, to: ref('dim_date')}}}]
+      - name: driver_ref
+        data_type: string
+      - name: engagement_type
+        data_type: string
+      - name: home_garage_name
+        data_type: string
+      - name: shift_count
+        data_type: bigint
+        description: Driver sign-ons.
+      - name: vehicles_driven
+        data_type: bigint
+      - name: trip_count
+        data_type: bigint
+      - name: online_hours
+        data_type: double
+        description: Hours a driver was signed on, from effective shift end so an unclosed shift keeps the time it was worked.
+      - name: on_trip_hours
+        data_type: double
+        description: Hours a driver was carrying a fare.
+      - name: break_hours
+        data_type: double
+      - name: gross_revenue
+        data_type: double
+        description: Revenue earned on the fleet's shifts.
+      - name: tip_revenue
+        data_type: double
+      - name: airport_fee_collected
+        data_type: double
+      - name: total_cost
+        data_type: double
+      - name: total_margin
+        data_type: double
+      - name: paid_miles
+        data_type: double
+      - name: unclosed_shift_count
+        data_type: bigint
+      - name: revenue_per_online_hour
+        data_type: double
+        description: Gross revenue per online hour, from summed revenue and summed hours. The driver ranking basis (ADR 0010).
+      - name: revenue_per_trip
+        data_type: double
 
   - name: agg_driver_monthly
     description: >
       Driver-month, built from driver-day rather than from shifts again. Each
       level is built from the one below so the pyramid cannot disagree with
       itself.
+    contract: {enforced: true}
     columns:
       - name: month_start_date
-        tests: [not_null]
+        data_type: date
+        data_tests: [not_null]
       - name: driver_key
-        tests:
-          - not_null
-          - relationships: {arguments: {to: ref('dim_driver'), field: driver_key}}
+        data_type: bigint
+        data_tests: [not_null, {relationships: {arguments: {field: driver_key, to: ref('dim_driver')}}}]
       - name: garage_key
-        tests:
-          - relationships: {arguments: {to: ref('dim_garage'), field: garage_key}}
+        data_type: bigint
+        data_tests: [{relationships: {arguments: {field: garage_key, to: ref('dim_garage')}}}]
+      - name: driver_ref
+        data_type: string
+      - name: engagement_type
+        data_type: string
+      - name: home_garage_name
+        data_type: string
+      - name: active_days
+        data_type: bigint
+      - name: shift_count
+        data_type: bigint
+        description: Driver sign-ons.
+      - name: trip_count
+        data_type: bigint
+      - name: online_hours
+        data_type: double
+        description: Hours a driver was signed on, from effective shift end so an unclosed shift keeps the time it was worked.
+      - name: on_trip_hours
+        data_type: double
+        description: Hours a driver was carrying a fare.
+      - name: gross_revenue
+        data_type: double
+        description: Revenue earned on the fleet's shifts.
+      - name: tip_revenue
+        data_type: double
+      - name: total_cost
+        data_type: double
+      - name: total_margin
+        data_type: double
+      - name: paid_miles
+        data_type: double
+      - name: occupancy_rate
+        data_type: double
+        description: Share of online time spent carrying a fare, rebuilt from summed seconds (ADR 0016); null when the fleet was never online.
+      - name: revenue_per_online_hour
+        data_type: double
+        description: Gross revenue per online hour, from summed revenue and summed hours. The driver ranking basis (ADR 0010).
+      - name: trips_per_online_hour
+        data_type: double
+      - name: margin_rate
+        data_type: double
 
   - name: agg_vehicle_daily
     description: >
@@ -136,57 +396,196 @@ models:
       against the 24-hour day, not against sign-on time -- a medallion idle in the
       depot is the asset question, a driver idle on the road is the labour
       question, and they are different numbers.
+    contract: {enforced: true}
     columns:
       - name: shift_date
-        tests: [not_null]
+        data_type: date
+        data_tests: [not_null]
       - name: vehicle_key
-        tests:
-          - not_null
-          - relationships: {arguments: {to: ref('dim_vehicle'), field: vehicle_key}}
+        data_type: int
+        data_tests: [not_null, {relationships: {arguments: {field: vehicle_key, to: ref('dim_vehicle')}}}]
       - name: garage_key
-        tests:
-          - relationships: {arguments: {to: ref('dim_garage'), field: garage_key}}
+        data_type: bigint
+        data_tests: [{relationships: {arguments: {field: garage_key, to: ref('dim_garage')}}}]
       - name: date_key
-        tests:
-          - relationships: {arguments: {to: ref('dim_date'), field: date_key}}
+        data_type: int
+        data_tests: [{relationships: {arguments: {field: date_key, to: ref('dim_date')}}}]
+      - name: medallion_number
+        data_type: string
+      - name: make_model
+        data_type: string
+      - name: fuel_type
+        data_type: string
+      - name: is_low_emission
+        data_type: boolean
+      - name: shift_count
+        data_type: bigint
+        description: Driver sign-ons.
+      - name: distinct_drivers
+        data_type: bigint
+      - name: trip_count
+        data_type: bigint
+      - name: online_hours
+        data_type: double
+        description: Hours a driver was signed on, from effective shift end so an unclosed shift keeps the time it was worked.
+      - name: on_trip_hours
+        data_type: double
+        description: Hours a driver was carrying a fare.
+      - name: gross_revenue
+        data_type: double
+        description: Revenue earned on the fleet's shifts.
+      - name: paid_miles
+        data_type: double
+      - name: odometer_miles
+        data_type: double
+      - name: occupancy_rate
+        data_type: double
+        description: Share of online time spent carrying a fare, rebuilt from summed seconds (ADR 0016); null when the fleet was never online.
+      - name: asset_utilisation_rate
+        data_type: double
+      - name: paid_mile_ratio
+        data_type: double
 
   - name: agg_vehicle_monthly
     description: >
       Vehicle-month with maintenance downtime netted out of the denominator. A
       vehicle in the shop for six days has 24 fewer available days, and charging
       it with those days makes a well-run asset look idle.
+    contract: {enforced: true}
     columns:
       - name: month_start_date
-        tests: [not_null]
+        data_type: date
+        data_tests: [not_null]
       - name: vehicle_key
-        tests:
-          - not_null
-          - relationships: {arguments: {to: ref('dim_vehicle'), field: vehicle_key}}
+        data_type: int
+        data_tests: [not_null, {relationships: {arguments: {field: vehicle_key, to: ref('dim_vehicle')}}}]
       - name: garage_key
-        tests:
-          - relationships: {arguments: {to: ref('dim_garage'), field: garage_key}}
+        data_type: bigint
+        data_tests: [{relationships: {arguments: {field: garage_key, to: ref('dim_garage')}}}]
+      - name: medallion_number
+        data_type: string
+      - name: make_model
+        data_type: string
+      - name: fuel_type
+        data_type: string
+      - name: active_days
+        data_type: bigint
+      - name: shift_count
+        data_type: bigint
+        description: Driver sign-ons.
+      - name: trip_count
+        data_type: bigint
+      - name: online_hours
+        data_type: double
+        description: Hours a driver was signed on, from effective shift end so an unclosed shift keeps the time it was worked.
+      - name: on_trip_hours
+        data_type: double
+        description: Hours a driver was carrying a fare.
+      - name: gross_revenue
+        data_type: double
+        description: Revenue earned on the fleet's shifts.
+      - name: paid_miles
+        data_type: double
+      - name: down_days
+        data_type: bigint
+      - name: maintenance_cost
+        data_type: bigint
+      - name: calendar_days
+        data_type: int
+      - name: available_days
+        data_type: bigint
+      - name: availability_adjusted_activity_rate
+        data_type: double
+      - name: occupancy_rate
+        data_type: double
+        description: Share of online time spent carrying a fare, rebuilt from summed seconds (ADR 0016); null when the fleet was never online.
+      - name: revenue_per_online_hour
+        data_type: double
+        description: Gross revenue per online hour, from summed revenue and summed hours. The driver ranking basis (ADR 0010).
 
   - name: agg_garage_monthly
     description: Garage-month. The top of the driver, vehicle and garage pyramid.
+    contract: {enforced: true}
     columns:
       - name: month_start_date
-        tests: [not_null]
+        data_type: date
+        data_tests: [not_null]
       - name: garage_key
-        tests:
-          - not_null
-          - relationships: {arguments: {to: ref('dim_garage'), field: garage_key}}
+        data_type: int
+        data_tests: [not_null, {relationships: {arguments: {field: garage_key, to: ref('dim_garage')}}}]
+      - name: garage_name
+        data_type: string
+      - name: borough_name
+        data_type: string
+      - name: bay_capacity
+        data_type: int
+      - name: active_vehicles
+        data_type: bigint
+      - name: shift_count
+        data_type: bigint
+        description: Driver sign-ons.
+      - name: trip_count
+        data_type: bigint
+      - name: online_hours
+        data_type: double
+        description: Hours a driver was signed on, from effective shift end so an unclosed shift keeps the time it was worked.
+      - name: on_trip_hours
+        data_type: double
+        description: Hours a driver was carrying a fare.
+      - name: gross_revenue
+        data_type: double
+        description: Revenue earned on the fleet's shifts.
+      - name: maintenance_cost
+        data_type: bigint
+      - name: down_days
+        data_type: bigint
+      - name: occupancy_rate
+        data_type: double
+        description: Share of online time spent carrying a fare, rebuilt from summed seconds (ADR 0016); null when the fleet was never online.
+      - name: revenue_per_online_hour
+        data_type: double
+        description: Gross revenue per online hour, from summed revenue and summed hours. The driver ranking basis (ADR 0010).
+      - name: bay_occupancy_rate
+        data_type: double
 
   - name: agg_zone_occupancy_hourly
     description: >
       Where the fleet spends its time, by zone and hour, from the status stream
       rather than from trips. The gap between this map and the revenue map is the
       whole reason occupancy is collected.
+    contract: {enforced: true}
     columns:
       - name: interval_date
-        tests: [not_null]
+        data_type: date
+        data_tests: [not_null]
       - name: interval_hour
-        tests: [not_null]
+        data_type: int
+        data_tests: [not_null]
       - name: location_id
-        tests:
-          - not_null
-          - relationships: {arguments: {to: ref('dim_zone'), field: zone_natural_key}}
+        data_type: bigint
+        data_tests: [not_null, {relationships: {arguments: {field: zone_natural_key, to: ref('dim_zone')}}}]
+      - name: daypart_code
+        data_type: string
+      - name: zone_name
+        data_type: string
+      - name: borough_name
+        data_type: string
+      - name: is_airport_zone
+        data_type: boolean
+      - name: interval_count
+        data_type: bigint
+      - name: distinct_drivers
+        data_type: bigint
+      - name: distinct_vehicles
+        data_type: bigint
+      - name: total_hours
+        data_type: double
+      - name: on_trip_hours
+        data_type: double
+        description: Hours a driver was carrying a fare.
+      - name: available_hours
+        data_type: double
+      - name: break_hours
+        data_type: double
+      - name: zone_occupancy_rate
+        data_type: double

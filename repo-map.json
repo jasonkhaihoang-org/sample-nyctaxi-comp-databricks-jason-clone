@@ -154,6 +154,12 @@
       "reason": "No join key into any star: no fact carries a fare-regime key, so it cannot be a conformed dimension."
     }
   ],
+  "contract_layers": [
+    "core",
+    "agg",
+    "finance",
+    "ops"
+  ],
   "sources": {
     "tlc": {
       "kind": "dlt",
@@ -212,7 +218,11 @@
     "requirement": "docs/requirement/{intent}.md",
     "plan": "docs/plans/{intent}.md",
     "verification": "docs/verify/{intent}.md",
-    "case_record": "docs/cases/{intent}.md"
+    "case_record": "docs/cases/{intent}.md",
+    "logical_model": "logical-model/*.ossie.yaml",
+    "data_contract": "contracts/{schema}/{table}.odcs.yaml",
+    "ontology": "ontology/{name}.ontology.yaml",
+    "ontology_mapping": "ontology/{document}.mapping.yaml"
   },
   "modules": {
     "ingestion": {
@@ -233,7 +243,7 @@
     },
     "core": {
       "path": "transformation/models/marts/core/",
-      "description": "Facts and conformed dimensions, plus the semantic model (_semantic.yml)."
+      "description": "Facts and conformed dimensions."
     },
     "agg": {
       "path": "transformation/models/marts/agg/",
@@ -246,6 +256,18 @@
     "ops": {
       "path": "transformation/models/marts/ops/",
       "description": "Fleet-operations marts: driver scorecard, vehicle utilisation, trip quality scorecard."
+    },
+    "logical_model": {
+      "path": "logical-model/",
+      "description": "Canonical semantic model, Apache Ossie 0.2.0.dev0: documents partition the model by whole fact stars (a star never straddles documents; a document may hold several), with shared dimensions copied per document and structure drift-checked. Authored under the semantic-model skill and reviewed under the validating-semantic-model skill; consumer formats export on the fly and are never committed."
+    },
+    "ontology": {
+      "path": "ontology/",
+      "description": "Business ontology, Apache Ossie 0.2.0.dev0: the CONTEXT.md vocabulary as entity and value types with their relationships, plus one mapping per canonical document that concepts reach. Authored under the ontology skill and gated by validating-ontology (its own step: structure, then coverage, then content). Declarations only: nothing parses or executes a mapping."
+    },
+    "contracts": {
+      "path": "contracts/",
+      "description": "ODCS v3.2.0 data contracts at `{schema}/{table}.odcs.yaml` for the boundary relations: `contract_layers` scopes them to core, agg, finance and ops. The raw source tables carry none yet, because their pipelines are Databricks notebooks that do not read generated dlt hints. Physical types are Databricks' own, as the Domain catalog builds them. Authored with the data-contract skill and gated by `odcs.py check`: the schema, the structure, agreement with the canonical document that names a relation, and its own generated dbt keys. The contract is the authored artifact; the enforcement generated from it is not."
     },
     "seeds": {
       "path": "transformation/seeds/",
@@ -304,7 +326,8 @@
     ".github/": "Domain CI workflows and scripts",
     "docs/setup/": "Repo maintenance: the port's requirements and plans, the data-provenance notes, the skill changes it implies, how it keeps up with the upstream repos and how to seed the Domain. Not for ingestion or transformation tasks; do not read it for them, and do not maintain it.",
     "docs/review/": "Review findings for triage. Not read during build tasks.",
-    "docs/proposal/": "Proposals that become intents. Read one only when the intent links to it."
+    "docs/proposal/": "Proposals that become intents. Read one only when the intent links to it.",
+    "contracts/": "ODCS data contracts for the boundary relations (core, agg, finance, ops; `contract_layers`). Read one before changing the relation it names."
   },
   "commands": {
     "dbt_deps": "cd transformation && dbt deps",
@@ -316,7 +339,12 @@
     "python_tests": "python3 -m pytest tests -q",
     "python_lint": "ruff check .",
     "adr_lint": "PYTHONPATH=.github/scripts python3 .github/scripts/vibedata_domain_ci/adr_lint.py",
-    "validate_job": "python3 <plugin>/scripts/platforms/databricks/validate-job.py --repo-root ."
+    "validate_job": "python3 <plugin>/scripts/platforms/databricks/validate-job.py --repo-root .",
+    "ossie_lint": "python3 tools/ossie_lint.py",
+    "odcs_check": "python3 .agents/skills/data-contract/scripts/odcs.py check",
+    "odcs_generate": "python3 .agents/skills/data-contract/scripts/odcs.py generate",
+    "ossie_generate_tests": "python3 .agents/skills/semantic-model/scripts/ossie.py generate-tests logical-model/ transformation/tests --dialect databricks",
+    "odcs_diff": "python3 .agents/skills/data-contract/scripts/odcs.py diff origin/main"
   },
   "key_references": {
     "agents": "AGENTS.md",
@@ -337,5 +365,6 @@
     "reviews_and_proposals": "docs/review/ holds review findings for triage; do not read it for build tasks. Read a docs/proposal/ file only when the intent's requirement links to it.",
     "dbt_sources": "dbt sources name their schema and, as database, \"{{ env_var('VD_DOMAIN_DATABRICKS_CATALOG', target.database) }}\"; never write a catalog name into _sources.yml. macros/source_defer.sql reads the Intent's own <prefix><schema> table in the Ephemeral catalog when the Intent loaded it, and the Domain's table otherwise. Every layer sets +schema:, so a sandbox builds <prefix>staging, <prefix>core and so on. dbt runs in the sandbox use Studio's profile dbt_databricks, target databricks_sandbox.",
     "artifact_paths": "Every artifact location is declared here: requirement, plan, verification and case_record per intent, design records per model, dlt pipeline, orchestration item (a Lakeflow job file) or area. The plugin names an intent's artifacts; this map places them."
-  }
+  },
+  "data_platform": "databricks"
 }

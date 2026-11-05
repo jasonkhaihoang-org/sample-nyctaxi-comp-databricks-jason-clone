@@ -43,7 +43,8 @@ TLC site ──► ingestion/tlc_pipeline.ipynb ──► bronze ─────
                 dbt (dbt-databricks): staging → intermediate → marts (core, agg, finance, ops)
                                                                        │
                                                                        ▼
-                                              semantic model (MetricFlow) and dbt docs
+                              Ossie canonical model (logical-model/) and ontology,
+                              the hand-authored semantic source of truth, and dbt docs
 ```
 
 The `nyc_taxi_refresh` Lakeflow job (`orchestration/nyc_taxi_refresh.job.yml`,
@@ -103,7 +104,7 @@ is organised as:
 
 - **staging**: one model per source table, renamed and typed.
 - **intermediate**: conformed trip, status, occupancy, fare and quality logic.
-- **core marts**: dimensions, bridges and facts, plus the semantic model.
+- **core marts**: dimensions, bridges and facts; the semantic model over them is in `logical-model/`, the business ontology in `ontology/`, and the boundary relations' ODCS contracts in `contracts/`.
 - **aggregates**: driver, vehicle, zone, OD, weather and occupancy summaries.
 - **finance marts**: daily revenue, monthly summaries and revenue bridges.
 - **operations marts**: driver, vehicle and trip-quality scorecards.

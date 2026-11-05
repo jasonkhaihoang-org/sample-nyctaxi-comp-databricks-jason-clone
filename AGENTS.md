@@ -12,13 +12,15 @@ Do not read the installed source code of dbt, dlt or any other library to work o
 
 After the conversation is condensed, invoke the [`workarounds`](.agents/skills/workarounds/SKILL.md) skill again before the next tool call: its rules are easy to lose in a summary.
 
-## Medallion layers
+## Layers and their roles
 
-- **Bronze**: raw data loaded by dlt (`ingestion/`) into `bronze` (TLC), `ops_raw` and `mdm_raw`.
-- **Silver**: dbt staging and intermediate models in `transformation/`.
-- **Gold**: dbt marts in `core`, `agg`, `finance` and `ops`.
+- **Input** (bronze): raw data loaded by dlt (`ingestion/`) into `bronze` (TLC), `ops_raw` and `mdm_raw`.
+- **Internal** (silver): dbt staging and intermediate models in `transformation/`, and the `seeds` schema.
+- **Boundary** (gold): dbt marts in `core`, `agg`, `finance` and `ops`.
 
-Layer, schema and builder for each are in `repo-map.json` under `layers`.
+Layers and their roles are declared in `repo-map.json` under `layers` (schema, builder, role and path for each). Rules apply by role, not by name: an `input` or `boundary` relation owes a contract and a boundary relation is a candidate for the semantic layer; an `internal` relation owes neither. The medallion names are this Domain's own choice; the role definitions are in the plugin's `layer-roles.md`. Here `contract_layers` limits contracts to the boundary layers for now: the input layers' pipelines are notebooks that do not read generated dlt hints.
+
+Words used in this repo: a **dbt model** is a SQL file with its properties entry; an **Ossie document** is one `*.ossie.yaml` under `logical-model/`; the **semantic layer** is the Ossie documents plus the ontology.
 
 ## Conventions
 
@@ -29,6 +31,12 @@ Operator conventions are skills in `.agents/skills/`, and the agent's skill list
 | [`dbt-models`](.agents/skills/dbt-models/SKILL.md) | Layer mapping, model naming, properties files, materialisation |
 | [`sql-style`](.agents/skills/sql-style/SKILL.md) | SQL formatting |
 | [`dbt-testing`](.agents/skills/dbt-testing/SKILL.md) | Generic, singular, unit and Python tests |
+| [`semantic-model`](.agents/skills/semantic-model/SKILL.md) | Ossie documents: the star anchor, routing a boundary table (a star member or `semantic_exclusions`), VIBEDATA rules |
+| [`data-contract`](.agents/skills/data-contract/SKILL.md) | The contract boundary (input and boundary layers), `status: proposed` before a table exists, grain from keys, generated dbt and dlt keys, when the version moves, and what is never invented |
+| [`validating-data-contract`](.agents/skills/validating-data-contract/SKILL.md) | The contract review before commit: that the key is the grain, honest `required`, rules against data and ADRs, version moves, actionable descriptions on non-star relations, and meaning against the Ossie document |
+| [`ontology`](.agents/skills/ontology/SKILL.md) | Business ontology and its mappings: classifying boundary relations, concepts, natural identity, relationships, declaration-only |
+| [`validating-ontology`](.agents/skills/validating-ontology/SKILL.md) | The ontology's own gate: structure, coverage and content against the Ossie documents |
+| [`validating-semantic-model`](.agents/skills/validating-semantic-model/SKILL.md) | Structural gate plus the content review before commit |
 | [`dlt`](.agents/skills/dlt/SKILL.md) | Datasets, write disposition, schema contract, bronze carries no logic |
 | [`context`](.agents/skills/context/SKILL.md) | What goes into `CONTEXT.md` |
 | [`adr`](.agents/skills/adr/SKILL.md) | What goes into an ADR, and when |

@@ -1,0 +1,85 @@
+version: 0.2.0.dev0
+name: nyc_taxi_trips_mapping
+description: "Maps the Trip concept onto the trips document. Every classification link is mapped because the fact carries the natural value: pickup_location_id and dropoff_location_id are the zone natural keys the as-of join matches, pickup_date is the calendar date, and the service-type, rate-plan, payment-method and daypart columns are the dimensions' own codes. The vendor link stays unmapped: the fact carries vendor_key, the as-of surrogate over natural key and valid-from, and no vendor natural key."
+ontology_ref:
+  name: nyc_taxi
+semantic_model_ref:
+  name: nyc_taxi_trips
+concept_mappings:
+- concept: Trip
+  object_mappings:
+  - referent_mappings:
+    - relationship: trip_key
+      expression: trips.trip_key
+    - relationship: shift
+      referent_mappings:
+      - relationship: shift_id
+        expression: trips.shift_id
+    - relationship: part_of_day
+      referent_mappings:
+      - relationship: daypart_id
+        expression: trips.daypart_code
+    - relationship: paid_by
+      referent_mappings:
+      - relationship: payment_method_id
+        expression: trips.payment_method_key
+    - relationship: pickup_zone
+      referent_mappings:
+      - relationship: zone_id
+        expression: trips.pickup_location_id
+    - relationship: dropoff_zone
+      referent_mappings:
+      - relationship: zone_id
+        expression: trips.dropoff_location_id
+    - relationship: occurred_on
+      referent_mappings:
+      - relationship: date_id
+        expression: trips.pickup_date
+    - relationship: served_by
+      referent_mappings:
+      - relationship: service_type_id
+        expression: trips.service_type_key
+    - relationship: priced_by
+      referent_mappings:
+      - relationship: rate_plan_id
+        expression: trips.rate_plan_key
+- concept: Shift
+  object_mappings:
+  - referent_mappings:
+    - relationship: shift_id
+      expression: trips.shift_id
+- concept: Zone
+  object_mappings:
+  - referent_mappings:
+    - relationship: zone_id
+      expression: zone.zone_natural_key
+- concept: Technology vendor
+  object_mappings:
+  - referent_mappings:
+    - relationship: vendor_id
+      expression: vendor.vendor_natural_key
+- concept: Date
+  object_mappings:
+  - referent_mappings:
+    - relationship: date_id
+      expression: date.calendar_date
+- concept: Daypart
+  object_mappings:
+  - referent_mappings:
+    - relationship: daypart_id
+      expression: daypart.daypart_code
+- concept: Service type
+  object_mappings:
+  - referent_mappings:
+    - relationship: service_type_id
+      expression: service_type.service_type_key
+- concept: Rate plan
+  object_mappings:
+  - referent_mappings:
+    - relationship: rate_plan_id
+      expression: rate_plan.rate_plan_key
+- concept: Payment method
+  object_mappings:
+  - referent_mappings:
+    - relationship: payment_method_id
+      expression: payment_method.payment_method_key

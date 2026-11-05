@@ -1,0 +1,175 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 116ddee7-4f52-5ca9-9abd-8a3fa417d0c5
+name: fct_trip
+version: 1.1.0
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: core
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: fct_trip
+    properties:
+      - name: trip_key
+        logicalType: string
+        physicalType: string
+        primaryKey: true
+        quality:
+          - type: library
+            metric: duplicateValues
+            mustBe: 0
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: pickup_zone_key
+        logicalType: string
+        physicalType: string
+        relationships:
+          - to: dim_zone.zone_key
+      - name: dropoff_zone_key
+        logicalType: string
+        physicalType: string
+        relationships:
+          - to: dim_zone.zone_key
+      - name: vendor_key
+        logicalType: string
+        physicalType: string
+        relationships:
+          - to: dim_vendor.vendor_key
+      - name: trip_quality_key
+        logicalType: string
+        physicalType: string
+        relationships:
+          - to: dim_trip_quality.trip_quality_key
+      - name: payment_method_key
+        logicalType: integer
+        physicalType: bigint
+        relationships:
+          - to: dim_payment_method.payment_method_key
+      - name: is_fleet_attributed
+        logicalType: boolean
+        physicalType: boolean
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: fare_residual
+        logicalType: number
+        physicalType: double
+      - name: airport_fee
+        logicalType: number
+        physicalType: double
+      - name: pickup_date_key
+        logicalType: integer
+        physicalType: int
+        relationships:
+          - to: dim_date.date_key
+      - name: pickup_date
+        logicalType: date
+        physicalType: date
+      - name: pickup_hour
+        logicalType: integer
+        physicalType: int
+        relationships:
+          - to: dim_daypart.hour_of_day
+      - name: daypart_code
+        logicalType: string
+        physicalType: string
+      - name: service_type_key
+        logicalType: string
+        physicalType: string
+        relationships:
+          - to: dim_service_type.service_type_key
+      - name: rate_plan_key
+        logicalType: integer
+        physicalType: bigint
+        relationships:
+          - to: dim_rate_plan.rate_plan_key
+      - name: shift_id
+        logicalType: string
+        physicalType: string
+      - name: driver_key
+        logicalType: integer
+        physicalType: bigint
+      - name: vehicle_key
+        logicalType: integer
+        physicalType: int
+      - name: assignment_method
+        logicalType: string
+        physicalType: string
+      - name: pickup_datetime
+        logicalType: timestamp
+        physicalType: timestamp
+      - name: dropoff_datetime
+        logicalType: timestamp
+        physicalType: timestamp
+      - name: pickup_location_id
+        logicalType: integer
+        physicalType: int
+      - name: dropoff_location_id
+        logicalType: integer
+        physicalType: int
+      - name: passenger_count
+        logicalType: integer
+        physicalType: bigint
+      - name: store_and_fwd_flag
+        logicalType: string
+        physicalType: string
+      - name: trip_type
+        logicalType: integer
+        physicalType: bigint
+      - name: trip_distance
+        logicalType: number
+        physicalType: double
+      - name: trip_seconds
+        logicalType: integer
+        physicalType: bigint
+      - name: avg_mph
+        logicalType: number
+        physicalType: double
+      - name: fare_amount
+        logicalType: number
+        physicalType: double
+      - name: extra
+        logicalType: number
+        physicalType: double
+      - name: mta_tax
+        logicalType: number
+        physicalType: double
+      - name: tip_amount
+        logicalType: number
+        physicalType: double
+      - name: tolls_amount
+        logicalType: number
+        physicalType: double
+      - name: improvement_surcharge
+        logicalType: number
+        physicalType: double
+      - name: congestion_surcharge
+        logicalType: number
+        physicalType: double
+      - name: ehail_fee
+        logicalType: number
+        physicalType: double
+      - name: total_amount
+        logicalType: number
+        physicalType: double
+      - name: total_surcharges
+        logicalType: number
+        physicalType: double
+      - name: measurable_tip_rate
+        logicalType: number
+        physicalType: double
+      - name: is_billable
+        logicalType: boolean
+        physicalType: boolean
+      - name: airport_fee_status
+        logicalType: string
+        physicalType: string
+authoritativeDefinitions:
+  - url: logical-model/nyc_taxi_analytics.ossie.yaml
+    type: businessDefinition

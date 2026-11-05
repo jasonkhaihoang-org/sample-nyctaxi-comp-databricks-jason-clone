@@ -160,13 +160,47 @@
         "data": "cd transformation && dbt test --select path:seeds --exclude test_type:unit"
       }
     },
-    "semantic": {
+    "logical-model": {
       "sources": [
-        "transformation/models/marts/core/_semantic.yml",
-        "transformation/models/metricflow_time_spine.sql"
+        "logical-model/",
+        ".agents/skills/semantic-model/",
+        ".agents/skills/validating-semantic-model/"
+      ],
+      "unit": [
+        "tests/test_ossie_validate.py",
+        "tests/test_ossie_compile.py"
       ],
       "commands": {
-        "structural": "cd transformation && dbt parse && dbt ls --resource-type metric"
+        "unit": "python3 -m pytest tests/test_ossie_validate.py tests/test_ossie_compile.py -q",
+        "structural": "python3 tools/ossie_lint.py"
+      }
+    },
+    "ontology": {
+      "sources": [
+        "ontology/",
+        ".agents/skills/ontology/",
+        ".agents/skills/validating-ontology/"
+      ],
+      "unit": [
+        "tests/test_ossie_validate.py"
+      ],
+      "commands": {
+        "unit": "python3 -m pytest tests/test_ossie_validate.py -q",
+        "structural": "python3 tools/ossie_lint.py"
+      }
+    },
+    "contracts": {
+      "sources": [
+        "contracts/",
+        ".agents/skills/data-contract/",
+        ".agents/skills/validating-data-contract/"
+      ],
+      "unit": [
+        "tests/test_odcs.py"
+      ],
+      "commands": {
+        "unit": "python3 -m pytest tests/test_odcs.py -q",
+        "structural": "python3 .agents/skills/data-contract/scripts/odcs.py check"
       }
     },
     "maps": {

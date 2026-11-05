@@ -57,6 +57,12 @@ GUID = re.compile(r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{1
 DOMAIN_COORDINATE_FILES = {".workflow/ci-config.yml"}
 # The all-zeros id is a placeholder, never a coordinate.
 PLACEHOLDER_ID = "00000000-0000-0000-0000-000000000000"
+CONTRACT_ID = re.compile(r"^id: [0-9a-f-]{36}$", re.MULTILINE)
+VENDORED_STANDARDS = (".agents/skills/data-contract/scripts/odcs_vendor/",
+                      ".agents/skills/semantic-model/scripts/ossie_vendor/",
+                      ".github/data-contract/scripts/odcs_vendor/")
+# The contract tool's tests build contracts with fixed, obviously fake ids.
+FIXTURE_ID = re.compile(r"c0ffee00-0000-4000-8000-[0-9]{12}")
 # A workspace host, a SQL warehouse path or a personal access token points at one workspace;
 # none belongs in git. The bundle and Studio pass them at run time.
 # `offline.cloud.databricks.com` is the CI bundle's placeholder for a parse that opens no connection.
@@ -74,7 +80,8 @@ def _superseded_adr(path: Path) -> bool:
 
 
 def _agent_read_files() -> list[Path]:
-    files = [p for p in (ROOT / ".agents").rglob("*") if p.is_file()]
+    # Bytecode the skills' scripts leave beside them when a test imports them is no prose.
+    files = [p for p in (ROOT / ".agents").rglob("*") if p.is_file() and "__pycache__" not in p.parts]
     files += [ROOT / "AGENTS.md", ROOT / "CONTEXT.md"]
     files += [p for p in (ROOT / "docs" / "adr").glob("*.md") if not _superseded_adr(p)]
     files += list((ROOT / "docs" / "design").rglob("*.md"))
@@ -190,10 +197,16 @@ def test_no_committed_coordinate():
 def _guid_hits(name: str, text: str) -> list[str]:
     if name in DOMAIN_COORDINATE_FILES:
         return []
-    return [f"{name}: {m}" for m in GUID.findall(text) if m != PLACEHOLDER_ID]
+    if name.startswith("contracts/") and name.endswith(".odcs.yaml"):
+        # An ODCS contract's top-level `id` names the contract itself, not a workspace.
+        text = CONTRACT_ID.sub("", text)
+    return [f"{name}: {m}" for m in GUID.findall(text) if m != PLACEHOLDER_ID and not FIXTURE_ID.fullmatch(m)]
 
 
 def _coordinate_hits(name: str, text: str) -> list[str]:
+    if name.startswith(VENDORED_STANDARDS):
+        # Upstream schema copies, kept as-is; their example hosts point at no workspace.
+        return []
     hits = [f"{name}: {m}" for m in WORKSPACE_COORDINATE.findall(text)]
     if not name.startswith(INTENT_SCHEMA_RECORDS):
         hits += [f"{name}: {m}" for m in INTENT_SCHEMA.findall(text)]

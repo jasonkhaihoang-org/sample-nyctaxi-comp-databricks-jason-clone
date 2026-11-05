@@ -1,0 +1,50 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: d705ae57-ddfc-50b6-9a9a-f33b8e7b355d
+name: bridge_zone_poi
+version: 1.1.0
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: core
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: bridge_zone_poi
+    properties:
+      - name: poi_id
+        logicalType: string
+        physicalType: string
+        primaryKey: true
+        quality:
+          - type: library
+            metric: duplicateValues
+            mustBe: 0
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: zone_natural_key
+        logicalType: integer
+        physicalType: bigint
+        relationships:
+          - to: dim_zone.zone_natural_key
+      - name: poi_category
+        logicalType: string
+        physicalType: string
+      - name: poi_category_name
+        logicalType: string
+        physicalType: string
+      - name: poi_name
+        logicalType: string
+        physicalType: string
+      - name: demand_weight
+        logicalType: integer
+        physicalType: int
+      - name: allocation_factor
+        logicalType: number
+        physicalType: double
+authoritativeDefinitions:
+  - url: logical-model/nyc_taxi_analytics.ossie.yaml
+    type: businessDefinition

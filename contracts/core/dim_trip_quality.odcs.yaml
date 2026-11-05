@@ -1,0 +1,69 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 45817eb7-5720-52b9-9118-9ce4bb3430d3
+name: dim_trip_quality
+version: 1.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: core
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: dim_trip_quality
+    properties:
+      - name: trip_quality_key
+        logicalType: string
+        physicalType: string
+        primaryKey: true
+        quality:
+          - type: library
+            metric: duplicateValues
+            mustBe: 0
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: is_billable
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_refund
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_zero_distance
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_implausibly_short
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_implausibly_fast
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_negative_duration
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_zero_passenger
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_missing_passenger_count
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_sparse_vendor_feed
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_unresolved_pickup_zone
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_undocumented_rate_code
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_missing_airport_fee
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_clean_trip
+        logicalType: boolean
+        physicalType: boolean
+authoritativeDefinitions:
+  - url: logical-model/nyc_taxi_analytics.ossie.yaml
+    type: businessDefinition

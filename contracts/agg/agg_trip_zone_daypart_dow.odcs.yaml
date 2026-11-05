@@ -1,0 +1,135 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 81de3f5a-9664-5f68-b779-5b79dbdb222e
+name: agg_trip_zone_daypart_dow
+version: 1.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: agg
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: agg_trip_zone_daypart_dow
+    properties:
+      - name: avg_measurable_tip_rate
+        logicalType: number
+        physicalType: double
+      - name: trip_count
+        logicalType: integer
+        physicalType: bigint
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: pickup_location_id
+        logicalType: integer
+        physicalType: bigint
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+        relationships:
+          - to: dim_zone.zone_natural_key
+      - name: zone_name
+        logicalType: string
+        physicalType: string
+      - name: borough_name
+        logicalType: string
+        physicalType: string
+      - name: reporting_region
+        logicalType: string
+        physicalType: string
+      - name: zone_class
+        logicalType: string
+        physicalType: string
+      - name: is_airport_zone
+        logicalType: boolean
+        physicalType: boolean
+      - name: day_of_week
+        logicalType: integer
+        physicalType: int
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: day_name
+        logicalType: string
+        physicalType: string
+      - name: is_weekend
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_non_working_day
+        logicalType: boolean
+        physicalType: boolean
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: daypart_code
+        logicalType: string
+        physicalType: string
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: daypart_name
+        logicalType: string
+        physicalType: string
+      - name: is_peak
+        logicalType: boolean
+        physicalType: boolean
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: service_type_key
+        logicalType: string
+        physicalType: string
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+        relationships:
+          - to: dim_service_type.service_type_key
+      - name: billable_trip_count
+        logicalType: integer
+        physicalType: bigint
+      - name: total_revenue
+        logicalType: number
+        physicalType: double
+      - name: fare_revenue
+        logicalType: number
+        physicalType: double
+      - name: tip_revenue
+        logicalType: number
+        physicalType: double
+      - name: surcharge_revenue
+        logicalType: number
+        physicalType: double
+      - name: total_miles
+        logicalType: number
+        physicalType: double
+      - name: total_paid_hours
+        logicalType: number
+        physicalType: double
+      - name: avg_total_amount
+        logicalType: number
+        physicalType: double
+      - name: avg_trip_distance
+        logicalType: number
+        physicalType: double
+      - name: avg_trip_minutes
+        logicalType: number
+        physicalType: double
+      - name: median_total_amount
+        logicalType: number
+        physicalType: double
+      - name: measurable_tip_trip_count
+        logicalType: integer
+        physicalType: bigint
+      - name: tip_measurable_share
+        logicalType: number
+        physicalType: double

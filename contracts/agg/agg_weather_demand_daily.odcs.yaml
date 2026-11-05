@@ -1,0 +1,72 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 03545ed9-b13f-50d6-918e-6772d8f11853
+name: agg_weather_demand_daily
+version: 1.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: agg
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: agg_weather_demand_daily
+    properties:
+      - name: obs_date
+        logicalType: date
+        physicalType: date
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: borough_name
+        logicalType: string
+        physicalType: string
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: day_name
+        logicalType: string
+        physicalType: string
+      - name: is_weekend
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_holiday
+        logicalType: boolean
+        physicalType: boolean
+      - name: temp_avg_f
+        logicalType: number
+        physicalType: double
+      - name: precip_inches
+        logicalType: number
+        physicalType: double
+      - name: snow_inches
+        logicalType: number
+        physicalType: double
+      - name: is_wet_day
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_snow_day
+        logicalType: boolean
+        physicalType: boolean
+      - name: weather_class
+        logicalType: string
+        physicalType: string
+      - name: trip_count
+        logicalType: integer
+        physicalType: bigint
+      - name: total_revenue
+        logicalType: number
+        physicalType: double
+      - name: avg_trip_distance
+        logicalType: number
+        physicalType: double
+      - name: avg_fare
+        logicalType: number
+        physicalType: double
+      - name: avg_paid_hours_per_trip
+        logicalType: number
+        physicalType: double

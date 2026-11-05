@@ -1,0 +1,78 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: d3d3121e-ea7a-5860-b419-6f73d8f6dee9
+name: mart_trip_quality_scorecard
+version: 1.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: ops
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: mart_trip_quality_scorecard
+    properties:
+      - name: trip_month
+        logicalType: timestamp
+        physicalType: timestamp
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: vendor_id
+        logicalType: integer
+        physicalType: int
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: vendor_legal_name
+        logicalType: string
+        physicalType: string
+      - name: service_type_key
+        logicalType: string
+        physicalType: string
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+        relationships:
+          - to: dim_service_type.service_type_key
+      - name: trip_count
+        logicalType: integer
+        physicalType: bigint
+      - name: clean_trip_count
+        logicalType: integer
+        physicalType: bigint
+      - name: non_billable_count
+        logicalType: integer
+        physicalType: bigint
+      - name: refund_count
+        logicalType: integer
+        physicalType: bigint
+      - name: zero_distance_count
+        logicalType: integer
+        physicalType: bigint
+      - name: implausible_speed_count
+        logicalType: integer
+        physicalType: bigint
+      - name: sparse_feed_count
+        logicalType: integer
+        physicalType: bigint
+      - name: unresolved_zone_count
+        logicalType: integer
+        physicalType: bigint
+      - name: undocumented_rate_count
+        logicalType: integer
+        physicalType: bigint
+      - name: unbalanced_total_count
+        logicalType: integer
+        physicalType: bigint
+      - name: clean_rate
+        logicalType: number
+        physicalType: double
+      - name: sparse_feed_rate
+        logicalType: number
+        physicalType: double

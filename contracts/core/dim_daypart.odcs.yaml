@@ -1,0 +1,39 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 15ae98ac-718e-55b6-93e7-0a02cac8ff27
+name: dim_daypart
+version: 1.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: core
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: dim_daypart
+    properties:
+      - name: hour_of_day
+        logicalType: integer
+        physicalType: bigint
+        primaryKey: true
+        quality:
+          - type: library
+            metric: duplicateValues
+            mustBe: 0
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: daypart_code
+        logicalType: string
+        physicalType: string
+      - name: daypart_name
+        logicalType: string
+        physicalType: string
+      - name: is_peak
+        logicalType: boolean
+        physicalType: boolean
+authoritativeDefinitions:
+  - url: logical-model/nyc_taxi_fleet.ossie.yaml
+    type: businessDefinition

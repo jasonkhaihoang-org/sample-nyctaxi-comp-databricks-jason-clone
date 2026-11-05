@@ -1,0 +1,71 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 0012cefa-b0a4-5942-9979-aebde62d1457
+name: mart_revenue_component_bridge
+version: 1.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: finance
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: mart_revenue_component_bridge
+    dataGranularityDescription: 'The fare-to-total walk, unpivoted one component per row. The residual is its own component rather than being absorbed into a real one: if it is non-zero the walk does not balance, and that is a finding about the source.'
+    properties:
+      - name: component_name
+        description: 'Fare component the row carries: c_fare, c_tip, c_tolls, c_extra, c_mta_tax, c_improvement, c_congestion, c_airport_fee, or c_residual, the part of total_amount no other component explains.'
+        logicalType: string
+        physicalType: string
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: trip_month
+        description: Month of the pickup, truncated to the first day.
+        logicalType: timestamp
+        physicalType: timestamp
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: service_type_key
+        description: Fleet service type of the trips, yellow or green.
+        logicalType: string
+        physicalType: string
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+        relationships:
+          - to: dim_service_type.service_type_key
+      - name: borough_name
+        description: Borough of the pickup zone.
+        logicalType: string
+        physicalType: string
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: trip_count
+        description: Billable trips in the month, service type and borough; repeated on each component row, so do not sum it across components.
+        logicalType: integer
+        physicalType: bigint
+      - name: total_amount
+        description: Sum of total_amount over those trips; repeated on each component row, so do not sum it across components.
+        logicalType: number
+        physicalType: double
+      - name: component_order
+        description: Position of the component in the walk from fare to total, 1 to 9.
+        logicalType: integer
+        physicalType: int
+      - name: component_amount
+        description: Sum of the named component over those trips.
+        logicalType: number
+        physicalType: double
+      - name: component_share
+        description: component_amount divided by total_amount; null when total_amount is zero.
+        logicalType: number
+        physicalType: double

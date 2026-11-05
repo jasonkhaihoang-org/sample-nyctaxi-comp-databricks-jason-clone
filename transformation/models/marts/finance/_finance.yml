@@ -5,41 +5,99 @@ models:
     description: >
       Daily revenue by pickup zone. The billable rule (ADR 0003) is applied
       here and nowhere upstream.
+    contract: {enforced: true}
     columns:
       - name: trip_date
-        tests: [not_null]
+        data_type: date
+        data_tests: [not_null]
       - name: total_revenue
-        tests: [not_null]
+        data_type: double
+        data_tests: [not_null]
       - name: pickup_location_id
-        tests:
-          - relationships: {arguments: {to: ref('dim_zone'), field: zone_natural_key}}
-          - not_null
+        data_type: bigint
+        data_tests: [not_null, {relationships: {arguments: {field: zone_natural_key, to: ref('dim_zone')}}}]
+      - name: borough
+        data_type: string
+      - name: zone_name
+        data_type: string
+      - name: reporting_region
+        data_type: string
+      - name: trip_count
+        data_type: bigint
+        description: Trips, billable or not.
+      - name: fare_revenue
+        data_type: double
+      - name: tip_revenue
+        data_type: double
+      - name: surcharge_revenue
+        data_type: double
+      - name: toll_revenue
+        data_type: double
 
   - name: mart_monthly_service_summary
     description: Monthly volume and revenue by fleet and payment method.
+    contract: {enforced: true}
     columns:
       - name: trip_month
-        tests: [not_null]
+        data_type: timestamp
+        data_tests: [not_null]
       - name: service_type
-        tests:
-          - accepted_values: {arguments: {values: ['yellow', 'green']}}
-          - not_null
+        data_type: string
+        data_tests: [{accepted_values: {arguments: {values: [yellow, green]}}}, not_null]
       - name: payment_method_name
-        tests: [not_null]
+        data_type: string
+        data_tests: [not_null]
+      - name: settlement_class
+        data_type: string
+      - name: counts_as_revenue
+        data_type: boolean
+      - name: trip_count
+        data_type: bigint
+        description: Trips, billable or not.
+      - name: total_miles
+        data_type: double
+      - name: total_revenue
+        data_type: double
+      - name: avg_fare
+        data_type: double
+      - name: est_processor_fees
+        data_type: double
 
   - name: mart_revenue_component_bridge
     description: >
       The fare-to-total walk, unpivoted one component per row. The residual is
       its own component rather than being absorbed into a real one: if it is
       non-zero the walk does not balance, and that is a finding about the source.
+    contract: {enforced: true}
     columns:
       - name: component_name
-        tests: [not_null]
+        data_type: string
+        data_tests: [not_null]
+        description: 'Fare component the row carries: c_fare, c_tip, c_tolls, c_extra, c_mta_tax, c_improvement, c_congestion, c_airport_fee, or c_residual, the part of total_amount no other component explains.'
       - name: trip_month
-        tests: [not_null]
+        data_type: timestamp
+        description: Month of the pickup, truncated to the first day.
+        data_tests: [not_null]
       - name: service_type_key
-        tests:
-          - not_null
-          - relationships: {arguments: {to: ref('dim_service_type'), field: service_type_key}}
+        data_type: string
+        description: Fleet service type of the trips, yellow or green.
+        data_tests: [not_null, {relationships: {arguments: {field: service_type_key, to: ref('dim_service_type')}}}]
       - name: borough_name
-        tests: [not_null]
+        data_type: string
+        description: Borough of the pickup zone.
+        data_tests: [not_null]
+      - name: trip_count
+        data_type: bigint
+        description: Billable trips in the month, service type and borough; repeated on each component row, so do not sum it across components.
+      - name: total_amount
+        data_type: double
+        description: Sum of total_amount over those trips; repeated on each component row, so do not sum it across components.
+      - name: component_order
+        data_type: int
+        description: Position of the component in the walk from fare to total, 1 to 9.
+      - name: component_amount
+        data_type: double
+        description: Sum of the named component over those trips.
+      - name: component_share
+        data_type: double
+        description: component_amount divided by total_amount; null when total_amount is zero.

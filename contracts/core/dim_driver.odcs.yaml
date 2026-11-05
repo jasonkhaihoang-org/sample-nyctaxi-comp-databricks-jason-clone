@@ -1,0 +1,77 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: d4ffe397-9122-546c-a7ea-f2dee59d3a48
+name: dim_driver
+version: 2.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: core
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: dim_driver
+    properties:
+      - name: driver_key
+        logicalType: integer
+        physicalType: bigint
+        primaryKey: true
+        quality:
+          - type: library
+            metric: duplicateValues
+            mustBe: 0
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: garage_key
+        logicalType: integer
+        physicalType: bigint
+        relationships:
+          - to: dim_garage.garage_key
+      - name: hack_licence_no
+        logicalType: string
+        physicalType: string
+      - name: driver_ref
+        logicalType: string
+        physicalType: string
+      - name: engagement_type
+        logicalType: string
+        physicalType: string
+      - name: driver_status
+        logicalType: string
+        physicalType: string
+      - name: is_wav_certified
+        logicalType: boolean
+        physicalType: boolean
+      - name: hire_date
+        logicalType: date
+        physicalType: date
+      - name: termination_date
+        logicalType: date
+        physicalType: date
+      - name: tenure_days
+        logicalType: integer
+        physicalType: int
+      - name: home_garage_name
+        logicalType: string
+        physicalType: string
+      - name: lease_id
+        logicalType: integer
+        physicalType: bigint
+      - name: lease_type
+        logicalType: string
+        physicalType: string
+      - name: lease_rate
+        logicalType: number
+        physicalType: decimal(22,2)
+      - name: revenue_share_pct
+        logicalType: number
+        physicalType: decimal(3,2)
+      - name: primary_vehicle_id
+        logicalType: integer
+        physicalType: bigint
+authoritativeDefinitions:
+  - url: logical-model/nyc_taxi_fleet.ossie.yaml
+    type: businessDefinition

@@ -1,0 +1,1108 @@
+version: "0.2.0.dev0"
+name: nyc_taxi_fleet
+description: "Fleet operations for the Harbour Point fleet: driver sign-ons, vehicle status intervals and maintenance downtime, with the conformed driver, vehicle, garage, date, daypart and zone dimensions. Fleet star of the nyc-taxi-duckdb-demo warehouse."
+ai_context:
+  instructions: "Use for fleet-ops questions — driver and vehicle utilisation, garage-level performance, and where the fleet waits by zone and hour. Rates are rebuilt from summed numerators and denominators (ADR 0016), never averaged from row-level rate columns. Maintenance down-days are semi-additive (ADR 0010 for the utilisation split): expand them to a daily grain before computing availability."
+  synonyms:
+    - fleet operations
+    - driver and vehicle utilisation
+    - shift performance
+datasets:
+  - name: shift
+    source: core.fct_shift
+    primary_key: [shift_id]
+    description: One row per driver sign-on, bridging the operational world (occupancy, leases) and the revenue world (trips).
+    ai_context:
+      synonyms:
+        - shifts
+        - sign-ons
+    fields:
+      - name: shift_id
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: shift_id
+        datatype: String
+        description: Sign-on identifier; the grain of the fleet revenue fact.
+      - name: shift_date
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: shift_date
+        datatype: Date
+        dimension:
+          is_time: true
+        description: Calendar date of sign-on.
+      - name: shift_date_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: shift_date_key
+        datatype: Integer
+        description: Surrogate key into date for the shift date.
+      - name: driver_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: driver_key
+        datatype: Integer
+        description: Driver who signed on.
+      - name: vehicle_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: vehicle_key
+        datatype: Integer
+        description: Vehicle operated during the shift.
+      - name: garage_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: garage_key
+        datatype: Integer
+        description: Driver's home garage at sign-on, carried from dim_driver; not the vehicle's garage.
+      - name: engagement_type
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: engagement_type
+        datatype: String
+        description: How the driver is engaged (employee, contractor, ...).
+      - name: lease_type
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: lease_type
+        datatype: String
+        description: Lease arrangement in force for the shift; null when the driver is not on a lease.
+      - name: shift_start_ts
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: shift_start_ts
+        datatype: DateTime
+        description: Timestamp the driver signed on.
+      - name: is_unclosed_shift
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: is_unclosed_shift
+        datatype: Boolean
+        description: True when no sign-off event closed the shift and the effective end was used instead.
+      - name: online_seconds
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: online_seconds
+        datatype: Integer
+        description: Signed-on seconds, to the shift's effective end. Denominator of the rate metrics; aggregate only through metrics.
+      - name: on_trip_seconds
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: on_trip_seconds
+        datatype: Integer
+        description: Seconds spent carrying a fare. Numerator of occupancy; aggregate only through metrics.
+      - name: trip_count
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: trip_count
+        datatype: Integer
+        description: Trips attributed to the shift, row level; sum it rather than reading a single row.
+      - name: gross_revenue
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: gross_revenue
+        datatype: Decimal
+        description: Revenue earned on the shift's trips, row level; aggregate only through metrics.
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "logical_sources": [{"name": "LTS1_detail", "physical_table": "fct_shift", "priority_group": 1, "content_grain": ["shift"], "note": "Refused columns: available_seconds, break_seconds, unaccounted_seconds, idle_rate, occupancy_rate, fare_revenue, tip_revenue, airport_fee_collected, surcharge_collected, recognised_revenue, paid_miles, paid_seconds, shift_cost, shift_margin, revenue_per_online_hour, revenue_per_paid_mile, odometer_miles, paid_mile_ratio, negative_interval_count, telematics_source, effective_end_ts. Fare components belong to the trips star, the row-level ratios are withdrawn in favour of the metric expressions (ADR 0016), and the rest are outside the six shift metrics this document scopes (S2).", "column_map": {"shift_id": "shift_id", "shift_date": "shift_date", "shift_date_key": "shift_date_key", "driver_key": "driver_key", "vehicle_key": "vehicle_key", "garage_key": "garage_key", "engagement_type": "engagement_type", "lease_type": "lease_type", "shift_start_ts": "shift_start_ts", "is_unclosed_shift": "is_unclosed_shift", "online_seconds": "online_seconds", "on_trip_seconds": "on_trip_seconds", "trip_count": "trip_count", "gross_revenue": "gross_revenue", "shift_count": "shift_id", "online_hours": "online_seconds", "on_trip_hours": "on_trip_seconds", "active_driver_count": "driver_key", "fleet_on_trip_hours": "on_trip_seconds"}}, {"name": "LTS2_driver_day", "physical_table": "agg_driver_daily", "priority_group": 0, "content_grain": ["shift_date", "driver_key"], "column_map": {"shift_date": "shift_date", "shift_date_key": "date_key", "driver_key": "driver_key", "garage_key": "garage_key", "engagement_type": "engagement_type", "trip_count": "trip_count", "shift_count": "shift_count", "online_hours": "online_hours", "on_trip_hours": "on_trip_hours", "gross_revenue": "gross_revenue", "fleet_on_trip_hours": "on_trip_hours"}, "note": "Refused: driver_ref, home_garage_name (driver dataset attributes), vehicles_driven, break_hours, tip_revenue, airport_fee_collected, total_cost, total_margin, paid_miles, unclosed_shift_count, revenue_per_trip — measures outside the six shift metrics this document scopes (S2). occupancy_rate and revenue_per_online_hour are computed after aggregation from their summed inputs (ADR 0016), never read from this source''s ratio columns. The inner join to dim_driver drops a shift with no driver key; the relationships test on fct_shift.driver_key ignores nulls, so the filter is stated, not assumed. Binding held by assert_semantic_content_holds.", "content_levels": [{"via": "shift_to_date", "level": "day", "key_columns": ["shift_date"]}, {"via": "shift_to_driver", "key_columns": ["driver_key"]}], "content_filter": "driver_key IS NOT NULL"}, {"name": "LTS3_driver_month", "physical_table": "agg_driver_monthly", "priority_group": 0, "content_grain": ["month_start_date", "driver_key"], "column_map": {"driver_key": "driver_key", "garage_key": "garage_key", "engagement_type": "engagement_type", "trip_count": "trip_count", "shift_count": "shift_count", "online_hours": "online_hours", "on_trip_hours": "on_trip_hours", "gross_revenue": "gross_revenue", "fleet_on_trip_hours": "on_trip_hours"}, "note": "Refused: month_start_date is the grain of this source, not shift_date, so no date field is mapped; driver_ref, home_garage_name (driver dataset attributes), active_days, tip_revenue, total_cost, total_margin, paid_miles, trips_per_online_hour, margin_rate are out of scope (S2). occupancy_rate and revenue_per_online_hour are computed after aggregation from their summed inputs (ADR 0016), never read from this source''s ratio columns. The inner join to dim_driver drops a shift with no driver key; the relationships test on fct_shift.driver_key ignores nulls, so the filter is stated, not assumed. Binding held by assert_semantic_content_holds.", "content_levels": [{"via": "shift_to_date", "level": "month", "key_columns": ["month_start_date"]}, {"via": "shift_to_driver", "key_columns": ["driver_key"]}], "content_filter": "driver_key IS NOT NULL"}, {"name": "LTS4_vehicle_day", "physical_table": "agg_vehicle_daily", "priority_group": 0, "content_grain": ["shift_date", "vehicle_key"], "column_map": {"shift_date": "shift_date", "shift_date_key": "date_key", "vehicle_key": "vehicle_key", "trip_count": "trip_count", "shift_count": "shift_count", "online_hours": "online_hours", "on_trip_hours": "on_trip_hours", "gross_revenue": "gross_revenue", "fleet_on_trip_hours": "on_trip_hours"}, "note": "Refused: medallion_number, make_model, fuel_type, is_low_emission (vehicle dataset attributes); garage_key refused because this agg carries the dim_vehicle garage, not the driver home garage the shift field means; distinct_drivers, paid_miles, odometer_miles, asset_utilisation_rate, paid_mile_ratio out of scope; revenue_per_online_hour is not computed at this grain. occupancy_rate are computed after aggregation from their summed inputs (ADR 0016), never read from this source''s ratio columns. The inner join to dim_vehicle drops a shift with no vehicle key; the relationships test on fct_shift.vehicle_key ignores nulls, so the filter is stated, not assumed. Binding held by assert_semantic_content_holds.", "content_levels": [{"via": "shift_to_date", "level": "day", "key_columns": ["shift_date"]}, {"via": "shift_to_vehicle", "key_columns": ["vehicle_key"]}], "content_filter": "vehicle_key IS NOT NULL"}, {"name": "LTS5_vehicle_month", "physical_table": "agg_vehicle_monthly", "priority_group": 0, "content_grain": ["month_start_date", "vehicle_key"], "column_map": {"vehicle_key": "vehicle_key", "trip_count": "trip_count", "shift_count": "shift_count", "online_hours": "online_hours", "on_trip_hours": "on_trip_hours", "gross_revenue": "gross_revenue", "fleet_on_trip_hours": "on_trip_hours"}, "note": "Refused: medallion_number, make_model, fuel_type (vehicle dataset attributes); garage_key refused (the vehicle garage, not the shift driver home garage); active_days, paid_miles, down_days, maintenance_cost, calendar_days, available_days, availability_adjusted_activity_rate out of scope (S2). occupancy_rate and revenue_per_online_hour are computed after aggregation from their summed inputs (ADR 0016), never read from this source''s ratio columns. The inner join to dim_vehicle drops a shift with no vehicle key; the relationships test on fct_shift.vehicle_key ignores nulls, so the filter is stated, not assumed. Binding held by assert_semantic_content_holds.", "content_levels": [{"via": "shift_to_date", "level": "month", "key_columns": ["month_start_date"]}, {"via": "shift_to_vehicle", "key_columns": ["vehicle_key"]}], "content_filter": "vehicle_key IS NOT NULL"}, {"name": "LTS6_garage_month", "physical_table": "agg_garage_monthly", "priority_group": 0, "content_grain": ["month_start_date", "garage_key"], "column_map": {"trip_count": "trip_count", "shift_count": "shift_count", "online_hours": "online_hours", "on_trip_hours": "on_trip_hours", "gross_revenue": "gross_revenue", "fleet_on_trip_hours": "on_trip_hours"}, "note": "garage_key is the grain but is not mapped as a field: the group is the dim_garage garage reached through the vehicle, not the driver home garage the shift field means. Refused: garage_name, borough_name, bay_capacity (garage dataset attributes), active_vehicles, maintenance_cost, down_days, bay_occupancy_rate out of scope (S2). occupancy_rate and revenue_per_online_hour are computed after aggregation from their summed inputs (ADR 0016), never read from this source''s ratio columns. Built from agg_vehicle_monthly (inner join to dim_vehicle) and inner joined to dim_garage through the vehicle''s garage; a vehicle without a garage would also drop out, which no shift field can state, so the generated test is what proves the totals still match. Binding held by assert_semantic_content_holds.", "content_levels": [{"via": "shift_to_date", "level": "month", "key_columns": ["month_start_date"]}], "content_filter": "vehicle_key IS NOT NULL"}, {"name": "LTS7_driver_scorecard", "physical_table": "mart_driver_scorecard", "priority_group": 0, "content_grain": ["driver_key"], "note": "Refused: driver_ref, home_garage_name (driver dataset attributes); active_days, tip_revenue, total_cost, total_margin, paid_miles, revenue_per_trip, trips_per_online_hour, tip_share, is_below_ranking_floor, fleet_rank, garage_rank, revenue_quartile, occupancy_percentile — ranking and cost columns belong to the scorecard report, not the six metrics of this star (S2). occupancy_rate and revenue_per_online_hour are computed after aggregation from their summed inputs (ADR 0016), never read from this source''s ratio columns. The inner join to dim_driver drops a shift with no driver key; the relationships test on fct_shift.driver_key ignores nulls, so the filter is stated, not assumed. Binding held by assert_semantic_content_holds.", "column_map": {"driver_key": "driver_key", "garage_key": "garage_key", "engagement_type": "engagement_type", "trip_count": "trip_count", "shift_count": "shift_count", "online_hours": "online_hours", "on_trip_hours": "on_trip_hours", "gross_revenue": "gross_revenue", "fleet_on_trip_hours": "on_trip_hours"}, "content_levels": [{"via": "shift_to_driver", "key_columns": ["driver_key"]}], "content_filter": "driver_key IS NOT NULL"}, {"name": "LTS8_vehicle_utilisation", "physical_table": "mart_vehicle_utilisation", "priority_group": 0, "content_grain": ["vehicle_key"], "note": "Refused: medallion_number, make_model, model_year, fuel_type, is_low_emission, is_in_service (vehicle dataset attributes), garage_name (garage dataset attribute); garage_key refused (the vehicle garage); active_days, paid_miles, down_days, maintenance_cost, available_days, availability_adjusted_rate, net_revenue_per_active_day out of scope (S2). occupancy_rate and revenue_per_online_hour are computed after aggregation from their summed inputs (ADR 0016), never read from this source''s ratio columns. The inner join to dim_vehicle drops a shift with no vehicle key; the relationships test on fct_shift.vehicle_key ignores nulls, so the filter is stated, not assumed. Binding held by assert_semantic_content_holds.", "column_map": {"vehicle_key": "vehicle_key", "trip_count": "trip_count", "shift_count": "shift_count", "online_hours": "online_hours", "on_trip_hours": "on_trip_hours", "gross_revenue": "gross_revenue", "fleet_on_trip_hours": "on_trip_hours"}, "content_levels": [{"via": "shift_to_vehicle", "key_columns": ["vehicle_key"]}], "content_filter": "vehicle_key IS NOT NULL"}]}'
+  - name: status_interval
+    source: core.fct_status_interval
+    primary_key: [interval_id]
+    description: One row per driver state interval. The only place idle time is locatable — a trip says where a driver earned, this says where they waited.
+    ai_context:
+      synonyms:
+        - status intervals
+        - occupancy intervals
+    fields:
+      - name: interval_id
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: interval_id
+        datatype: String
+        description: Interval identifier; the grain of the occupancy fact.
+      - name: shift_id
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: shift_id
+        datatype: String
+        description: Shift the interval belongs to.
+      - name: driver_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: driver_key
+        datatype: Integer
+        description: Driver the interval is attributed to.
+      - name: vehicle_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: vehicle_key
+        datatype: Integer
+        description: Vehicle the driver was in during the interval.
+      - name: interval_date
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: interval_date
+        datatype: Date
+        dimension:
+          is_time: true
+        description: Calendar date the interval started.
+      - name: interval_date_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: interval_date_key
+        datatype: Integer
+        description: Surrogate key into date for the interval date.
+      - name: interval_hour
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: interval_hour
+        datatype: Integer
+        description: Hour of day the interval started (0-23), joins dim_daypart.
+      - name: daypart_code
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: daypart_code
+        datatype: String
+        description: Analyst-owned daypart band for interval_hour.
+      - name: zone_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: zone_key
+        datatype: String
+        description: Zone surrogate resolved to the current version of the zone.
+      - name: zone_natural_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: zone_natural_key
+        datatype: Integer
+        description: TLC location_id of the interval's zone.
+      - name: status_code
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: status_code
+        datatype: String
+        description: Driver state for the interval (LOGIN, AVAILABLE, DISPATCHED, ON_TRIP, BREAK, LOGOUT).
+      - name: interval_seconds
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: interval_seconds
+        datatype: Integer
+        description: Duration of the interval. Sum it for time; do not read a single row.
+      - name: is_negative_interval
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: is_negative_interval
+        datatype: Boolean
+        description: True when the event stream closes the interval before it opens; a quality flag, not a duration.
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "logical_sources": [{"name": "LTS1_detail", "physical_table": "fct_status_interval", "priority_group": 1, "content_grain": ["interval"], "note": "Refused: interval_start_ts, interval_end_ts (derivable from date, hour and duration and outside the scope of this document), is_terminal_interval and skew_seconds (stream audit columns, not semantic attributes). S2.", "column_map": {"interval_id": "interval_id", "shift_id": "shift_id", "driver_key": "driver_key", "vehicle_key": "vehicle_key", "interval_date": "interval_date", "interval_date_key": "interval_date_key", "interval_hour": "interval_hour", "daypart_code": "daypart_code", "zone_key": "zone_key", "zone_natural_key": "zone_natural_key", "status_code": "status_code", "interval_seconds": "interval_seconds", "is_negative_interval": "is_negative_interval", "on_trip_interval_hours": "interval_seconds"}}, {"name": "LTS2_zone_hour", "physical_table": "agg_zone_occupancy_hourly", "priority_group": 0, "content_grain": ["interval_date", "interval_hour", "location_id"], "column_map": {"interval_date": "interval_date", "interval_hour": "interval_hour", "daypart_code": "daypart_code", "zone_natural_key": "location_id"}, "note": "Refused: zone_key (this agg carries the zone natural key, not the surrogate), interval_id, shift_id, driver_key, vehicle_key, interval_seconds, status_code and is_negative_interval (aggregated, counted distinct, pivoted, or dropped at this grain); zone_name, borough_name, is_airport_zone belong to the zone dataset; interval_count, distinct_drivers, distinct_vehicles, total_hours, on_trip_hours, available_hours, break_hours and zone_occupancy_rate are measures this document does not declare (S2).", "content_levels": [{"via": "status_interval_to_date", "level": "day", "key_columns": ["interval_date"]}, {"via": "status_interval_to_daypart", "level": "hour", "key_columns": ["interval_hour"]}, {"via": "status_interval_to_zone", "level": "zone", "key_columns": ["location_id"]}]}]}'
+  - name: maintenance
+    source: core.fct_maintenance
+    primary_key: [maintenance_id]
+    description: One row per vehicle maintenance event. Semi-additive — down-days sum across vehicles but not across overlapping date ranges, so availability expands this to a daily grain rather than summing the column.
+    ai_context:
+      instructions: Never sum down_days across overlapping periods; expand the event to a daily grain before computing availability.
+      synonyms:
+        - vehicle downtime
+        - maintenance events
+    fields:
+      - name: maintenance_id
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: maintenance_id
+        datatype: String
+        description: Maintenance event identifier; the grain of the downtime fact.
+      - name: vehicle_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: vehicle_key
+        datatype: Integer
+        description: Vehicle that was in the shop.
+      - name: garage_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: garage_key
+        datatype: Integer
+        description: Garage the vehicle belongs to, carried from dim_vehicle.
+      - name: started_date
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: started_date
+        datatype: Date
+        dimension:
+          is_time: true
+        description: First day of the downtime.
+      - name: started_date_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: started_date_key
+        datatype: Integer
+        description: Surrogate key into date for the start date.
+      - name: ended_date
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: ended_date
+        datatype: Date
+        dimension:
+          is_time: false
+        description: Last day of the downtime; a range end, not a time dimension.
+      - name: down_days
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: down_days
+        datatype: Integer
+        description: Days out of service for the event; semi-additive across overlapping ranges.
+      - name: maintenance_type
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: maintenance_type
+        datatype: String
+        description: Kind of work performed.
+      - name: cost_usd
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: cost_usd
+        datatype: Decimal
+        description: Cost of the event in USD, row level.
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "logical_sources": [{"name": "LTS1_detail", "physical_table": "fct_maintenance", "priority_group": 1, "content_grain": ["maintenance_event"], "column_map": {"maintenance_id": "maintenance_id", "vehicle_key": "vehicle_key", "garage_key": "garage_key", "started_date": "started_date", "started_date_key": "started_date_key", "ended_date": "ended_date", "down_days": "down_days", "maintenance_type": "maintenance_type", "cost_usd": "cost_usd"}}]}'
+  - name: driver
+    source: core.dim_driver
+    primary_key: [driver_key]
+    description: Type 1 driver dimension — current state with lease and home garage. The operator keeps no driver history, so a Type 2 here would fabricate it.
+    ai_context:
+      synonyms:
+        - drivers
+        - hack drivers
+    fields:
+      - name: driver_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: driver_key
+        datatype: Integer
+        description: Operator's driver identifier.
+      - name: driver_ref
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: driver_ref
+        datatype: String
+        description: Short driver reference used in reports.
+      - name: engagement_type
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: engagement_type
+        datatype: String
+        description: How the driver is engaged (employee, contractor, ...).
+      - name: driver_status
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: driver_status
+        datatype: String
+        description: Current activation status of the driver.
+      - name: is_wav_certified
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: is_wav_certified
+        datatype: Boolean
+        description: Certified to drive a wheelchair-accessible vehicle.
+      - name: hire_date
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: hire_date
+        datatype: Date
+        dimension:
+          is_time: false
+        description: Date engagement started; an attribute of the driver, not a time dimension.
+      - name: termination_date
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: termination_date
+        datatype: Date
+        dimension:
+          is_time: false
+        description: Date engagement ended; null while active.
+      - name: tenure_days
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: tenure_days
+        datatype: Integer
+        description: Days from hire to the report end; restates with the reporting window.
+      - name: garage_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: garage_key
+        datatype: Integer
+        description: Driver's home garage.
+      - name: home_garage_name
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: home_garage_name
+        datatype: String
+        description: Display name of the driver's home garage.
+      - name: lease_type
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: lease_type
+        datatype: String
+        description: Current lease arrangement, null when the driver is not on a lease.
+      - name: lease_rate
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: lease_rate
+        datatype: Decimal
+        description: Current lease rate charged to the driver.
+      - name: revenue_share_pct
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: revenue_share_pct
+        datatype: Decimal
+        description: Share of revenue retained under the current lease.
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "scd": {"type": 1}, "logical_sources": [{"name": "LTS1_base", "physical_table": "dim_driver", "priority_group": 1, "content_grain": ["driver"], "note": "Refused: hack_licence_no (personal licence identifier, not an analytic attribute), lease_id (degenerate lease key), primary_vehicle_id (the shift carries the operated vehicle, so a second driver-to-vehicle path is not declared). S2.", "column_map": {"driver_key": "driver_key", "driver_ref": "driver_ref", "engagement_type": "engagement_type", "driver_status": "driver_status", "is_wav_certified": "is_wav_certified", "hire_date": "hire_date", "termination_date": "termination_date", "tenure_days": "tenure_days", "garage_key": "garage_key", "home_garage_name": "home_garage_name", "lease_type": "lease_type", "lease_rate": "lease_rate", "revenue_share_pct": "revenue_share_pct"}}]}'
+  - name: vehicle
+    source: core.dim_vehicle
+    primary_key: [vehicle_key]
+    description: Type 1 vehicle dimension with maintenance downtime folded in, so a vehicle out of the shop is not read as an underperforming asset.
+    ai_context:
+      synonyms:
+        - vehicles
+        - medallions
+    fields:
+      - name: vehicle_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: vehicle_key
+        datatype: Integer
+        description: Operator's vehicle identifier.
+      - name: medallion_number
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: medallion_number
+        datatype: String
+        description: Medallion the vehicle operates under.
+      - name: make_model
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: make_model
+        datatype: String
+        description: Reporting label for make and model.
+      - name: model_year
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: model_year
+        datatype: Integer
+        description: Model year of the vehicle.
+      - name: vehicle_age_years
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: vehicle_age_years
+        datatype: Integer
+        description: Model age in years at the report end; restates with the reporting window.
+      - name: fuel_type
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: fuel_type
+        datatype: String
+        description: Fuel or drivetrain type.
+      - name: is_low_emission
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: is_low_emission
+        datatype: Boolean
+        description: Hybrid or electric.
+      - name: wheelchair_accessible
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: wheelchair_accessible
+        datatype: Boolean
+        description: Equipped for wheelchair access.
+      - name: garage_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: garage_key
+        datatype: Integer
+        description: Garage the vehicle is assigned to; not the driver's home garage.
+      - name: garage_name
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: garage_name
+        datatype: String
+        description: Display name of the assigned garage.
+      - name: in_service_date
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: in_service_date
+        datatype: Date
+        dimension:
+          is_time: false
+        description: Date the vehicle entered service.
+      - name: retired_date
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: retired_date
+        datatype: Date
+        dimension:
+          is_time: false
+        description: Date the vehicle left service; null while in service.
+      - name: is_in_service
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: is_in_service
+        datatype: Boolean
+        description: True while the vehicle is available to the fleet.
+      - name: maintenance_events
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: maintenance_events
+        datatype: Integer
+        description: Lifetime count of maintenance events.
+      - name: maintenance_down_days
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: maintenance_down_days
+        datatype: Integer
+        description: Lifetime down-days across maintenance events; semi-additive.
+      - name: maintenance_cost_usd
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: maintenance_cost_usd
+        datatype: Decimal
+        description: Lifetime maintenance cost in USD.
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "scd": {"type": 1}, "logical_sources": [{"name": "LTS1_base", "physical_table": "dim_vehicle", "priority_group": 1, "content_grain": ["vehicle"], "note": "Refused: vin, make, model — vin is a technical identifier and make/model are the components of make_model, the reporting label. S2.", "column_map": {"vehicle_key": "vehicle_key", "medallion_number": "medallion_number", "make_model": "make_model", "model_year": "model_year", "vehicle_age_years": "vehicle_age_years", "fuel_type": "fuel_type", "is_low_emission": "is_low_emission", "wheelchair_accessible": "wheelchair_accessible", "garage_key": "garage_key", "garage_name": "garage_name", "in_service_date": "in_service_date", "retired_date": "retired_date", "is_in_service": "is_in_service", "maintenance_events": "maintenance_events", "maintenance_down_days": "maintenance_down_days", "maintenance_cost_usd": "maintenance_cost_usd"}}]}'
+  - name: garage
+    source: core.dim_garage
+    primary_key: [garage_key]
+    description: One row per garage with its capacity and the vehicles assigned to it.
+    ai_context:
+      synonyms:
+        - depot
+    fields:
+      - name: garage_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: garage_key
+        datatype: Integer
+        description: Garage identifier.
+      - name: garage_name
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: garage_name
+        datatype: String
+        description: Garage display name.
+      - name: borough_name
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: borough_name
+        datatype: String
+        description: Borough the garage sits in.
+      - name: bay_capacity
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: bay_capacity
+        datatype: Integer
+        description: Number of bays available for vehicles.
+      - name: opened_date
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: opened_date
+        datatype: Date
+        dimension:
+          is_time: false
+        description: Date the garage opened.
+      - name: assigned_vehicle_count
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: assigned_vehicle_count
+        datatype: Integer
+        description: Vehicles currently assigned to the garage.
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "logical_sources": [{"name": "LTS1_base", "physical_table": "dim_garage", "priority_group": 1, "content_grain": ["garage"], "column_map": {"garage_key": "garage_key", "garage_name": "garage_name", "borough_name": "borough_name", "bay_capacity": "bay_capacity", "opened_date": "opened_date", "assigned_vehicle_count": "assigned_vehicle_count"}}]}'
+  - name: date
+    source: core.dim_date
+    primary_key: [date_key]
+    description: Date spine with holiday, weekend, and school-term flags from master data.
+    fields:
+      - name: date_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: date_key
+        datatype: Integer
+        description: yyyymmdd integer key.
+      - name: calendar_date
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: calendar_date
+        datatype: Date
+        dimension:
+          is_time: true
+        description: Calendar date.
+      - name: calendar_year
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: calendar_year
+        datatype: Integer
+        dimension:
+          is_time: true
+        description: Calendar year grain.
+      - name: calendar_quarter
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: calendar_quarter
+        datatype: Integer
+        dimension:
+          is_time: true
+        description: Calendar quarter grain (1-4).
+      - name: calendar_month
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: calendar_month
+        datatype: Integer
+        dimension:
+          is_time: true
+        description: Calendar month grain (1-12).
+      - name: month_name
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: month_name
+        datatype: String
+        dimension:
+          is_time: true
+        description: Month label for the month grain.
+      - name: month_start_date
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: month_start_date
+        datatype: Date
+        description: First day of the calendar month; key of the month level, since calendar_month repeats every year.
+      - name: week_start_date
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: week_start_date
+        datatype: Date
+        description: Monday that starts the calendar week (ADR 0014); key of the week level.
+      - name: is_weekend
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: is_weekend
+        datatype: Boolean
+        description: Saturday or Sunday.
+      - name: is_holiday
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: is_holiday
+        datatype: Boolean
+        description: Master-data holiday flag; corrections restate reports without code change.
+      - name: is_non_working_day
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: is_non_working_day
+        datatype: Boolean
+        description: Weekend or holiday; weekday holidays behave like weekends for demand.
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "conformed_from": "nyc_taxi_trips", "logical_sources": [{"name": "LTS1_calendar", "physical_table": "dim_date", "priority_group": 1, "content_grain": ["calendar_date"], "column_map": {"date_key": "date_key", "calendar_date": "calendar_date", "calendar_year": "calendar_year", "calendar_quarter": "calendar_quarter", "calendar_month": "calendar_month", "month_name": "month_name", "is_weekend": "is_weekend", "is_holiday": "is_holiday", "is_non_working_day": "is_non_working_day", "month_start_date": "month_start_date", "week_start_date": "week_start_date"}}], "levels": [{"name": "year", "keys": [{"name": "calendar_year", "fields": ["calendar_year"], "primary": true, "display": true}]}, {"name": "quarter", "keys": [{"name": "year_quarter", "fields": ["calendar_year", "calendar_quarter"], "primary": true}]}, {"name": "month", "keys": [{"name": "month_start_date", "fields": ["month_start_date"], "primary": true, "display": true}, {"name": "year_month", "fields": ["calendar_year", "calendar_month"]}], "attributes": ["month_name"]}, {"name": "week", "keys": [{"name": "week_start_date", "fields": ["week_start_date"], "primary": true, "display": true}]}, {"name": "day", "keys": [{"name": "calendar_date", "fields": ["calendar_date"], "primary": true, "display": true}, {"name": "date_key", "fields": ["date_key"]}], "attributes": ["is_weekend", "is_holiday", "is_non_working_day"]}], "row_level": {"level": "day", "versioned": false}, "hierarchies": [{"name": "Time", "is_time": true, "levels": ["year", "quarter", "month", "day"]}, {"name": "Week", "is_time": true, "levels": ["week", "day"]}]}'
+  - name: daypart
+    source: core.dim_daypart
+    primary_key: [hour_of_day]
+    description: One row per hour of the day, with its analyst-owned daypart band and peak flag.
+    fields:
+      - name: hour_of_day
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: hour_of_day
+        datatype: Integer
+        description: Hour of day (0-23); joins trips on pickup_hour.
+      - name: daypart_code
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: daypart_code
+        datatype: String
+        description: "Daypart band code from the daypart seed: LATE, EARLY, MID, AMPEAK, PMPEAK or EVE."
+      - name: daypart_name
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: daypart_name
+        datatype: String
+        description: Daypart label for the band.
+      - name: is_peak
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: is_peak
+        datatype: Boolean
+        description: Whether the hour is a peak hour in the seed's daypart bands.
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "conformed_from": "nyc_taxi_trips", "logical_sources": [{"name": "LTS1_base", "physical_table": "dim_daypart", "priority_group": 1, "content_grain": ["daypart"], "column_map": {"hour_of_day": "hour_of_day", "daypart_code": "daypart_code", "daypart_name": "daypart_name", "is_peak": "is_peak"}}], "levels": [{"name": "daypart", "keys": [{"name": "daypart_code", "fields": ["daypart_code"], "primary": true}, {"name": "daypart_name", "fields": ["daypart_name"], "display": true}], "attributes": ["is_peak"]}, {"name": "hour", "keys": [{"name": "hour_of_day", "fields": ["hour_of_day"], "primary": true, "display": true}]}], "row_level": {"level": "hour", "versioned": false}, "hierarchies": [{"name": "Daypart", "levels": ["daypart", "hour"]}]}'
+  - name: zone
+    source: core.dim_zone
+    primary_key: [zone_key]
+    description: Type 2 zone dimension, natural key location_id, versioned by master data.
+    ai_context:
+      synonyms:
+        - pickup zone
+        - dropoff zone
+        - taxi zone
+    fields:
+      - name: zone_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: zone_key
+        datatype: String
+        description: Surrogate over natural key plus valid-from date.
+      - name: zone_natural_key
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: zone_natural_key
+        datatype: Integer
+        description: TLC location_id.
+      - name: zone_name
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: zone_name
+        datatype: String
+        description: Zone display name.
+      - name: borough_name
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: borough_name
+        datatype: String
+        description: Borough, including Unknown and N/A for unresolved zones.
+      - name: reporting_region
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: reporting_region
+        datatype: String
+        description: Reporting region above borough.
+      - name: valid_from_date
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: valid_from_date
+        datatype: Date
+        dimension:
+          is_time: false
+        description: Half-open validity start for the as-of join. Audit column, not a time dimension.
+      - name: valid_to_date
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: valid_to_date
+        datatype: Date
+        dimension:
+          is_time: false
+        description: Half-open validity end; 2099-12-31 marks the current version.
+      - name: is_current_version
+        expression:
+          dialects:
+            - dialect: ANSI_SQL
+              expression: is_current_version
+        datatype: Boolean
+        description: True for the current version of each zone.
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "conformed_from": "nyc_taxi_trips", "scd": {"type": 2, "natural_key": "zone_natural_key", "valid_from": "valid_from_date", "valid_to": "valid_to_date", "is_current": "is_current_version", "open_ended_value": "2099-12-31"}, "logical_sources": [{"name": "LTS1_base", "physical_table": "dim_zone", "priority_group": 1, "content_grain": ["zone"], "column_map": {"zone_key": "zone_key", "zone_natural_key": "zone_natural_key", "zone_name": "zone_name", "borough_name": "borough_name", "reporting_region": "reporting_region", "valid_from_date": "valid_from_date", "valid_to_date": "valid_to_date", "is_current_version": "is_current_version"}}], "levels": [{"name": "region", "keys": [{"name": "reporting_region", "fields": ["reporting_region"], "primary": true, "display": true}]}, {"name": "borough", "keys": [{"name": "borough_name", "fields": ["borough_name"], "primary": true, "display": true}]}, {"name": "zone", "keys": [{"name": "zone_natural_key", "fields": ["zone_natural_key"], "primary": true, "display": true}], "attributes": ["zone_name"]}], "row_level": {"level": "zone", "versioned": true}, "hierarchies": [{"name": "Geography", "scd_rollup": "as_of", "levels": ["region", "borough", "zone"]}]}'
+relationships:
+  - name: shift_to_driver
+    from: shift
+    to: driver
+    from_columns: [driver_key]
+    to_columns: [driver_key]
+    ai_context:
+      synonyms:
+        - driver of the shift
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "physical_join": "fct_shift_to_dim_driver", "cardinality": "many-to-one", "join_type": "LEFT OUTER"}'
+  - name: shift_to_vehicle
+    from: shift
+    to: vehicle
+    from_columns: [vehicle_key]
+    to_columns: [vehicle_key]
+    ai_context:
+      synonyms:
+        - vehicle operated during the shift
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "physical_join": "fct_shift_to_dim_vehicle", "cardinality": "many-to-one", "join_type": "INNER"}'
+  - name: shift_to_garage
+    from: shift
+    to: garage
+    from_columns: [garage_key]
+    to_columns: [garage_key]
+    ai_context:
+      synonyms:
+        - home garage of the driver on the shift
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "physical_join": "fct_shift_to_dim_garage", "cardinality": "many-to-one", "join_type": "LEFT OUTER"}'
+  - name: shift_to_date
+    from: shift
+    to: date
+    from_columns: [shift_date_key]
+    to_columns: [date_key]
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "physical_join": "fct_shift_to_dim_date", "cardinality": "many-to-one", "join_type": "LEFT OUTER"}'
+  - name: status_interval_to_driver
+    from: status_interval
+    to: driver
+    from_columns: [driver_key]
+    to_columns: [driver_key]
+    ai_context:
+      synonyms:
+        - driver in the interval
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "physical_join": "fct_status_interval_to_dim_driver", "cardinality": "many-to-one", "join_type": "LEFT OUTER"}'
+  - name: status_interval_to_vehicle
+    from: status_interval
+    to: vehicle
+    from_columns: [vehicle_key]
+    to_columns: [vehicle_key]
+    ai_context:
+      synonyms:
+        - vehicle in the interval
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "physical_join": "fct_status_interval_to_dim_vehicle", "cardinality": "many-to-one", "join_type": "LEFT OUTER"}'
+  - name: status_interval_to_date
+    from: status_interval
+    to: date
+    from_columns: [interval_date_key]
+    to_columns: [date_key]
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "physical_join": "fct_status_interval_to_dim_date", "cardinality": "many-to-one", "join_type": "LEFT OUTER"}'
+  - name: status_interval_to_daypart
+    from: status_interval
+    to: daypart
+    from_columns: [interval_hour]
+    to_columns: [hour_of_day]
+    ai_context:
+      synonyms:
+        - daypart of the interval
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "physical_join": "fct_status_interval_to_dim_daypart", "cardinality": "many-to-one", "join_type": "LEFT OUTER"}'
+  - name: status_interval_to_zone
+    from: status_interval
+    to: zone
+    from_columns: [zone_key]
+    to_columns: [zone_key]
+    ai_context:
+      synonyms:
+        - where the driver waited
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "physical_join": "fct_status_interval_to_dim_zone", "cardinality": "many-to-one", "join_type": "LEFT OUTER"}'
+  - name: maintenance_to_vehicle
+    from: maintenance
+    to: vehicle
+    from_columns: [vehicle_key]
+    to_columns: [vehicle_key]
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "physical_join": "fct_maintenance_to_dim_vehicle", "cardinality": "many-to-one", "join_type": "LEFT OUTER"}'
+  - name: maintenance_to_garage
+    from: maintenance
+    to: garage
+    from_columns: [garage_key]
+    to_columns: [garage_key]
+    ai_context:
+      synonyms:
+        - garage of the vehicle in the shop
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "physical_join": "fct_maintenance_to_dim_garage", "cardinality": "many-to-one", "join_type": "LEFT OUTER"}'
+  - name: maintenance_to_date
+    from: maintenance
+    to: date
+    from_columns: [started_date_key]
+    to_columns: [date_key]
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "physical_join": "fct_maintenance_to_dim_date", "cardinality": "many-to-one", "join_type": "LEFT OUTER"}'
+metrics:
+  - name: shift_count
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(CASE WHEN shift.shift_id IS NOT NULL THEN 1 ELSE 0 END)
+    description: Driver sign-ons.
+    datatype: Integer
+    ai_context:
+      synonyms:
+        - Shifts
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "aggregation": "SUM"}'
+  - name: online_hours
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(shift.online_seconds) / 3600.0
+    description: Hours a driver was signed on, from effective shift end so an unclosed shift keeps the time it was worked.
+    datatype: Decimal
+    ai_context:
+      synonyms:
+        - Online hours
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "aggregation": "SUM"}'
+  - name: on_trip_hours
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(shift.on_trip_seconds) / 3600.0
+    description: Hours a driver was carrying a fare.
+    datatype: Decimal
+    ai_context:
+      synonyms:
+        - On-trip hours
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "aggregation": "SUM"}'
+  - name: on_trip_interval_hours
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(CASE WHEN status_interval.status_code = 'ON_TRIP' THEN status_interval.interval_seconds ELSE 0 END) / 3600.0
+    description: Hours of on-trip status intervals, located by zone and daypart. The status feed's view of on-trip time, which is what a zone or daypart can be grouped by.
+    datatype: Decimal
+    ai_context:
+      synonyms:
+        - On-trip hours by zone
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "aggregation": "SUM", "filter": "status_interval.status_code = ''ON_TRIP''"}'
+  - name: fleet_on_trip_hours
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(shift.on_trip_seconds) / 3600.0
+    description: The fleet's on-trip hours from shifts. Grouped by a dimension shifts do not reach (zone, daypart) it repeats the total for the rest of the query's grain instead of failing, so it can be the denominator of a zone's share.
+    datatype: Decimal
+    ai_context:
+      synonyms:
+        - Fleet on-trip hours
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "aggregation": "SUM", "unrelated_dimensions": "total"}'
+  - name: zone_share_of_fleet_on_trip_hours
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(CASE WHEN status_interval.status_code = 'ON_TRIP' THEN status_interval.interval_seconds ELSE 0 END) * 1.0 / NULLIF(SUM(shift.on_trip_seconds), 0)
+    description: "Share of the fleet's on-trip hours spent in each zone or daypart: located on-trip hours over the fleet's on-trip hours, which repeat across zones."
+    datatype: Decimal
+    ai_context:
+      synonyms:
+        - Share of on-trip time
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "derived_expression": "on_trip_interval_hours * 1.0 / NULLIF(fleet_on_trip_hours, 0)"}'
+  - name: gross_revenue
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(shift.gross_revenue)
+    description: Revenue earned on the fleet's shifts.
+    datatype: Decimal
+    ai_context:
+      synonyms:
+        - Gross revenue
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "aggregation": "SUM"}'
+  - name: occupancy_rate
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(shift.on_trip_seconds) * 1.0 / NULLIF(SUM(shift.online_seconds), 0)
+    description: Share of online time spent carrying a fare, rebuilt from summed seconds (ADR 0016); null when the fleet was never online.
+    datatype: Decimal
+    ai_context:
+      synonyms:
+        - Occupancy rate
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "derived_expression": "on_trip_hours * 1.0 / NULLIF(online_hours, 0)"}'
+  - name: revenue_per_online_hour
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(shift.gross_revenue) * 1.0 / NULLIF(SUM(shift.online_seconds) / 3600.0, 0)
+    description: Gross revenue per online hour, from summed revenue and summed hours. The driver ranking basis (ADR 0010).
+    datatype: Decimal
+    ai_context:
+      synonyms:
+        - Revenue per online hour
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "derived_expression": "gross_revenue * 1.0 / NULLIF(online_hours, 0)"}'
+  - name: mean_driver_occupancy_rate
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(shift.on_trip_seconds) * 1.0 / NULLIF(SUM(shift.online_seconds), 0)
+    description: "Unweighted mean of each driver's occupancy rate: the rate is rebuilt per driver first (ADR 0016), then drivers are averaged with equal weight. occupancy_rate is the fleet's time-weighted figure."
+    datatype: Decimal
+    ai_context:
+      synonyms:
+        - Average driver occupancy
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "based_on_dimensions": {"of": "occupancy_rate", "across": [{"via": "shift_to_driver"}], "rule": "AVG"}}'
+  - name: occupancy_rate_month_to_date
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: SUM(shift.on_trip_seconds) * 1.0 / NULLIF(SUM(shift.online_seconds), 0)
+    description: "Occupancy from the first of the month to each row's date: the ratio of to-date on-trip hours to to-date online hours, never a running sum of daily rates."
+    datatype: Decimal
+    ai_context:
+      synonyms:
+        - Month-to-date occupancy
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "time_series": {"function": "TODATE", "of": "occupancy_rate", "via": "shift_to_date", "level": "month"}}'
+  - name: active_driver_count
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: COUNT(DISTINCT shift.driver_key)
+    description: "Distinct drivers who signed on. A distinct count: it never sums across days or drivers, so only a source at the query's own grain, or the detail, can answer it."
+    datatype: Integer
+    ai_context:
+      synonyms:
+        - Active drivers
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "aggregation": "NON_ADDITIVE"}'
+  - name: avg_daily_active_drivers
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: COUNT(DISTINCT shift.driver_key)
+    description: "Distinct drivers per shift day, averaged over the days with shifts."
+    datatype: Decimal
+    ai_context:
+      synonyms:
+        - Average daily active drivers
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "based_on_dimensions": {"of": "active_driver_count", "across": [{"via": "shift_to_date", "level": "day"}], "rule": "AVG"}}'
+  - name: closing_active_driver_count
+    expression:
+      dialects:
+        - dialect: ANSI_SQL
+          expression: COUNT(DISTINCT shift.driver_key)
+    description: "Distinct drivers on the last day of the period that had shifts: a time balance, so a month reports its closing headcount, not the sum of its days."
+    datatype: Integer
+    ai_context:
+      synonyms:
+        - Closing active drivers
+    custom_extensions:
+      - vendor_name: VIBEDATA
+        data: '{"vibedata_version": "1.6", "based_on_dimensions": {"of": "active_driver_count", "across": [{"via": "shift_to_date", "level": "day"}], "rule": "LAST"}}'
+custom_extensions:
+  - vendor_name: VIBEDATA
+    data: '{"vibedata_version": "1.6", "physical_tables": [{"name": "fct_shift", "source": "core.fct_shift", "dbt_model": "fct_shift", "table_type": "TABLE"}, {"name": "fct_status_interval", "source": "core.fct_status_interval", "dbt_model": "fct_status_interval", "table_type": "TABLE"}, {"name": "fct_maintenance", "source": "core.fct_maintenance", "dbt_model": "fct_maintenance", "table_type": "TABLE"}, {"name": "dim_driver", "source": "core.dim_driver", "dbt_model": "dim_driver", "table_type": "TABLE"}, {"name": "dim_vehicle", "source": "core.dim_vehicle", "dbt_model": "dim_vehicle", "table_type": "TABLE"}, {"name": "dim_garage", "source": "core.dim_garage", "dbt_model": "dim_garage", "table_type": "TABLE"}, {"name": "dim_date", "source": "core.dim_date", "dbt_model": "dim_date", "table_type": "TABLE"}, {"name": "dim_daypart", "source": "core.dim_daypart", "dbt_model": "dim_daypart", "table_type": "TABLE"}, {"name": "dim_zone", "source": "core.dim_zone", "dbt_model": "dim_zone", "table_type": "TABLE"}, {"name": "agg_driver_daily", "source": "agg.agg_driver_daily", "dbt_model": "agg_driver_daily", "table_type": "TABLE"}, {"name": "agg_driver_monthly", "source": "agg.agg_driver_monthly", "dbt_model": "agg_driver_monthly", "table_type": "TABLE"}, {"name": "agg_vehicle_daily", "source": "agg.agg_vehicle_daily", "dbt_model": "agg_vehicle_daily", "table_type": "TABLE"}, {"name": "agg_vehicle_monthly", "source": "agg.agg_vehicle_monthly", "dbt_model": "agg_vehicle_monthly", "table_type": "TABLE"}, {"name": "agg_garage_monthly", "source": "agg.agg_garage_monthly", "dbt_model": "agg_garage_monthly", "table_type": "TABLE"}, {"name": "agg_zone_occupancy_hourly", "source": "agg.agg_zone_occupancy_hourly", "dbt_model": "agg_zone_occupancy_hourly", "table_type": "TABLE"}, {"name": "mart_driver_scorecard", "source": "ops.mart_driver_scorecard", "dbt_model": "mart_driver_scorecard", "table_type": "TABLE"}, {"name": "mart_vehicle_utilisation", "source": "ops.mart_vehicle_utilisation", "dbt_model": "mart_vehicle_utilisation", "table_type": "TABLE"}], "physical_joins": [{"name": "fct_shift_to_dim_driver", "from": "fct_shift", "to": "dim_driver"}, {"name": "fct_shift_to_dim_vehicle", "from": "fct_shift", "to": "dim_vehicle"}, {"name": "fct_shift_to_dim_garage", "from": "fct_shift", "to": "dim_garage"}, {"name": "fct_shift_to_dim_date", "from": "fct_shift", "to": "dim_date"}, {"name": "fct_status_interval_to_dim_driver", "from": "fct_status_interval", "to": "dim_driver"}, {"name": "fct_status_interval_to_dim_vehicle", "from": "fct_status_interval", "to": "dim_vehicle"}, {"name": "fct_status_interval_to_dim_date", "from": "fct_status_interval", "to": "dim_date"}, {"name": "fct_status_interval_to_dim_daypart", "from": "fct_status_interval", "to": "dim_daypart"}, {"name": "fct_status_interval_to_dim_zone", "from": "fct_status_interval", "to": "dim_zone"}, {"name": "fct_maintenance_to_dim_vehicle", "from": "fct_maintenance", "to": "dim_vehicle"}, {"name": "fct_maintenance_to_dim_garage", "from": "fct_maintenance", "to": "dim_garage"}, {"name": "fct_maintenance_to_dim_date", "from": "fct_maintenance", "to": "dim_date"}, {"name": "agg_driver_daily_to_dim_driver", "from": "agg_driver_daily", "to": "dim_driver"}, {"name": "agg_driver_monthly_to_dim_driver", "from": "agg_driver_monthly", "to": "dim_driver"}, {"name": "agg_vehicle_daily_to_dim_vehicle", "from": "agg_vehicle_daily", "to": "dim_vehicle"}, {"name": "agg_vehicle_monthly_to_dim_vehicle", "from": "agg_vehicle_monthly", "to": "dim_vehicle"}, {"name": "agg_garage_monthly_to_dim_garage", "from": "agg_garage_monthly", "to": "dim_garage"}, {"name": "agg_zone_occupancy_hourly_to_dim_zone", "from": "agg_zone_occupancy_hourly", "to": "dim_zone"}, {"name": "mart_driver_scorecard_to_dim_driver", "from": "mart_driver_scorecard", "to": "dim_driver"}, {"name": "mart_vehicle_utilisation_to_dim_vehicle", "from": "mart_vehicle_utilisation", "to": "dim_vehicle"}, {"name": "agg_driver_daily_to_dim_date", "from": "agg_driver_daily", "to": "dim_date"}, {"name": "agg_driver_monthly_to_dim_date", "from": "agg_driver_monthly", "to": "dim_date"}, {"name": "agg_vehicle_daily_to_dim_date", "from": "agg_vehicle_daily", "to": "dim_date"}, {"name": "agg_vehicle_monthly_to_dim_date", "from": "agg_vehicle_monthly", "to": "dim_date"}, {"name": "agg_garage_monthly_to_dim_date", "from": "agg_garage_monthly", "to": "dim_date"}, {"name": "agg_zone_occupancy_hourly_to_dim_date", "from": "agg_zone_occupancy_hourly", "to": "dim_date"}, {"name": "agg_zone_occupancy_hourly_to_dim_daypart", "from": "agg_zone_occupancy_hourly", "to": "dim_daypart"}]}'

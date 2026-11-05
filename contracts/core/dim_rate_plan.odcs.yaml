@@ -1,0 +1,48 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 4e41a1cb-c1fb-5309-ac37-344f95e1d5a1
+name: dim_rate_plan
+version: 1.0.1
+status: active
+servers:
+  - server: sample-nyctaxi-comp-databricks
+    type: custom
+    schema: core
+    customProperties:
+      - property: platform
+        value: databricks
+schema:
+  - name: dim_rate_plan
+    properties:
+      - name: rate_plan_key
+        logicalType: integer
+        physicalType: int
+        primaryKey: true
+        quality:
+          - type: library
+            metric: duplicateValues
+            mustBe: 0
+          - type: library
+            metric: nullValues
+            mustBe: 0
+      - name: rate_plan_name
+        logicalType: string
+        physicalType: string
+      - name: pricing_model
+        logicalType: string
+        physicalType: string
+      - name: is_flat_fare
+        logicalType: boolean
+        physicalType: boolean
+      - name: flat_fare_amount
+        logicalType: number
+        physicalType: decimal(4,2)
+      - name: is_airport_plan
+        logicalType: boolean
+        physicalType: boolean
+      - name: is_metered_baseline
+        logicalType: boolean
+        physicalType: boolean
+authoritativeDefinitions:
+  - url: logical-model/nyc_taxi_analytics.ossie.yaml
+    type: businessDefinition

@@ -43,7 +43,7 @@ A source in `_sources.yml` names its `schema`, its tables and, as `database`, `"
 
 ## Properties files (B6)
 
-One YAML file per folder, named `_<folder>.yml` (`_staging.yml`, `_intermediate.yml`, `_core.yml`, `_seeds.yml`). Unit tests sit in `_unit_tests.yml` beside the models they cover, and the semantic models and metrics in `_semantic.yml` beside `_core.yml`. MetricFlow's `metricflow_time_spine` sits at the models root with its own properties file: it is infrastructure, in no layer.
+One YAML file per folder, named `_<folder>.yml` (`_staging.yml`, `_intermediate.yml`, `_core.yml`, `_seeds.yml`). Unit tests sit in `_unit_tests.yml` beside the models they cover. The semantic model is not dbt's: it is the Ossie documents in `logical-model/`, owned by the `semantic-model` skill. A boundary model's `contract`, `data_type` and `data_tests` keys are generated from its ODCS contract in `contracts/` by the `data-contract` skill's `odcs.py generate`; never edit them by hand.
 
 ## Columns (B8)
 
