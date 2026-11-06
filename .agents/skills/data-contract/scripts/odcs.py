@@ -40,6 +40,7 @@ class Destination(TypedDict, total=False):
     port: str
     user: str
     sslmode: str
+    schema_prefix: str
 
 
 def _version_key(name: str) -> tuple:
@@ -97,6 +98,32 @@ def plugin_destination(repo_map: dict) -> Destination | None:
     return destination
 
 
+def outdated(package: str, constraints: Path | None = None) -> tuple[str, str] | None:
+    """(installed, pinned) when the installed `vibedata-odcs` is not the version the plugin pins; else None.
+
+    A runtime image can carry an older build than the plugin pins. It imports, so only its
+    version shows the commands are not the ones the plugin's skills are written against.
+    No readable pin (a copy outside the plugin) or no installed distribution checks nothing.
+    """
+    from importlib.metadata import PackageNotFoundError, version
+
+    if constraints is None:  # the pin sits beside the plugin's scripts/, wherever that resolves
+        scripts = plugin_scripts()
+        if scripts is None:
+            return None
+        constraints = scripts.parent / "lib" / "runtime" / "managed-constraints.txt"
+    try:
+        lines = constraints.read_text(encoding="utf-8").splitlines()
+        installed = version(package)
+    except (OSError, PackageNotFoundError):
+        return None
+    for line in lines:
+        name, _, pinned = line.split("#", 1)[0].partition("==")
+        if name.strip().lower() == package and pinned.strip() and pinned.strip() != installed:
+            return installed, pinned.strip()
+    return None
+
+
 def run() -> None:
     try:
         from vibedata.odcs.cli import main
@@ -105,6 +132,14 @@ def run() -> None:
             "severity": "error",
             "code": "cli/package-missing",
             "message": f"vibedata-odcs cannot be imported ({error}): {INSTALL}",
+        }]))
+        sys.exit(1)
+    stale = outdated("vibedata-odcs")
+    if stale:
+        print(json.dumps([{
+            "severity": "error",
+            "code": "cli/package-outdated",
+            "message": f"vibedata-odcs {stale[0]} is installed; the plugin pins {stale[1]}: {INSTALL}",
         }]))
         sys.exit(1)
     main(destination_resolver=plugin_destination)

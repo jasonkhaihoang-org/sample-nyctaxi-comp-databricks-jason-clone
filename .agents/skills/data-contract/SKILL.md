@@ -24,7 +24,7 @@ Leaves one current ODCS `v3.2.0` contract per boundary relation, the dbt and dlt
 
    An input contract describes the landed input relation. Dropping or renaming source columns downstream is the developer's choice; dropping a column the contract promised is breaking.
 
-2. Run `python3 "$SKILL_DIR/scripts/odcs.py" version`. When it reports `cli/package-missing`, write the effective managed constraints with `python3 <plugin>/scripts/runtime_pins.py --out <scratch dir outside the repo>/constraints.txt`, run `python3 -m pip install -c <scratch dir outside the repo>/constraints.txt -r "$SKILL_DIR/scripts/requirements.txt"` once and retry; halt and report the error if it still fails.
+2. Run `python3 "$SKILL_DIR/scripts/odcs.py" version`. When it reports `cli/package-missing` or `cli/package-outdated` (a runtime can carry an older build than the plugin pins), write the effective managed constraints with `python3 <plugin>/scripts/runtime_pins.py --out <scratch dir outside the repo>/constraints.txt`, run `python3 -m pip install -c <scratch dir outside the repo>/constraints.txt -r "$SKILL_DIR/scripts/requirements.txt"` once and retry; halt and report the error if it still fails.
 3. Read `references/authoring-rules.md`, then take the path the change needs.
 
    | The change | Path |

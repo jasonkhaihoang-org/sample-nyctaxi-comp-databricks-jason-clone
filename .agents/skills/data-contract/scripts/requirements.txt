@@ -3,8 +3,8 @@
 # python3 -m pip install -c <scratch>/constraints.txt -r requirements.txt
 # warehouse (duckdb): reverse on a local file and the undeclared-columns check.
 # engine-duckdb: the datacontract-cli driver for a local database file.
-# Not installed here: engine-databricks. datacontract-cli 1.2.9 caps databricks-sql-connector below 4.7,
-# which pins a vulnerable oauthlib for the whole environment, and the engine cannot authenticate in an
-# Intent yet. Until it can, profile and check --relations report this Domain's warehouse unreachable;
-# check --relations --catalog <catalog.json> compares against dbt's catalog instead.
-vibedata-odcs[warehouse,engine-duckdb]
+# engine-databricks: the datacontract-cli driver for profile and the live check --relations. Its
+# connector and SDK are the versions the managed constraints already pin for dbt-databricks, so it adds
+# no pin. It logs in through the Intent's metadata-service endpoint, from a profile the plugin's
+# platform module writes; no token is minted or stored.
+vibedata-odcs[warehouse,engine-duckdb,engine-databricks]
