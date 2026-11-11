@@ -3,8 +3,6 @@
 # Installed once by the `/install-ci` skill, which copies this template and
 # substitutes this Domain's coordinates. The file then belongs to the
 # repository: nothing rewrites it, and your edits persist.
-#
-# This bundle publishes the production dbt manifest only; it runs no PR gates.
 
 # Platform discriminator. Must be exactly "databricks" for this bundle.
 VD_DOMAIN_DATA_PLATFORM: databricks
@@ -16,5 +14,21 @@ VD_DOMAIN_SLUG: nyc-taxi-databricks
 # relation name, so an Intent's `--defer` resolves to the live production relations.
 # The schema is optional: delete its line when the Domain records no Primary Schema,
 # and the publish uses default.
-VD_DOMAIN_DATABRICKS_CATALOG: nyctaxi_prod
-VD_DOMAIN_DATABRICKS_PRIMARY_SCHEMA: main
+VD_DOMAIN_DATABRICKS_CATALOG: prd
+VD_DOMAIN_DATABRICKS_PRIMARY_SCHEMA: mrt
+
+# Workspace and SQL warehouse PR CI connects to.
+VD_DOMAIN_DATABRICKS_HOST: adb-7405605085751196.16.azuredatabricks.net
+VD_DOMAIN_DATABRICKS_HTTP_PATH: /sql/1.0/warehouses/6bcdba3d9db6aa58
+
+# Ephemeral catalog. PR CI creates and drops only its own ci__ schemas here.
+VD_EPHM_DATABRICKS_CATALOG: eph
+
+# Repository variable holding the CI service principal's application (client) ID.
+# CI signs in as it through GitHub OIDC; no secret is stored.
+DATABRICKS_CLIENT_ID_VAR: VD_CI_DATABRICKS_CLIENT_ID
+
+# design-drift's LLM: a GitHub Actions secret (key) and variables (URL, model) named here.
+LLM_API_KEY_VAR: VD_CI_LLM_API_KEY
+LLM_API_URL_VAR: VD_CI_LLM_API_URL
+LLM_MODEL_VAR: VD_CI_LLM_MODEL
