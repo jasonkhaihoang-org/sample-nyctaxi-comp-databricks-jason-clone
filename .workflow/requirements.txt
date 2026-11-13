@@ -1,2 +1,0 @@
-vibedata-domain-ci==1.0.0rc16
-vibedata-domain-hooks==1.0.0rc16
