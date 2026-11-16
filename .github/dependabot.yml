@@ -1,4 +1,5 @@
 # Touched 2026-11-16 to trigger a Dependabot run for the rc23 bump (VD-7809).
+# Touched 2026-11-16 to trigger a Dependabot run for the rc23 bump (VD-7809).
 # Vibedata Domain CI Dependabot configuration (written by onboarding to .github/dependabot.yml when the repo has
 # none). One `vibedata` group moves the callers' workflow pins and the root requirements.txt package pins in
 # one PR per release (D7). Keep both Vibedata entries in that one group and do not add other entries to it
