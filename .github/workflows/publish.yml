@@ -18,8 +18,8 @@ permissions:
 
 jobs:
   publish-manifest:
-    uses: accelerate-data/vibedata-official/.github/workflows/publish-manifest.yml@domain-ci/v1.0.0rc17
+    uses: accelerate-data/vibedata-official/.github/workflows/publish-manifest.yml@domain-ci/v1.0.0rc24
 
   publish-docs:
     needs: publish-manifest
-    uses: accelerate-data/vibedata-official/.github/workflows/publish-docs.yml@domain-ci/v1.0.0rc17
+    uses: accelerate-data/vibedata-official/.github/workflows/publish-docs.yml@domain-ci/v1.0.0rc24
