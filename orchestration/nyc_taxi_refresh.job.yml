@@ -51,6 +51,7 @@ resources:
             - task_key: dlt_ops_pipeline
             - task_key: dlt_mdm_pipeline
           environment_key: dbt
+          environment_variables_key: dbt
           dbt_task:
             project_directory: ../transformation
             warehouse_id: ${var.warehouse_id}
@@ -60,13 +61,21 @@ resources:
               - dbt deps
               - dbt build
 
+      environment_variables:
+        - environment_variables_key: dbt
+          spec:
+            variables:
+              VD_EPHM_SCHEMA_PREFIX: ${var.schema_prefix}
+              DBT_DEFER: ${var.dbt_defer}
+              DBT_STATE: ${var.dbt_state}
+
       environments:
         - environment_key: dlt
           spec:
-            environment_version: "4"
+            environment_version: "5"
         - environment_key: dbt
           spec:
-            environment_version: "4"
+            environment_version: "5"
             dependencies:
               - -c ${workspace.file_path}/.github/managed-constraints.txt
               - dbt-core

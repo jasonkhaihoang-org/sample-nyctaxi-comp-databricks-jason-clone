@@ -24,7 +24,7 @@ boroughs as (
     select distinct borough_name
     from {{ ref('dim_zone') }}
 
-    union
+    union distinct
 
     select 'unresolved'
 ),

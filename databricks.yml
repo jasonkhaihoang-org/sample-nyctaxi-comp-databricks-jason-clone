@@ -14,6 +14,15 @@ variables:
   dlt_env:
     description: JSON of dlt environment overrides for the pipeline notebooks. By default the catalog and SQL warehouse the job is deployed with; a sandbox run passes the Ephemeral catalog, warehouse, the Intent's schema prefix and Studio's staging layout.
     default: '{"DESTINATION__DATABRICKS__CREDENTIALS__CATALOG": "${var.catalog}", "DESTINATION__DATABRICKS__CREDENTIALS__HTTP_PATH": "/sql/1.0/warehouses/${var.warehouse_id}"}'
+  schema_prefix:
+    description: The schema prefix the dbt task builds and reads under; empty in production, the Intent's prefix in a sandbox run.
+    default: ""
+  dbt_defer:
+    description: Set in a sandbox run so the dbt task defers unbuilt upstream models to production state; empty in production.
+    default: ""
+  dbt_state:
+    description: The production manifest directory the dbt task defers to in a sandbox run; empty in production.
+    default: ""
   schedule_pause_status:
     description: PAUSED or UNPAUSED; production CI/CD activates schedules.
     default: PAUSED
