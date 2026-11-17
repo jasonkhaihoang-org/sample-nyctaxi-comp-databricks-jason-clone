@@ -203,6 +203,9 @@ def _guid_hits(name: str, text: str) -> list[str]:
 
 
 def _coordinate_hits(name: str, text: str) -> list[str]:
+    if name in DOMAIN_COORDINATE_FILES:
+        # The released ci-config template requires VD_DOMAIN_DATABRICKS_HOST and _HTTP_PATH here.
+        return []
     if name.startswith(VENDORED_STANDARDS):
         # Upstream schema copies, kept as-is; their example hosts point at no workspace.
         return []
@@ -223,6 +226,7 @@ def test_coordinate_guard_catches_what_points_at_one_workspace():
     assert _guid_hits("docs/setup/notes.md", f"workspace {guid}") == [f"docs/setup/notes.md: {guid}"]
     assert _coordinate_hits("transformation/profiles.yml", f"host: {host}\nhttp_path: {warehouse}") == [
         f"transformation/profiles.yml: {host}", f"transformation/profiles.yml: {warehouse}"]
+    assert _coordinate_hits(".workflow/ci-config.yml", f"VD_DOMAIN_DATABRICKS_HTTP_PATH: {warehouse}") == []
     assert _coordinate_hits("docs/verify/run.md", f"loaded {prefix}") == []
     assert _coordinate_hits(".github/profiles/profiles.yml", "host: offline.cloud.databricks.com") == []
     aws_host = "dbc-1a2b3c4d" + ".cloud.databricks.com"
@@ -247,12 +251,12 @@ def test_dbt_project_is_databricks():
 
 
 def test_ci_publishes_the_manifest_for_the_production_coordinates():
-    """The publish workflow parses with a profile the bundle installs, for the catalog and schema the prod target names."""
+    """Publish calls the released publish-manifest workflow, which reads the catalog and schema the prod target names."""
     import yaml
 
-    workflow = (ROOT / ".github/workflows/publish-prod-manifest-databricks.yml").read_text()
-    profile = re.search(r"--profile (\S+)", workflow).group(1)
-    assert profile in yaml.safe_load((ROOT / ".github/profiles/profiles.yml").read_text())
+    workflow = yaml.safe_load((ROOT / ".github/workflows/publish.yml").read_text())
+    assert workflow["jobs"]["publish-manifest"]["uses"].startswith(
+        "accelerate-data/vibedata-official/.github/workflows/publish-manifest.yml@")
     config = yaml.safe_load((ROOT / ".workflow/ci-config.yml").read_text())
     prod = yaml.safe_load((ROOT / "transformation/profiles.yml").read_text())["dbt_databricks"]["outputs"]["prod"]
     assert config["VD_DOMAIN_DATA_PLATFORM"] == "databricks"
