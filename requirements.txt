@@ -29,5 +29,5 @@ pyyaml==6.0.3
 ruff==0.17.5
 
 # Vibedata CI (Dependabot)
-vibedata-domain-ci==1.0.0rc24
-vibedata-domain-hooks==1.0.0rc24
+vibedata-domain-ci==1.0.0rc29
+vibedata-domain-hooks==1.0.0rc29
