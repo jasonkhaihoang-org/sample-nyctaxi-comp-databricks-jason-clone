@@ -1,0 +1,1 @@
+manifests: [{name: nyc_taxi_upstream, type: file, config: {path: "${DBT_LOOM_UPSTREAM_MANIFEST}"}}]

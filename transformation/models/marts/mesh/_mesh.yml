@@ -1,0 +1,6 @@
+version: 2
+
+models:
+  - name: mesh_zone_count
+    config:
+      schema: core

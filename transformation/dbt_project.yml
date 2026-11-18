@@ -1,4 +1,4 @@
-name: 'nyc_taxi_analytics'
+name: 'nyc_taxi_consumer'
 version: '2.1.0'
 config-version: 2
 # A literal name: the bundle job's dbt task cannot find a profile named through env_var() here.
@@ -31,7 +31,7 @@ models:
   # the quality workflow asks for it (--vars '{dbt_project_evaluator_enabled: true}').
   dbt_project_evaluator:
     +enabled: "{{ var('dbt_project_evaluator_enabled', false) }}"
-  nyc_taxi_analytics:
+  nyc_taxi_consumer:
     +persist_docs:
       relation: true
       columns: true
@@ -59,6 +59,6 @@ models:
 seeds:
   dbt_project_evaluator:
     +enabled: "{{ var('dbt_project_evaluator_enabled', false) }}"
-  nyc_taxi_analytics:
+  nyc_taxi_consumer:
     +schema: seeds
     +quote_columns: false
