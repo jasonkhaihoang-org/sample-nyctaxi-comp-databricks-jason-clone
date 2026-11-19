@@ -18,12 +18,12 @@ permissions:
 
 jobs:
   publish-manifest:
-    uses: accelerate-data/vibedata-official/.github/workflows/publish-manifest.yml@domain-ci/v1.0.0rc29
+    uses: accelerate-data/vibedata-official/.github/workflows/publish-manifest.yml@domain-ci/v1.0.0rc30
     with:
       runner: blacksmith-2vcpu-ubuntu-2404
 
   publish-docs:
     needs: publish-manifest
-    uses: accelerate-data/vibedata-official/.github/workflows/publish-docs.yml@domain-ci/v1.0.0rc29
+    uses: accelerate-data/vibedata-official/.github/workflows/publish-docs.yml@domain-ci/v1.0.0rc30
     with:
       runner: blacksmith-2vcpu-ubuntu-2404
