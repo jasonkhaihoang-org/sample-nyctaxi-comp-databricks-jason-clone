@@ -45,7 +45,7 @@ jobs:
 
   ci:
     needs: config
-    uses: accelerate-data/vibedata-official/.github/workflows/domain-ci.yml@domain-ci/v1.0.0rc29
+    uses: accelerate-data/vibedata-official/.github/workflows/domain-ci.yml@domain-ci/v1.0.0rc30
     with:
       runner: blacksmith-2vcpu-ubuntu-2404
       llm_api_url: ${{ vars[needs.config.outputs.llm_api_url] }}
